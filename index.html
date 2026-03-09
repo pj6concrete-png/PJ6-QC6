@@ -609,6 +609,117 @@
         .worse-val { color: #ef4444; font-weight: 700; }
         .neutral-val { color: #64748b; font-weight: 600; }
 
+        /* ===== INCIDENT MANAGEMENT STYLES ===== */
+        .incident-severity-critical { border-left: 5px solid #dc2626 !important; }
+        .incident-severity-high     { border-left: 5px solid #ea580c !important; }
+        .incident-severity-medium   { border-left: 5px solid #d97706 !important; }
+        .incident-severity-low      { border-left: 5px solid #16a34a !important; }
+
+        .severity-badge {
+            display: inline-block; padding: 3px 10px; border-radius: 12px;
+            font-size: 12px; font-weight: 700; text-transform: uppercase;
+        }
+        .severity-badge.critical { background:#fee2e2; color:#991b1b; }
+        .severity-badge.high     { background:#ffedd5; color:#9a3412; }
+        .severity-badge.medium   { background:#fef3c7; color:#92400e; }
+        .severity-badge.low      { background:#dcfce7; color:#166534; }
+
+        .status-badge {
+            display: inline-block; padding: 3px 10px; border-radius: 12px;
+            font-size: 12px; font-weight: 600;
+        }
+        .status-badge.open       { background:#dbeafe; color:#1e40af; }
+        .status-badge.progress   { background:#fef3c7; color:#92400e; }
+        .status-badge.resolved   { background:#dcfce7; color:#166534; }
+        .status-badge.closed     { background:#f1f5f9; color:#475569; }
+
+        .incident-card {
+            background: white; border-radius: 10px; padding: 18px;
+            border: 2px solid var(--border); margin-bottom: 14px;
+            transition: box-shadow 0.2s;
+        }
+        .incident-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+
+        .incident-card-header {
+            display: flex; justify-content: space-between;
+            align-items: flex-start; margin-bottom: 10px;
+        }
+        .incident-card-title { font-weight: 700; font-size: 15px; color: var(--text); }
+        .incident-card-meta  { font-size: 13px; color: var(--text-light); margin-top: 4px; }
+
+        /* Gallery */
+        .gallery-drop-zone {
+            border: 3px dashed #cbd5e1; border-radius: 10px;
+            padding: 30px; text-align: center; cursor: pointer;
+            background: #f8fafc; transition: all 0.2s; margin-bottom: 16px;
+        }
+        .gallery-drop-zone:hover, .gallery-drop-zone.drag-over {
+            border-color: var(--primary); background: #eff6ff;
+        }
+        .gallery-drop-zone .drop-icon { font-size: 36px; margin-bottom: 8px; }
+        .gallery-drop-zone p { color: var(--text-light); font-size: 14px; margin: 0; }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 12px; margin-top: 12px;
+        }
+        .gallery-item {
+            position: relative; border-radius: 8px; overflow: hidden;
+            border: 2px solid var(--border); background: #f1f5f9;
+            aspect-ratio: 1; cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .gallery-item:hover { transform: scale(1.04); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .gallery-item img {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+        .gallery-item .doc-thumb {
+            width: 100%; height: 100%; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 6px;
+            font-size: 12px; color: var(--text-light); padding: 8px;
+            text-align: center; word-break: break-all;
+        }
+        .gallery-item .doc-thumb span.doc-icon { font-size: 32px; }
+        .gallery-item .remove-btn {
+            position: absolute; top: 4px; right: 4px;
+            background: rgba(220,38,38,0.85); color: white;
+            border: none; border-radius: 50%; width: 22px; height: 22px;
+            font-size: 13px; cursor: pointer; display: flex;
+            align-items: center; justify-content: center; line-height: 1;
+            padding: 0;
+        }
+        .gallery-item .remove-btn:hover { background: #dc2626; transform: none; }
+
+        /* Lightbox */
+        #incident-lightbox {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.9); z-index: 99999;
+            align-items: center; justify-content: center;
+        }
+        #incident-lightbox.open { display: flex; }
+        #incident-lightbox img {
+            max-width: 90vw; max-height: 90vh; border-radius: 8px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.5);
+        }
+        #incident-lightbox .lb-close {
+            position: fixed; top: 20px; right: 28px;
+            color: white; font-size: 36px; cursor: pointer;
+            background: none; border: none; line-height: 1;
+        }
+        #incident-lightbox .lb-close:hover { transform: none; color: #f87171; }
+        #incident-lightbox .lb-caption {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.7); color: white; padding: 8px 20px;
+            border-radius: 20px; font-size: 13px; white-space: nowrap; max-width: 90vw;
+            overflow: hidden; text-overflow: ellipsis;
+        }
+
+        .incidents-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap:14px; margin-bottom:20px; }
+        .inc-stat { background:white; border-radius:10px; padding:16px; text-align:center; border:2px solid var(--border); }
+        .inc-stat .inc-num { font-size:28px; font-weight:800; margin-bottom:4px; }
+        .inc-stat .inc-lbl { font-size:12px; color:var(--text-light); text-transform:uppercase; font-weight:600; }
+
         </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -643,6 +754,7 @@
             <div class="tab" onclick="switchTab('gradaciones')">🪨 Gradaciones</div>
             <div class="tab" onclick="switchTab('calendario')">📅 Calendario Roturas</div>
             <div class="tab" onclick="switchTab('ai-optimizer')">🤖 AI Optimizer</div>
+            <div class="tab" onclick="switchTab('incidents')">🚨 Incident Management</div>
         </div>
 
         <!-- DASHBOARD -->
@@ -2498,7 +2610,10 @@
                     cotizaciones: await getAllRecords('cotizaciones'),
                     mixdesigns: await getAllRecords('mixdesigns'),
                     trials: await getAllRecords('trials'),
-                    campo_evaluaciones: await getAllRecords('campo_evaluaciones')
+                    campo_evaluaciones: await getAllRecords('campo_evaluaciones'),
+                    incidentes: JSON.parse(localStorage.getItem('incidentes_v1') || '[]'),
+                    inc_proyectos: JSON.parse(localStorage.getItem('inc_proyectos_v1') || '[]'),
+                    gradaciones: JSON.parse(localStorage.getItem('gradaciones_db') || '[]')
                 };
                 
                 // Incluir logo si existe
@@ -2546,7 +2661,9 @@
                       'Cotizaciones: '       + (data.cotizaciones||[]).length + '\n' +
                       'Mix Designs: '        + (data.mixdesigns||[]).length + '\n' +
                       'Trial Mixes: '        + (data.trials||[]).length + '\n' +
-                      'Eval. de Campo: '     + (data.campo_evaluaciones||[]).length);
+                      'Eval. de Campo: '     + (data.campo_evaluaciones||[]).length + '\n' +
+                      'Incidentes: '         + (data.incidentes||[]).length + '\n' +
+                      'Gradaciones: '        + (data.gradaciones||[]).length);
                 
             } catch (error) {
                 console.error('Error exportando:', error);
@@ -2584,7 +2701,7 @@
             catch(e) { alert('No es JSON valido: ' + e.message); return; }
 
             // Validate
-            if (!data || (!data.clientes && !data.mixdesigns && !data.trials && !data.proyectos && !data.materiales)) {
+            if (!data || (!data.clientes && !data.mixdesigns && !data.trials && !data.proyectos && !data.materiales && !data.incidentes)) {
                 alert('Archivo no reconocido. Exporta primero desde esta aplicacion.');
                 return;
             }
@@ -2602,6 +2719,8 @@
             var mds = (data.mixdesigns || []).length;
             var trs = (data.trials     || []).length;
             var ces = (data.campo_evaluaciones || []).length;
+            var ins = (data.incidentes || []).length;
+            var grs = (data.gradaciones || []).length;
 
             var lines = [
                 'IMPORTAR BACKUP',
@@ -2613,6 +2732,8 @@
                 'Mix Designs:    ' + mds,
                 'Trial Mixes:    ' + trs,
                 'Eval Campo:     ' + ces,
+                'Incidentes:     ' + ins,
+                'Gradaciones:    ' + grs,
                 '',
                 'Los registros existentes no seran eliminados.',
                 'Presiona OK para continuar.'
@@ -2651,6 +2772,41 @@
             await insertStore('trials',             data.trials,     'trialId');
             await insertStore('campo_evaluaciones', data.campo_evaluaciones || [], 'evalId');
 
+            // Import incidentes (stored in localStorage)
+            if (data.incidentes && data.incidentes.length > 0) {
+                var existingInc = [];
+                try { existingInc = JSON.parse(localStorage.getItem('incidentes_v1') || '[]'); } catch(e) {}
+                var existingIds = new Set(existingInc.map(function(i){ return i.id; }));
+                var newInc = data.incidentes.filter(function(i){ return i.id && !existingIds.has(i.id); });
+                var merged = existingInc.concat(newInc);
+                localStorage.setItem('incidentes_v1', JSON.stringify(merged));
+                imported += newInc.length;
+                skipped  += (data.incidentes.length - newInc.length);
+            }
+
+            // Import inc_proyectos (stored in localStorage)
+            if (data.inc_proyectos && data.inc_proyectos.length > 0) {
+                var existingProj = [];
+                try { existingProj = JSON.parse(localStorage.getItem('inc_proyectos_v1') || '[]'); } catch(e) {}
+                var existingSet = new Set(existingProj.map(function(p){ return p.toLowerCase(); }));
+                data.inc_proyectos.forEach(function(p){
+                    if(p && !existingSet.has(p.toLowerCase())){ existingProj.push(p); existingSet.add(p.toLowerCase()); }
+                });
+                localStorage.setItem('inc_proyectos_v1', JSON.stringify(existingProj));
+            }
+
+            // Import gradaciones (stored in localStorage)
+            if (data.gradaciones && data.gradaciones.length > 0) {
+                var existingGrad = [];
+                try { existingGrad = JSON.parse(localStorage.getItem('gradaciones_db') || '[]'); } catch(e) {}
+                var existingGradIds = new Set(existingGrad.map(function(g){ return g.id; }));
+                var newGrad = data.gradaciones.filter(function(g){ return g.id && !existingGradIds.has(g.id); });
+                var mergedGrad = existingGrad.concat(newGrad);
+                localStorage.setItem('gradaciones_db', JSON.stringify(mergedGrad));
+                imported += newGrad.length;
+                skipped  += (data.gradaciones.length - newGrad.length);
+            }
+
             // Restore logo
             if (data.logo && !logoEmpresa) {
                 try {
@@ -2675,6 +2831,14 @@
             alert(result.join('\n'));
 
             try { await updateDashboard(); } catch(e) {}
+            try {
+                // Refresh incident module if functions are available
+                if (typeof renderIncidentes === 'function') renderIncidentes();
+                if (typeof updateIncStats   === 'function') updateIncStats();
+                if (typeof renderIncProyectos === 'function') renderIncProyectos();
+                if (typeof populateIncClienteSelect === 'function') populateIncClienteSelect();
+                if (typeof renderTablaGradaciones === 'function') renderTablaGradaciones();
+            } catch(e) {}
             try {
                 var t = document.querySelector('.tab.active');
                 if (t) {
@@ -11956,7 +12120,9 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
             document.getElementById('grad-tipo').value = g.tipo || '';
             actualizarEspecsC33();
             setTimeout(() => {
-                document.getElementById('grad-designacion').value = g.designacion || '';
+                if (g.designacion) {
+                    document.getElementById('grad-designacion').value = g.designacion;
+                }
                 generarTablaTamices();
                 setTimeout(() => {
                     (g.sieveData || []).forEach(sv => {
@@ -11991,13 +12157,22 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
             if (!tipo || !C33_SPECS[tipo]) {
                 sel.innerHTML = '<option value="">— Seleccionar tipo primero —</option>';
                 document.getElementById('tabla-tamices').innerHTML = '';
+                document.getElementById('cumplimiento-c33').innerHTML = '';
                 return;
             }
+            // Add blank placeholder first so user must actively select a size
+            const ph = document.createElement('option');
+            ph.value = ''; ph.textContent = '— Seleccionar tamaño —';
+            sel.appendChild(ph);
             C33_SPECS[tipo].designaciones.forEach(d => {
                 const opt = document.createElement('option');
                 opt.value = d.id; opt.textContent = d.label;
                 sel.appendChild(opt);
             });
+            // Auto-select first real option if only one choice (fine, intermedio, base)
+            if (C33_SPECS[tipo].designaciones.length === 1) {
+                sel.value = C33_SPECS[tipo].designaciones[0].id;
+            }
             generarTablaTamices();
         }
 
@@ -12006,6 +12181,22 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
             const des    = document.getElementById('grad-designacion').value;
             const cont   = document.getElementById('tabla-tamices');
             if (!tipo || !C33_SPECS[tipo]) { cont.innerHTML = ''; return; }
+
+            // If no designation selected yet (placeholder), show prompt
+            if (!des) {
+                cont.innerHTML = '<div style="padding:1rem;color:#8b92a8;font-size:0.85rem;text-align:center;background:rgba(255,255,255,0.03);border-radius:8px;border:1px dashed rgba(255,255,255,0.1);">Selecciona un tamaño/designación para ver los tamices y límites C33</div>';
+                document.getElementById('cumplimiento-c33').innerHTML = '';
+                return;
+            }
+
+            // Capture existing entered values before re-rendering
+            const savedValues = {};
+            C33_SPECS[tipo].tamices.forEach(t => {
+                const safeId = 'sv_' + t.replace(/[^a-zA-Z0-9]/g,'_');
+                const el = document.getElementById(safeId);
+                if (el && el.value !== '') savedValues[safeId] = el.value;
+            });
+
             const tamices = C33_SPECS[tipo].tamices;
             const limits  = C33_SPECS[tipo].limits[des] || {};
 
@@ -12016,18 +12207,27 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                 + '<span style="color:#8b92a8;font-size:0.77rem;font-weight:700;">LÍM. SUP.</span>'
                 + '</div>';
             tamices.forEach(t => {
-                const lim  = limits[t];
+                const lim    = limits[t];
                 const safeId = 'sv_' + t.replace(/[^a-zA-Z0-9]/g,'_');
-                html += '<div style="display:grid;grid-template-columns:0.7fr 1fr 0.8fr 0.8fr;gap:0.3rem;align-items:center;padding:0.18rem 0;">'
-                    + '<span style="color:#e8eaed;font-size:0.88rem;font-weight:600;">' + t + '</span>'
+                // Highlight rows that have C33 limits for this designation
+                const rowBg = lim ? 'background:rgba(99,102,241,0.07);border-radius:6px;' : '';
+                html += '<div style="display:grid;grid-template-columns:0.7fr 1fr 0.8fr 0.8fr;gap:0.3rem;align-items:center;padding:0.18rem 0.25rem;' + rowBg + '">'
+                    + '<span style="color:' + (lim ? '#a5b4fc' : '#e8eaed') + ';font-size:0.88rem;font-weight:' + (lim ? '700' : '600') + ';">' + t + '</span>'
                     + '<input type="number" min="0" max="100" step="0.1" id="' + safeId + '" placeholder="—"'
                     + ' oninput="calcularMFAuto();verificarC33();"'
                     + ' style="padding:0.42rem 0.55rem;background:rgba(20,25,45,0.8);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#e8eaed;width:100%;box-sizing:border-box;">'
-                    + '<span style="color:#8b92a8;font-size:0.83rem;text-align:center;">' + (lim ? lim[0]+'%' : '—') + '</span>'
-                    + '<span style="color:#8b92a8;font-size:0.83rem;text-align:center;">' + (lim ? lim[1]+'%' : '—') + '</span>'
+                    + '<span style="color:' + (lim ? '#6ee7b7' : '#8b92a8') + ';font-size:0.83rem;text-align:center;font-weight:' + (lim ? '700' : '400') + ';">' + (lim ? lim[0]+'%' : '—') + '</span>'
+                    + '<span style="color:' + (lim ? '#6ee7b7' : '#8b92a8') + ';font-size:0.83rem;text-align:center;font-weight:' + (lim ? '700' : '400') + ';">' + (lim ? lim[1]+'%' : '—') + '</span>'
                     + '</div>';
             });
             cont.innerHTML = html;
+
+            // Restore previously entered values
+            Object.keys(savedValues).forEach(safeId => {
+                const el = document.getElementById(safeId);
+                if (el) el.value = savedValues[safeId];
+            });
+
             verificarC33();
         }
 
@@ -13240,7 +13440,346 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
         </div>
         <!-- ===== END AI OPTIMIZER TAB ===== -->
 
-<!-- Modal para Nuevo Cliente Rápido -->
+        <!-- ===== INCIDENT MANAGEMENT TAB ===== -->
+        <div id="tab-incidents" class="tab-content">
+
+            <!-- Stats Row + New Incident Button -->
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+                <div class="incidents-stats" id="inc-stats-row" style="flex:1;margin-bottom:0">
+                    <div class="inc-stat">
+                        <div class="inc-num" id="inc-total" style="color:#2563eb">0</div>
+                        <div class="inc-lbl">Total</div>
+                    </div>
+                    <div class="inc-stat">
+                        <div class="inc-num" id="inc-open" style="color:#2563eb">0</div>
+                        <div class="inc-lbl">Abiertos</div>
+                    </div>
+                    <div class="inc-stat">
+                        <div class="inc-num" id="inc-progress" style="color:#d97706">0</div>
+                        <div class="inc-lbl">En Progreso</div>
+                    </div>
+                    <div class="inc-stat">
+                        <div class="inc-num" id="inc-resolved" style="color:#16a34a">0</div>
+                        <div class="inc-lbl">Resueltos</div>
+                    </div>
+                    <div class="inc-stat">
+                        <div class="inc-num" id="inc-critical" style="color:#dc2626">0</div>
+                        <div class="inc-lbl">Críticos</div>
+                    </div>
+                </div>
+                <button type="button" id="btn-nuevo-incidente" onclick="incToggleForm()"
+                    style="background:linear-gradient(135deg,#dc2626,#991b1b);color:white;border:none;
+                           padding:14px 28px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;
+                           box-shadow:0 4px 14px rgba(220,38,38,0.4);white-space:nowrap;
+                           display:flex;align-items:center;gap:8px;transition:all 0.2s">
+                    ➕ Nuevo Incidente
+                </button>
+            </div>
+
+            <!-- New Incident Form (collapsible) -->
+            <div class="card" id="inc-form-card" style="display:none">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+                    <h2 style="margin-bottom:0">🚨 <span id="inc-form-title">Registrar Nuevo Incidente</span></h2>
+                    <button onclick="incToggleForm()" style="background:#f1f5f9;color:#64748b;border:none;
+                        width:34px;height:34px;border-radius:50%;font-size:18px;cursor:pointer;
+                        display:flex;align-items:center;justify-content:center;font-weight:700">&times;</button>
+                </div>
+
+                <!-- ID display -->
+                <div style="background:#f1f5f9;border-radius:8px;padding:10px 16px;margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                    <span style="font-size:13px;color:#64748b;font-weight:600">ID DEL INCIDENTE:</span>
+                    <span id="inc-id-display" style="font-size:16px;font-weight:800;color:#dc2626;letter-spacing:1px">—</span>
+                    <span style="font-size:12px;color:#94a3b8">(se genera automáticamente al guardar)</span>
+                </div>
+
+                <div class="form-grid cols-2">
+                    <div class="form-group">
+                        <label>Título del Incidente *</label>
+                        <input type="text" id="inc-titulo" placeholder="Ej: Fisura en losa nivel 3">
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha &amp; Hora *</label>
+                        <input type="datetime-local" id="inc-fecha">
+                    </div>
+
+                    <!-- Cliente -->
+                    <div class="form-group">
+                        <label>Cliente</label>
+                        <div style="display:flex;gap:8px;align-items:center">
+                            <select id="inc-cliente" style="flex:1" onchange="incClienteChanged()">
+                                <option value="">— Seleccionar cliente —</option>
+                            </select>
+                            <button type="button" onclick="incAbrirModalCliente()"
+                                style="background:#16a34a;color:white;border:none;padding:10px 14px;border-radius:6px;
+                                       font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">
+                                ➕ Nuevo
+                            </button>
+                        </div>
+                        <div id="inc-cliente-info" style="display:none;margin-top:6px;padding:8px 12px;
+                             background:#eff6ff;border-radius:6px;border:1px solid #bfdbfe;font-size:13px;color:#1e40af"></div>
+                    </div>
+
+                    <!-- Contacto -->
+                    <div class="form-group">
+                        <label>Contacto</label>
+                        <input type="text" id="inc-contacto" placeholder="Nombre, teléfono o email del contacto">
+                    </div>
+
+                    <!-- Project -->
+                    <div class="form-group">
+                        <label>Proyecto</label>
+                        <div style="display:flex;gap:8px;align-items:center">
+                            <input type="text" id="inc-proyecto" placeholder="Nombre del proyecto" style="flex:1">
+                            <button type="button" onclick="incCrearProyecto()"
+                                style="background:#16a34a;color:white;border:none;padding:10px 14px;border-radius:6px;
+                                       font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">
+                                ➕ Crear
+                            </button>
+                        </div>
+                        <div id="inc-proyecto-sugg" style="display:none;border:1px solid #e2e8f0;border-top:none;
+                             border-radius:0 0 6px 6px;background:white;max-height:140px;overflow-y:auto;
+                             position:relative;z-index:100;box-shadow:0 4px 10px rgba(0,0,0,0.1)"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ubicación / Elemento</label>
+                        <input type="text" id="inc-ubicacion" placeholder="Ej: Columna C-12, Nivel 2">
+                    </div>
+
+                    <!-- Mix Code + Description -->
+                    <div class="form-group">
+                        <label>Código de Mezcla</label>
+                        <input type="text" id="inc-mezcla-codigo" placeholder="Ej: MX-3000-P1, MD-4000-A">
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción de Mezcla</label>
+                        <input type="text" id="inc-mezcla-descripcion" placeholder="Ej: 3000 PSI, w/c 0.45, 1&quot; CA">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Severidad</label>
+                        <select id="inc-severidad">
+                            <option value="low">🟢 Baja</option>
+                            <option value="medium" selected>🟡 Media</option>
+                            <option value="high">🟠 Alta</option>
+                            <option value="critical">🔴 Crítica</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo de Incidente</label>
+                        <select id="inc-tipo">
+                            <option value="">Seleccionar...</option>
+                            <option>Fisura / Grieta</option>
+                            <option>Segregación</option>
+                            <option>Baja Resistencia</option>
+                            <option>Exudación Excesiva</option>
+                            <option>Contracción / Shrinkage</option>
+                            <option>Descascaramiento</option>
+                            <option>Problema de Colocación</option>
+                            <option>Falla en Encofrado</option>
+                            <option>Contaminación de Material</option>
+                            <option>Incumplimiento de Slump</option>
+                            <option>Accidente / Seguridad</option>
+                            <option>Otro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Responsable / Reportado por</label>
+                        <input type="text" id="inc-responsable" placeholder="Nombre del inspector o ingeniero">
+                    </div>
+                    <div class="form-group">
+                        <label>Estado</label>
+                        <select id="inc-estado">
+                            <option value="open">Abierto</option>
+                            <option value="progress">En Progreso</option>
+                            <option value="resolved">Resuelto</option>
+                            <option value="closed">Cerrado</option>
+                        </select>
+                    </div>
+
+                    <!-- Fecha de Seguimiento -->
+                    <div class="form-group">
+                        <label>📅 Fecha de Seguimiento</label>
+                        <input type="date" id="inc-fecha-seguimiento">
+                    </div>
+                    <div class="form-group">
+                        <label>Notas de Seguimiento</label>
+                        <input type="text" id="inc-seguimiento-notas" placeholder="Ej: Re-inspeccionar en 7 días">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:12px">
+                    <label>Descripción del Incidente</label>
+                    <textarea id="inc-descripcion" rows="3" placeholder="Describe detalladamente lo ocurrido, condiciones del concreto, etc."></textarea>
+                </div>
+                <div class="form-group" style="margin-bottom:12px">
+                    <label>Acción Correctiva</label>
+                    <textarea id="inc-accion" rows="2" placeholder="Acciones tomadas o planeadas para corregir el problema"></textarea>
+                </div>
+
+                <!-- Análisis e Investigación -->
+                <h3 style="border-bottom:2px solid #e0e7ff;padding-bottom:8px;margin:18px 0 14px;color:#4338ca;font-size:15px">
+                    🔍 Análisis e Investigación
+                </h3>
+                <div class="form-grid cols-2" style="margin-bottom:12px">
+                    <div class="form-group">
+                        <label>📅 Fecha de Análisis</label>
+                        <input type="date" id="inc-analisis-fecha">
+                    </div>
+                    <div class="form-group">
+                        <label>Investigador / Responsable de Análisis</label>
+                        <input type="text" id="inc-analisis-investigador" placeholder="Nombre del ingeniero o técnico">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom:12px">
+                    <label>Causa Raíz Identificada</label>
+                    <textarea id="inc-analisis-causa" rows="2" placeholder="Ej: Relación agua/cemento excesiva, curado deficiente, segregación por vibración incorrecta..."></textarea>
+                </div>
+                <div class="form-group" style="margin-bottom:12px">
+                    <label>Análisis e Investigación</label>
+                    <textarea id="inc-analisis-texto" rows="4" placeholder="Detalla los hallazgos del análisis, pruebas realizadas, revisión de registros, observaciones de campo..."></textarea>
+                </div>
+                <div class="form-group" style="margin-bottom:4px">
+                    <label>Conclusiones y Recomendaciones</label>
+                    <textarea id="inc-analisis-conclusiones" rows="2" placeholder="Conclusiones técnicas y recomendaciones para prevenir recurrencia..."></textarea>
+                </div>
+
+                <h3 style="border-bottom:2px solid var(--border);padding-bottom:8px;margin-bottom:12px">📎 Fotos y Documentos Adjuntos</h3>
+                <div class="gallery-drop-zone" id="inc-drop-zone"
+                     onclick="document.getElementById('inc-file-input').click()"
+                     ondragover="incDragOver(event)" ondragleave="incDragLeave(event)" ondrop="incDrop(event)">
+                    <div class="drop-icon">📸</div>
+                    <p><strong>Haz clic o arrastra archivos aquí</strong></p>
+                    <p style="margin-top:4px">Fotos (JPG, PNG, WEBP) y documentos (PDF, DOCX, XLSX)</p>
+                </div>
+                <input type="file" id="inc-file-input" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                       style="display:none" onchange="incHandleFiles(this.files)">
+                <div class="gallery-grid" id="inc-new-gallery"></div>
+
+                <input type="hidden" id="inc-edit-id">
+                <div class="button-group">
+                    <button type="button" onclick="guardarIncidente()" style="background:#dc2626">🚨 Guardar Incidente</button>
+                    <button type="button" class="secondary" onclick="limpiarFormIncidente()">🔄 Limpiar</button>
+                    <button type="button" onclick="incToggleForm()" style="background:#94a3b8">✖ Cancelar</button>
+                </div>
+            </div>
+
+            <!-- Projects quick list -->
+            <div class="card" id="inc-proyectos-card">
+                <h2>📁 Proyectos de Incidentes</h2>
+                <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+                    <input type="text" id="inc-nuevo-proyecto-input" placeholder="Nombre del nuevo proyecto..."
+                           style="flex:1;min-width:200px" onkeydown="if(event.key==='Enter')incGuardarProyecto()">
+                    <button type="button" onclick="incGuardarProyecto()" style="background:#16a34a;color:white;border:none;
+                        padding:10px 20px;border-radius:6px;font-weight:600;cursor:pointer">➕ Agregar Proyecto</button>
+                </div>
+                <div id="inc-proyectos-lista"></div>
+            </div>
+
+            <!-- Filter & List -->
+            <div class="card">
+                <h2>📋 Registro de Incidentes</h2>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+                    <input type="text" id="inc-search" placeholder="🔍 Buscar incidente..."
+                           style="flex:1;min-width:180px" oninput="renderIncidentes()">
+                    <select id="inc-filter-estado" onchange="renderIncidentes()" style="min-width:140px">
+                        <option value="">Todos los estados</option>
+                        <option value="open">Abierto</option>
+                        <option value="progress">En Progreso</option>
+                        <option value="resolved">Resuelto</option>
+                        <option value="closed">Cerrado</option>
+                    </select>
+                    <select id="inc-filter-severidad" onchange="renderIncidentes()" style="min-width:140px">
+                        <option value="">Todas las severidades</option>
+                        <option value="critical">🔴 Crítica</option>
+                        <option value="high">🟠 Alta</option>
+                        <option value="medium">🟡 Media</option>
+                        <option value="low">🟢 Baja</option>
+                    </select>
+                    <button type="button" onclick="exportarIncidentes()" class="info" style="padding:10px 18px">📥 Exportar</button>
+                </div>
+                <div id="lista-incidentes">
+                    <div class="empty-state"><p>🚨 No hay incidentes registrados aún.</p></div>
+                </div>
+            </div>
+        </div>
+        <!-- ===== END INCIDENT MANAGEMENT TAB ===== -->
+
+        <!-- Lightbox for incident media -->
+        <div id="incident-lightbox" onclick="cerrarLightbox()">
+            <button class="lb-close" onclick="cerrarLightbox()">&times;</button>
+            <img id="lb-img" src="" alt="">
+            <div class="lb-caption" id="lb-caption"></div>
+        </div>
+
+        <!-- ===== INCIDENT NUEVO CLIENTE MODAL ===== -->
+        <div id="inc-modal-cliente" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);
+             z-index:30000;align-items:center;justify-content:center" onclick="if(event.target===this)incCerrarModalCliente()">
+            <div style="background:white;border-radius:12px;padding:28px;max-width:460px;width:90%;
+                        box-shadow:0 20px 50px rgba(0,0,0,0.3)">
+                <h3 style="color:#16a34a;margin-bottom:18px;font-size:18px">👤 Nuevo Cliente</h3>
+                <div class="form-group" style="margin-bottom:12px">
+                    <label>Nombre *</label>
+                    <input type="text" id="inc-nc-nombre" placeholder="Ej: Constructora ABC">
+                </div>
+                <div class="form-group" style="margin-bottom:12px">
+                    <label>Empresa</label>
+                    <input type="text" id="inc-nc-empresa" placeholder="Nombre de la empresa">
+                </div>
+                <div class="form-group" style="margin-bottom:12px">
+                    <label>Email</label>
+                    <input type="email" id="inc-nc-email" placeholder="contacto@empresa.com">
+                </div>
+                <div class="form-group" style="margin-bottom:18px">
+                    <label>Teléfono</label>
+                    <input type="tel" id="inc-nc-telefono" placeholder="787-123-4567">
+                </div>
+                <div style="display:flex;gap:10px">
+                    <button onclick="incGuardarNuevoCliente()"
+                        style="background:#16a34a;color:white;border:none;padding:11px 22px;border-radius:7px;
+                               font-weight:700;cursor:pointer;flex:1">💾 Guardar Cliente</button>
+                    <button onclick="incCerrarModalCliente()"
+                        style="background:#f1f5f9;color:#475569;border:none;padding:11px 22px;border-radius:7px;
+                               font-weight:600;cursor:pointer">Cancelar</button>
+                </div>
+            </div>
+        </div>
+        <div id="inc-preview-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:20000;
+             overflow-y:auto;padding:20px" onclick="if(event.target===this)cerrarPreviewIncidente()">
+            <div style="background:white;border-radius:14px;max-width:860px;margin:0 auto;
+                        box-shadow:0 24px 60px rgba(0,0,0,0.35);overflow:hidden">
+                <!-- Header -->
+                <div id="inc-preview-header" style="background:linear-gradient(135deg,#dc2626,#991b1b);
+                     padding:22px 28px;display:flex;justify-content:space-between;align-items:flex-start">
+                    <div>
+                        <div style="color:rgba(255,255,255,0.75);font-size:13px;font-weight:600;letter-spacing:1px;margin-bottom:4px"
+                             id="inc-pv-id"></div>
+                        <div style="color:white;font-size:20px;font-weight:800" id="inc-pv-titulo"></div>
+                        <div style="color:rgba(255,255,255,0.8);font-size:13px;margin-top:4px" id="inc-pv-meta"></div>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-shrink:0;margin-left:16px">
+                        <button onclick="imprimirIncidente()" style="background:rgba(255,255,255,0.2);border:none;
+                            color:white;padding:9px 16px;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px">
+                            🖨️ Imprimir
+                        </button>
+                        <button onclick="cerrarPreviewIncidente()" style="background:rgba(255,255,255,0.15);border:none;
+                            color:white;font-size:22px;width:36px;height:36px;border-radius:50%;cursor:pointer;line-height:1">
+                            &times;
+                        </button>
+                    </div>
+                </div>
+                <!-- Body -->
+                <div id="inc-preview-body" style="padding:28px;max-height:75vh;overflow-y:auto"></div>
+                <!-- Footer -->
+                <div style="padding:16px 28px;border-top:1px solid #e5e7eb;display:flex;gap:10px;
+                            justify-content:flex-end;flex-wrap:wrap">
+                    <button onclick="incPvEditar()" class="info" style="padding:10px 20px">✏️ Editar</button>
+                    <button onclick="imprimirIncidente()" style="background:#dc2626;color:white;border:none;
+                        padding:10px 20px;border-radius:6px;font-weight:600;cursor:pointer">🖨️ Imprimir</button>
+                    <button onclick="cerrarPreviewIncidente()" class="secondary" style="padding:10px 20px">Cerrar</button>
+                </div>
+            </div>
+        </div>
     <div id="modal-cliente-rapido" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;justify-content:center;align-items:center">
         <div style="background:white;padding:30px;border-radius:12px;max-width:500px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.3)">
             <h2 style="color:#16a34a;margin-bottom:20px">Nuevo Cliente</h2>
@@ -13365,5 +13904,880 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
             </div>
         </div>
     </div>
+
+<script>
+/* ============================================================
+   INCIDENT MANAGEMENT MODULE  v2
+   ============================================================ */
+
+const INC_KEY  = 'incidentes_v1';
+const INC_PROJ_KEY = 'inc_proyectos_v1';
+
+/* ── Helpers ─────────────────────────────────────────────── */
+function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function formatFechaInc(d){ try{ return new Date(d).toLocaleString('es-PR',{dateStyle:'medium',timeStyle:'short'}); }catch(e){return d||'';} }
+function formatFechaSolo(d){ try{ return new Date(d+'T00:00:00').toLocaleDateString('es-PR',{dateStyle:'medium'}); }catch(e){return d||'';} }
+
+/* ── Storage ─────────────────────────────────────────────── */
+function cargarIncidentes(){ try{ return JSON.parse(localStorage.getItem(INC_KEY)||'[]'); }catch(e){return [];} }
+function guardarIncidentesStore(l){ localStorage.setItem(INC_KEY, JSON.stringify(l)); }
+function cargarIncProyectos(){ try{ return JSON.parse(localStorage.getItem(INC_PROJ_KEY)||'[]'); }catch(e){return [];} }
+function guardarIncProyectos(l){ localStorage.setItem(INC_PROJ_KEY, JSON.stringify(l)); }
+
+/* ── ID Generator ────────────────────────────────────────── */
+function generarIncID(){
+    const year = new Date().getFullYear();
+    const list = cargarIncidentes();
+    // find max sequential number for this year
+    const prefix = `INC-${year}-`;
+    let max = 0;
+    list.forEach(i=>{
+        if(i.incidentId && i.incidentId.startsWith(prefix)){
+            const n = parseInt(i.incidentId.replace(prefix,'')) || 0;
+            if(n > max) max = n;
+        }
+    });
+    return `${prefix}${String(max+1).padStart(4,'0')}`;
+}
+
+/* ── Pending attachments ─────────────────────────────────── */
+let incPendingFiles = [];
+
+/* ── Init ────────────────────────────────────────────────── */
+(function initIncidents(){
+    const now = new Date();
+    now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
+    const el = document.getElementById('inc-fecha');
+    if(el) el.value = now.toISOString().slice(0,16);
+
+    // show preview ID
+    const disp = document.getElementById('inc-id-display');
+    if(disp) disp.textContent = generarIncID()+' (nuevo)';
+
+    // project autocomplete
+    const inp = document.getElementById('inc-proyecto');
+    if(inp){
+        inp.addEventListener('input', incProyectoAutocomplete);
+        inp.addEventListener('blur', ()=>{ setTimeout(()=>{ const s=document.getElementById('inc-proyecto-sugg'); if(s) s.style.display='none'; },200); });
+    }
+
+    renderIncProyectos();
+    renderIncidentes();
+    updateIncStats();
+})();
+
+/* ── Form toggle ─────────────────────────────────────────── */
+function incToggleForm(forceState){
+    const card = document.getElementById('inc-form-card');
+    const btn  = document.getElementById('btn-nuevo-incidente');
+    const isVisible = card.style.display !== 'none';
+    const show = forceState !== undefined ? forceState : !isVisible;
+    card.style.display = show ? 'block' : 'none';
+    btn.textContent = show ? '✖ Cerrar Formulario' : '➕ Nuevo Incidente';
+    btn.style.background = show
+        ? 'linear-gradient(135deg,#475569,#1e293b)'
+        : 'linear-gradient(135deg,#dc2626,#991b1b)';
+    if(show && forceState===undefined){
+        // reset title for new incident
+        document.getElementById('inc-form-title').textContent = 'Registrar Nuevo Incidente';
+        limpiarFormIncidente();
+        card.scrollIntoView({behavior:'smooth'});
+    }
+}
+
+/* ── Cliente management ──────────────────────────────────── */
+function populateIncClienteSelect(){
+    const sel = document.getElementById('inc-cliente');
+    if(!sel) return;
+    const current = sel.value;
+    while(sel.options.length > 1) sel.remove(1);
+    try{
+        // Pull from main clientes storage used by the app
+        const clientes = JSON.parse(localStorage.getItem('clientes') || '[]');
+        clientes.forEach(c=>{
+            const opt = document.createElement('option');
+            opt.value = c.id || c.nombre;
+            opt.dataset.email = c.email||'';
+            opt.dataset.telefono = c.telefono||'';
+            opt.dataset.empresa = c.empresa||'';
+            opt.textContent = c.nombre + (c.empresa ? ` — ${c.empresa}` : '');
+            sel.appendChild(opt);
+        });
+        // restore previous selection
+        if(current) sel.value = current;
+    }catch(e){}
+}
+
+function incClienteChanged(){
+    const sel = document.getElementById('inc-cliente');
+    const info = document.getElementById('inc-cliente-info');
+    if(!sel || !info) return;
+    const opt = sel.options[sel.selectedIndex];
+    if(!sel.value || !opt){
+        info.style.display='none'; return;
+    }
+    const parts = [];
+    if(opt.dataset.empresa) parts.push('🏢 '+opt.dataset.empresa);
+    if(opt.dataset.email)   parts.push('✉️ '+opt.dataset.email);
+    if(opt.dataset.telefono) parts.push('📞 '+opt.dataset.telefono);
+    if(parts.length){
+        info.textContent = parts.join('   |   ');
+        info.style.display='block';
+    } else {
+        info.style.display='none';
+    }
+}
+
+function incAbrirModalCliente(){
+    document.getElementById('inc-nc-nombre').value='';
+    document.getElementById('inc-nc-empresa').value='';
+    document.getElementById('inc-nc-email').value='';
+    document.getElementById('inc-nc-telefono').value='';
+    const modal = document.getElementById('inc-modal-cliente');
+    modal.style.display='flex';
+    setTimeout(()=>document.getElementById('inc-nc-nombre').focus(),100);
+}
+
+function incCerrarModalCliente(){
+    document.getElementById('inc-modal-cliente').style.display='none';
+}
+
+function incGuardarNuevoCliente(){
+    const nombre = document.getElementById('inc-nc-nombre').value.trim();
+    if(!nombre){ alert('El nombre del cliente es obligatorio.'); return; }
+    // Save to main clientes list so it's available everywhere
+    const clientes = JSON.parse(localStorage.getItem('clientes')||'[]');
+    const newCliente = {
+        id: 'cli_'+Date.now(),
+        nombre,
+        empresa: document.getElementById('inc-nc-empresa').value.trim(),
+        email:   document.getElementById('inc-nc-email').value.trim(),
+        telefono:document.getElementById('inc-nc-telefono').value.trim(),
+        notas:'', activo:true
+    };
+    clientes.push(newCliente);
+    localStorage.setItem('clientes', JSON.stringify(clientes));
+    // Refresh stats if function exists
+    if(typeof actualizarEstadisticas==='function') actualizarEstadisticas();
+    incCerrarModalCliente();
+    populateIncClienteSelect();
+    // Auto-select the new client
+    const sel = document.getElementById('inc-cliente');
+    if(sel){ sel.value=newCliente.id; incClienteChanged(); }
+    alert(`✅ Cliente "${nombre}" creado y seleccionado.`);
+}
+function incCrearProyecto(){
+    const inp = document.getElementById('inc-proyecto');
+    const nombre = (inp?.value||'').trim();
+    if(!nombre){ alert('Escribe el nombre del proyecto primero.'); inp?.focus(); return; }
+    const list = cargarIncProyectos();
+    if(list.find(p=>p.toLowerCase()===nombre.toLowerCase())){
+        alert(`El proyecto "${nombre}" ya existe.`); return;
+    }
+    list.push(nombre);
+    guardarIncProyectos(list);
+    renderIncProyectos();
+    alert(`✅ Proyecto "${nombre}" creado.`);
+    // hide suggestions
+    const sugg = document.getElementById('inc-proyecto-sugg');
+    if(sugg) sugg.style.display='none';
+}
+
+function incGuardarProyecto(){
+    const inp = document.getElementById('inc-nuevo-proyecto-input');
+    const nombre = (inp?.value||'').trim();
+    if(!nombre){ alert('Escribe el nombre del proyecto.'); return; }
+    const list = cargarIncProyectos();
+    if(list.find(p=>p.toLowerCase()===nombre.toLowerCase())){
+        alert(`El proyecto "${nombre}" ya existe.`); return;
+    }
+    list.push(nombre);
+    guardarIncProyectos(list);
+    if(inp) inp.value = '';
+    renderIncProyectos();
+}
+
+function renderIncProyectos(){
+    const container = document.getElementById('inc-proyectos-lista');
+    if(!container) return;
+    const list = cargarIncProyectos();
+    if(!list.length){
+        container.innerHTML = '<p style="color:#94a3b8;font-size:14px">No hay proyectos creados aún.</p>';
+        return;
+    }
+    container.innerHTML = list.map((p,i)=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    padding:10px 14px;background:#f8fafc;border-radius:8px;margin-bottom:8px;border:1px solid #e2e8f0">
+            <span style="font-weight:600;color:#1e293b">📁 ${escHtml(p)}</span>
+            <div style="display:flex;gap:6px">
+                <button onclick="usarProyectoInc('${escHtml(p)}')"
+                    style="background:#2563eb;color:white;border:none;padding:5px 12px;border-radius:5px;font-size:12px;cursor:pointer">
+                    Usar
+                </button>
+                <button onclick="eliminarIncProyecto(${i})"
+                    style="background:#ef4444;color:white;border:none;padding:5px 12px;border-radius:5px;font-size:12px;cursor:pointer">
+                    🗑️
+                </button>
+            </div>
+        </div>`).join('');
+}
+
+function usarProyectoInc(nombre){
+    const inp = document.getElementById('inc-proyecto');
+    if(inp) inp.value = nombre;
+    // scroll to form
+    document.querySelector('#tab-incidents .card').scrollIntoView({behavior:'smooth'});
+}
+
+function eliminarIncProyecto(idx){
+    if(!confirm('¿Eliminar este proyecto?')) return;
+    const list = cargarIncProyectos();
+    list.splice(idx,1);
+    guardarIncProyectos(list);
+    renderIncProyectos();
+}
+
+function incProyectoAutocomplete(){
+    const inp = document.getElementById('inc-proyecto');
+    const sugg = document.getElementById('inc-proyecto-sugg');
+    if(!sugg) return;
+    const q = (inp?.value||'').toLowerCase();
+    const list = cargarIncProyectos();
+    const matches = q ? list.filter(p=>p.toLowerCase().includes(q)) : list;
+    if(!matches.length){ sugg.style.display='none'; return; }
+    sugg.style.display='block';
+    sugg.innerHTML = matches.map(p=>`
+        <div onclick="seleccionarSuggProyecto('${escHtml(p)}')"
+             style="padding:9px 14px;cursor:pointer;font-size:14px;border-bottom:1px solid #f1f5f9;color:#1e293b"
+             onmouseenter="this.style.background='#eff6ff'" onmouseleave="this.style.background='white'">
+            📁 ${escHtml(p)}
+        </div>`).join('');
+}
+
+function seleccionarSuggProyecto(nombre){
+    const inp = document.getElementById('inc-proyecto');
+    if(inp) inp.value = nombre;
+    const sugg = document.getElementById('inc-proyecto-sugg');
+    if(sugg) sugg.style.display='none';
+}
+
+/* ── File handling ───────────────────────────────────────── */
+function incDragOver(e){ e.preventDefault(); document.getElementById('inc-drop-zone').classList.add('drag-over'); }
+function incDragLeave(){ document.getElementById('inc-drop-zone').classList.remove('drag-over'); }
+function incDrop(e){ e.preventDefault(); document.getElementById('inc-drop-zone').classList.remove('drag-over'); incHandleFiles(e.dataTransfer.files); }
+
+function incHandleFiles(files){
+    const gallery = document.getElementById('inc-new-gallery');
+    Array.from(files).forEach(file=>{
+        const reader = new FileReader();
+        reader.onload = function(ev){
+            const entry = {name:file.name, type:file.type, dataUrl:ev.target.result};
+            incPendingFiles.push(entry);
+            addGalleryItem(gallery, entry, incPendingFiles.length-1, true);
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function addGalleryItem(container, entry, idx, isPending){
+    const item = document.createElement('div');
+    item.className='gallery-item'; item.dataset.idx=idx;
+    if(entry.type && entry.type.startsWith('image/')){
+        const img=document.createElement('img');
+        img.src=entry.dataUrl; img.alt=entry.name;
+        img.onclick=e=>{ e.stopPropagation(); abrirLightbox(entry.dataUrl, entry.name); };
+        item.appendChild(img);
+    } else {
+        const thumb=document.createElement('div'); thumb.className='doc-thumb';
+        thumb.innerHTML=`<span class="doc-icon">${docIcon(entry.name,entry.type)}</span><span>${escHtml(entry.name)}</span>`;
+        thumb.onclick=e=>{ e.stopPropagation(); descargarAdjunto(entry); };
+        item.appendChild(thumb);
+    }
+    const btn=document.createElement('button'); btn.className='remove-btn'; btn.innerHTML='&times;'; btn.title='Eliminar';
+    btn.onclick=e=>{
+        e.stopPropagation();
+        if(isPending){ incPendingFiles.splice(idx,1); renderPendingGallery(); }
+        else { removeAttachmentFromIncident(container.dataset.incid, idx); }
+    };
+    item.appendChild(btn);
+    container.appendChild(item);
+}
+
+function renderPendingGallery(){
+    const g=document.getElementById('inc-new-gallery'); g.innerHTML='';
+    incPendingFiles.forEach((e,i)=>addGalleryItem(g,e,i,true));
+}
+
+function docIcon(name,type){
+    if(type&&type.includes('pdf')) return '📄';
+    if(type&&(type.includes('word')||type.includes('document'))) return '📝';
+    if(type&&(type.includes('excel')||type.includes('sheet'))) return '📊';
+    const ext=(name||'').split('.').pop().toLowerCase();
+    if(ext==='pdf') return '📄';
+    if(['doc','docx'].includes(ext)) return '📝';
+    if(['xls','xlsx','csv'].includes(ext)) return '📊';
+    return '📎';
+}
+
+function descargarAdjunto(entry){
+    const a=document.createElement('a'); a.href=entry.dataUrl; a.download=entry.name; a.click();
+}
+
+/* ── Lightbox ────────────────────────────────────────────── */
+function abrirLightbox(src, caption){
+    document.getElementById('lb-img').src=src;
+    document.getElementById('lb-caption').textContent=caption||'';
+    document.getElementById('incident-lightbox').classList.add('open');
+}
+function cerrarLightbox(){
+    document.getElementById('incident-lightbox').classList.remove('open');
+    document.getElementById('lb-img').src='';
+}
+
+/* ── Save ────────────────────────────────────────────────── */
+function guardarIncidente(){
+    const titulo = document.getElementById('inc-titulo').value.trim();
+    if(!titulo){ alert('Por favor ingresa el título del incidente.'); return; }
+    const fecha = document.getElementById('inc-fecha').value;
+    if(!fecha){ alert('Por favor selecciona la fecha y hora.'); return; }
+
+    const list = cargarIncidentes();
+    const editId = document.getElementById('inc-edit-id').value;
+    const existing = editId ? list.find(i=>i.id===editId) : null;
+
+    const incidente = {
+        id: editId || ('inc_'+Date.now()),
+        incidentId: existing?.incidentId || generarIncID(),
+        titulo, fecha,
+        cliente: document.getElementById('inc-cliente').value,
+        clienteNombre: document.getElementById('inc-cliente').options[document.getElementById('inc-cliente').selectedIndex]?.textContent || '',
+        contacto: document.getElementById('inc-contacto').value.trim(),
+        proyecto: document.getElementById('inc-proyecto').value.trim(),
+        ubicacion: document.getElementById('inc-ubicacion').value.trim(),
+        mezclaCodigo: document.getElementById('inc-mezcla-codigo').value.trim(),
+        mezclaDescripcion: document.getElementById('inc-mezcla-descripcion').value.trim(),
+        severidad: document.getElementById('inc-severidad').value,
+        tipo: document.getElementById('inc-tipo').value,
+        responsable: document.getElementById('inc-responsable').value.trim(),
+        estado: document.getElementById('inc-estado').value,
+        fechaSeguimiento: document.getElementById('inc-fecha-seguimiento').value,
+        seguimientoNotas: document.getElementById('inc-seguimiento-notas').value.trim(),
+        descripcion: document.getElementById('inc-descripcion').value.trim(),
+        accion: document.getElementById('inc-accion').value.trim(),
+        analisisFecha: document.getElementById('inc-analisis-fecha').value,
+        analisisInvestigador: document.getElementById('inc-analisis-investigador').value.trim(),
+        analisisCausa: document.getElementById('inc-analisis-causa').value.trim(),
+        analisisTexto: document.getElementById('inc-analisis-texto').value.trim(),
+        analisisConclusiones: document.getElementById('inc-analisis-conclusiones').value.trim(),
+        adjuntos: existing ? [...(existing.adjuntos||[]), ...incPendingFiles] : [...incPendingFiles],
+        creado: existing?.creado || new Date().toISOString(),
+        modificado: new Date().toISOString(),
+    };
+
+    if(editId){
+        const idx=list.findIndex(i=>i.id===editId);
+        if(idx>=0) list[idx]=incidente; else list.unshift(incidente);
+    } else {
+        list.unshift(incidente);
+    }
+
+    guardarIncidentesStore(list);
+    limpiarFormIncidente();
+    incToggleForm(false); // close form
+    renderIncidentes();
+    updateIncStats();
+
+    // update preview ID for next entry
+    const disp=document.getElementById('inc-id-display');
+    if(disp) disp.textContent=generarIncID()+' (nuevo)';
+
+    alert(`✅ Incidente ${incidente.incidentId} guardado correctamente.`);
+}
+
+function limpiarFormIncidente(){
+    document.getElementById('inc-edit-id').value='';
+    document.getElementById('inc-titulo').value='';
+    const now=new Date(); now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
+    document.getElementById('inc-fecha').value=now.toISOString().slice(0,16);
+    document.getElementById('inc-cliente').value='';
+    document.getElementById('inc-cliente-info').style.display='none';
+    document.getElementById('inc-contacto').value='';
+    document.getElementById('inc-proyecto').value='';
+    document.getElementById('inc-ubicacion').value='';
+    document.getElementById('inc-mezcla-codigo').value='';
+    document.getElementById('inc-mezcla-descripcion').value='';
+    document.getElementById('inc-severidad').value='medium';
+    document.getElementById('inc-tipo').value='';
+    document.getElementById('inc-responsable').value='';
+    document.getElementById('inc-estado').value='open';
+    document.getElementById('inc-fecha-seguimiento').value='';
+    document.getElementById('inc-seguimiento-notas').value='';
+    document.getElementById('inc-ubicacion').value='';
+    document.getElementById('inc-severidad').value='medium';
+    document.getElementById('inc-tipo').value='';
+    document.getElementById('inc-responsable').value='';
+    document.getElementById('inc-estado').value='open';
+    document.getElementById('inc-descripcion').value='';
+    document.getElementById('inc-accion').value='';
+    document.getElementById('inc-analisis-fecha').value='';
+    document.getElementById('inc-analisis-investigador').value='';
+    document.getElementById('inc-analisis-causa').value='';
+    document.getElementById('inc-analisis-texto').value='';
+    document.getElementById('inc-analisis-conclusiones').value='';
+    incPendingFiles=[];
+    document.getElementById('inc-new-gallery').innerHTML='';
+    const disp=document.getElementById('inc-id-display');
+    if(disp) disp.textContent=generarIncID()+' (nuevo)';
+}
+
+function removeAttachmentFromIncident(incId, adjIdx){
+    const list=cargarIncidentes();
+    const inc=list.find(i=>i.id===incId);
+    if(!inc) return;
+    inc.adjuntos.splice(adjIdx,1);
+    guardarIncidentesStore(list);
+    renderIncidentes();
+}
+
+/* ── Render list ─────────────────────────────────────────── */
+function renderIncidentes(){
+    const container=document.getElementById('lista-incidentes');
+    if(!container) return;
+    let list=cargarIncidentes();
+
+    const search=(document.getElementById('inc-search')?.value||'').toLowerCase();
+    const fe=document.getElementById('inc-filter-estado')?.value||'';
+    const fs=document.getElementById('inc-filter-severidad')?.value||'';
+
+    if(search) list=list.filter(i=>
+        (i.titulo||'').toLowerCase().includes(search)||
+        (i.incidentId||'').toLowerCase().includes(search)||
+        (i.descripcion||'').toLowerCase().includes(search)||
+        (i.tipo||'').toLowerCase().includes(search)||
+        (i.ubicacion||'').toLowerCase().includes(search)||
+        (i.responsable||'').toLowerCase().includes(search)||
+        (i.proyecto||'').toLowerCase().includes(search)
+    );
+    if(fe) list=list.filter(i=>i.estado===fe);
+    if(fs) list=list.filter(i=>i.severidad===fs);
+
+    if(!list.length){
+        container.innerHTML='<div class="empty-state"><p>🚨 No se encontraron incidentes.</p></div>';
+        return;
+    }
+
+    const sevLabel={critical:'Crítica',high:'Alta',medium:'Media',low:'Baja'};
+    const estLabel={open:'Abierto',progress:'En Progreso',resolved:'Resuelto',closed:'Cerrado'};
+
+    container.innerHTML=list.map(inc=>{
+        const adjCount=(inc.adjuntos||[]).length;
+        const thumbs=(inc.adjuntos||[]).slice(0,6).map(a=>{
+            if(a.type&&a.type.startsWith('image/')){
+                return `<div class="gallery-item" style="width:56px;height:56px;flex-shrink:0" title="${escHtml(a.name)}"
+                             onclick="abrirLightbox('${a.dataUrl}','${escHtml(a.name)}')">
+                             <img src="${a.dataUrl}" alt="${escHtml(a.name)}"></div>`;
+            }
+            return `<div class="gallery-item" style="width:56px;height:56px;flex-shrink:0" title="${escHtml(a.name)}"
+                         onclick="descargarAdjunto({dataUrl:'${a.dataUrl}',name:'${escHtml(a.name)}'})">
+                         <div class="doc-thumb"><span class="doc-icon">${docIcon(a.name,a.type)}</span></div></div>`;
+        }).join('');
+
+        return `<div class="incident-card incident-severity-${inc.severidad}">
+            <div class="incident-card-header">
+                <div style="flex:1">
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+                        <span style="font-size:11px;font-weight:700;background:#1e293b;color:white;
+                              padding:2px 8px;border-radius:4px;letter-spacing:.5px">${escHtml(inc.incidentId||inc.id)}</span>
+                        <span class="incident-card-title">${escHtml(inc.titulo)}</span>
+                    </div>
+                    <div class="incident-card-meta">
+                        📅 ${formatFechaInc(inc.fecha)}
+                        ${inc.clienteNombre&&inc.clienteNombre!='— Seleccionar cliente —'?' &bull; 👤 '+escHtml(inc.clienteNombre.split('—')[0].trim()):''}
+                        ${inc.contacto?' &bull; 📞 '+escHtml(inc.contacto):''}
+                        ${inc.proyecto?' &bull; 📁 '+escHtml(inc.proyecto):''}
+                        ${inc.ubicacion?' &bull; 📍 '+escHtml(inc.ubicacion):''}
+                        ${inc.responsable?' &bull; 🔧 '+escHtml(inc.responsable):''}
+                        ${inc.tipo?' &bull; 🏷️ '+escHtml(inc.tipo):''}
+                    </div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;margin-left:12px">
+                    <span class="severity-badge ${inc.severidad}">${sevLabel[inc.severidad]||inc.severidad}</span>
+                    <select onchange="cambiarEstadoRapido('${inc.id}',this.value)"
+                        style="border:2px solid #e2e8f0;border-radius:6px;padding:4px 8px;font-size:12px;font-weight:600;cursor:pointer;background:white">
+                        ${['open','progress','resolved','closed'].map(s=>`<option value="${s}" ${inc.estado===s?'selected':''}>${estLabel[s]}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+            ${inc.descripcion?`<p style="font-size:14px;color:#374151;margin:8px 0 4px">${escHtml(inc.descripcion)}</p>`:''}
+            ${inc.mezclaCodigo||inc.mezclaDescripcion?`<p style="font-size:13px;color:#1e40af;margin:4px 0;background:#eff6ff;padding:5px 10px;border-radius:6px;display:inline-block">🧪 ${escHtml(inc.mezclaCodigo||'')}${inc.mezclaDescripcion?' — '+escHtml(inc.mezclaDescripcion):''}</p>`:''}
+            ${inc.accion?`<p style="font-size:13px;color:#059669;margin:4px 0"><strong>✅ Acción:</strong> ${escHtml(inc.accion)}</p>`:''}
+            ${inc.fechaSeguimiento?`<p style="font-size:13px;font-weight:700;color:#92400e;background:#fefce8;padding:5px 10px;border-radius:6px;border:1px solid #fde047;display:inline-block;margin:4px 0">📆 Seguimiento: ${formatFechaSolo(inc.fechaSeguimiento)}${inc.seguimientoNotas?' — '+escHtml(inc.seguimientoNotas):''}</p>`:''}
+            ${inc.analisisTexto||inc.analisisCausa?`<p style="font-size:13px;font-weight:700;color:#4338ca;background:#eef2ff;padding:5px 10px;border-radius:6px;border:1px solid #c7d2fe;display:inline-block;margin:4px 4px 4px 0">🔍 Análisis${inc.analisisFecha?' — '+formatFechaSolo(inc.analisisFecha):''}${inc.analisisInvestigador?' • '+escHtml(inc.analisisInvestigador):''}</p>`:''}
+            ${adjCount>0?`<div style="margin-top:10px">
+                <p style="font-size:13px;font-weight:600;color:#475569;margin-bottom:6px">📎 ${adjCount} adjunto${adjCount>1?'s':''}</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">${thumbs}</div>
+            </div>`:''}
+            <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+                <button onclick="verPreviewIncidente('${inc.id}')"
+                    style="background:#7c3aed;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">
+                    👁️ Preview
+                </button>
+                <button onclick="imprimirDesdeLista('${inc.id}')"
+                    style="background:#dc2626;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">
+                    🖨️ Imprimir
+                </button>
+                <button onclick="editarIncidente('${inc.id}')" class="info" style="padding:7px 14px;font-size:13px">✏️ Editar</button>
+                <button onclick="eliminarIncidente('${inc.id}')" class="danger" style="padding:7px 14px;font-size:13px">🗑️ Eliminar</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+/* ── Quick status change ─────────────────────────────────── */
+function cambiarEstadoRapido(id, newEstado){
+    const list=cargarIncidentes();
+    const inc=list.find(i=>i.id===id);
+    if(!inc) return;
+    inc.estado=newEstado; inc.modificado=new Date().toISOString();
+    guardarIncidentesStore(list);
+    updateIncStats();
+}
+
+/* ── Preview modal ───────────────────────────────────────── */
+let _incPreviewId = null;
+
+function verPreviewIncidente(id){
+    const list=cargarIncidentes();
+    const inc=list.find(i=>i.id===id);
+    if(!inc) return;
+    _incPreviewId=id;
+
+    const sevLabel={critical:'🔴 Crítica',high:'🟠 Alta',medium:'🟡 Media',low:'🟢 Baja'};
+    const estLabel={open:'Abierto',progress:'En Progreso',resolved:'Resuelto',closed:'Cerrado'};
+    const sevColor={critical:'#dc2626',high:'#ea580c',medium:'#d97706',low:'#16a34a'};
+
+    document.getElementById('inc-pv-id').textContent = inc.incidentId || inc.id;
+    document.getElementById('inc-pv-titulo').textContent = inc.titulo;
+    document.getElementById('inc-pv-meta').textContent =
+        formatFechaInc(inc.fecha) + (inc.proyecto ? ' • ' + inc.proyecto : '');
+
+    // Header color by severity
+    document.getElementById('inc-preview-header').style.background =
+        `linear-gradient(135deg, ${sevColor[inc.severidad]||'#dc2626'}, #1e293b)`;
+
+    // Body
+    const adjHtml=(inc.adjuntos||[]).map(a=>{
+        if(a.type&&a.type.startsWith('image/')){
+            return `<div style="break-inside:avoid">
+                <img src="${a.dataUrl}" alt="${escHtml(a.name)}"
+                     style="width:100%;max-width:320px;border-radius:8px;border:2px solid #e2e8f0;
+                            cursor:pointer;display:block;margin-bottom:6px"
+                     onclick="abrirLightbox('${a.dataUrl}','${escHtml(a.name)}')">
+                <p style="font-size:12px;color:#64748b;margin:0 0 10px">${escHtml(a.name)}</p>
+            </div>`;
+        }
+        return `<div style="display:flex;align-items:center;gap:10px;padding:10px;background:#f8fafc;
+                     border-radius:8px;border:1px solid #e2e8f0;margin-bottom:8px;cursor:pointer"
+                     onclick="descargarAdjunto({dataUrl:'${a.dataUrl}',name:'${escHtml(a.name)}'})">
+                    <span style="font-size:26px">${docIcon(a.name,a.type)}</span>
+                    <div>
+                        <div style="font-weight:600;font-size:14px">${escHtml(a.name)}</div>
+                        <div style="font-size:12px;color:#64748b">Click para descargar</div>
+                    </div>
+                </div>`;
+    }).join('');
+
+    document.getElementById('inc-preview-body').innerHTML = `
+        <!-- Badges -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+            <span class="severity-badge ${inc.severidad}" style="font-size:14px;padding:5px 14px">${sevLabel[inc.severidad]||inc.severidad}</span>
+            <span class="status-badge ${inc.estado}" style="font-size:14px;padding:5px 14px">${estLabel[inc.estado]||inc.estado}</span>
+            ${inc.tipo?`<span style="background:#f1f5f9;color:#475569;padding:5px 14px;border-radius:12px;font-size:13px;font-weight:600">🏷️ ${escHtml(inc.tipo)}</span>`:''}
+        </div>
+
+        <!-- Info grid -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px">
+            ${inc.clienteNombre&&inc.clienteNombre!='— Seleccionar cliente —'?`<div style="background:#f8fafc;padding:12px;border-radius:8px"><div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:4px">Cliente</div><div style="font-weight:600">👤 ${escHtml(inc.clienteNombre.split('—')[0].trim())}</div></div>`:''}
+            ${inc.contacto?`<div style="background:#f8fafc;padding:12px;border-radius:8px"><div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:4px">Contacto</div><div style="font-weight:600">📞 ${escHtml(inc.contacto)}</div></div>`:''}
+            ${inc.proyecto?`<div style="background:#f8fafc;padding:12px;border-radius:8px"><div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:4px">Proyecto</div><div style="font-weight:600">📁 ${escHtml(inc.proyecto)}</div></div>`:''}
+            ${inc.ubicacion?`<div style="background:#f8fafc;padding:12px;border-radius:8px"><div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:4px">Ubicación</div><div style="font-weight:600">📍 ${escHtml(inc.ubicacion)}</div></div>`:''}
+            ${inc.mezclaCodigo?`<div style="background:#eff6ff;padding:12px;border-radius:8px;border:1px solid #bfdbfe"><div style="font-size:11px;color:#1e40af;font-weight:700;text-transform:uppercase;margin-bottom:4px">Código Mezcla</div><div style="font-weight:700;color:#1e40af">🧪 ${escHtml(inc.mezclaCodigo)}</div></div>`:''}
+            ${inc.mezclaDescripcion?`<div style="background:#eff6ff;padding:12px;border-radius:8px;border:1px solid #bfdbfe"><div style="font-size:11px;color:#1e40af;font-weight:700;text-transform:uppercase;margin-bottom:4px">Descripción Mezcla</div><div style="font-weight:600;color:#1e40af">${escHtml(inc.mezclaDescripcion)}</div></div>`:''}
+            ${inc.responsable?`<div style="background:#f8fafc;padding:12px;border-radius:8px"><div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:4px">Responsable</div><div style="font-weight:600">🔧 ${escHtml(inc.responsable)}</div></div>`:''}
+            <div style="background:#f8fafc;padding:12px;border-radius:8px"><div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:4px">Fecha</div><div style="font-weight:600">📅 ${formatFechaInc(inc.fecha)}</div></div>
+            ${inc.fechaSeguimiento?`<div style="background:#fefce8;padding:12px;border-radius:8px;border:1px solid #fde047"><div style="font-size:11px;color:#713f12;font-weight:700;text-transform:uppercase;margin-bottom:4px">Seguimiento</div><div style="font-weight:700;color:#713f12">📆 ${formatFechaSolo(inc.fechaSeguimiento)}</div>${inc.seguimientoNotas?`<div style="font-size:12px;color:#92400e;margin-top:2px">${escHtml(inc.seguimientoNotas)}</div>`:''}</div>`:''}
+        </div>
+
+        ${inc.descripcion?`<div style="margin-bottom:16px"><div style="font-weight:700;color:#1e293b;margin-bottom:6px;font-size:14px">📋 Descripción</div><div style="background:#f8fafc;padding:14px;border-radius:8px;font-size:14px;color:#374151;line-height:1.6">${escHtml(inc.descripcion)}</div></div>`:''}
+        ${inc.accion?`<div style="margin-bottom:16px"><div style="font-weight:700;color:#059669;margin-bottom:6px;font-size:14px">✅ Acción Correctiva</div><div style="background:#f0fdf4;padding:14px;border-radius:8px;font-size:14px;color:#374151;line-height:1.6;border:1px solid #bbf7d0">${escHtml(inc.accion)}</div></div>`:''}
+
+        ${inc.analisisTexto||inc.analisisCausa||inc.analisisConclusiones||inc.analisisFecha?`
+        <div style="margin:18px 0 0;border-top:2px solid #e0e7ff;padding-top:14px">
+            <div style="font-weight:800;color:#4338ca;font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+                🔍 Análisis e Investigación
+                ${inc.analisisFecha?`<span style="font-size:12px;font-weight:600;background:#e0e7ff;color:#4338ca;padding:3px 10px;border-radius:10px">📅 ${formatFechaSolo(inc.analisisFecha)}</span>`:''}
+                ${inc.analisisInvestigador?`<span style="font-size:12px;font-weight:600;background:#f1f5f9;color:#475569;padding:3px 10px;border-radius:10px">👤 ${escHtml(inc.analisisInvestigador)}</span>`:''}
+            </div>
+            ${inc.analisisCausa?`<div style="margin-bottom:12px"><div style="font-weight:700;color:#dc2626;margin-bottom:5px;font-size:13px">⚠️ Causa Raíz</div><div style="background:#fff1f2;padding:12px;border-radius:8px;font-size:14px;color:#374151;line-height:1.6;border:1px solid #fecdd3">${escHtml(inc.analisisCausa)}</div></div>`:''}
+            ${inc.analisisTexto?`<div style="margin-bottom:12px"><div style="font-weight:700;color:#4338ca;margin-bottom:5px;font-size:13px">📝 Análisis Detallado</div><div style="background:#eef2ff;padding:12px;border-radius:8px;font-size:14px;color:#374151;line-height:1.6;border:1px solid #c7d2fe">${escHtml(inc.analisisTexto)}</div></div>`:''}
+            ${inc.analisisConclusiones?`<div><div style="font-weight:700;color:#059669;margin-bottom:5px;font-size:13px">💡 Conclusiones y Recomendaciones</div><div style="background:#f0fdf4;padding:12px;border-radius:8px;font-size:14px;color:#374151;line-height:1.6;border:1px solid #bbf7d0">${escHtml(inc.analisisConclusiones)}</div></div>`:''}
+        </div>`:''}
+        ${(inc.adjuntos||[]).length>0?`
+        <div style="margin-top:20px">
+            <div style="font-weight:700;color:#1e293b;margin-bottom:12px;font-size:14px">📎 Adjuntos (${inc.adjuntos.length})</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
+                ${adjHtml}
+            </div>
+        </div>`:''}
+
+        <div style="margin-top:20px;padding-top:14px;border-top:1px solid #e2e8f0;font-size:12px;color:#94a3b8">
+            Creado: ${formatFechaInc(inc.creado)} &nbsp;|&nbsp; Modificado: ${formatFechaInc(inc.modificado)}
+        </div>`;
+
+    const modal=document.getElementById('inc-preview-modal');
+    modal.style.display='block';
+    setTimeout(()=>modal.scrollTop=0,10);
+}
+
+function cerrarPreviewIncidente(){
+    document.getElementById('inc-preview-modal').style.display='none';
+    _incPreviewId=null;
+}
+
+function incPvEditar(){
+    cerrarPreviewIncidente();
+    if(_incPreviewId) editarIncidente(_incPreviewId);
+}
+
+/* ── Print ───────────────────────────────────────────────── */
+function imprimirDesdeLista(id){
+    const list=cargarIncidentes();
+    const inc=list.find(i=>i.id===id);
+    if(!inc) return;
+    abrirVentanaImpresion(inc);
+}
+
+function imprimirIncidente(){
+    const id=_incPreviewId;
+    if(!id) return;
+    const list=cargarIncidentes();
+    const inc=list.find(i=>i.id===id);
+    if(!inc) return;
+    abrirVentanaImpresion(inc);
+}
+
+function abrirVentanaImpresion(inc){
+    const sevLabel={critical:'Crítica',high:'Alta',medium:'Media',low:'Baja'};
+    const estLabel={open:'Abierto',progress:'En Progreso',resolved:'Resuelto',closed:'Cerrado'};
+    const sevColor={critical:'#dc2626',high:'#ea580c',medium:'#d97706',low:'#16a34a'};
+
+    // Get logo from main app (stored as data URL in localStorage or DOM)
+    let logoHtml = '';
+    const logoImg = document.querySelector('#logo-container img');
+    if(logoImg && logoImg.src && !logoImg.src.includes('undefined')){
+        logoHtml = `<img src="${logoImg.src}" style="max-height:60px;max-width:160px;object-fit:contain">`;
+    }
+
+    // Get brand primary color from CSS variable (fallback to blue)
+    const brandColor = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#2563eb';
+
+    const imgHtml=(inc.adjuntos||[]).filter(a=>a.type&&a.type.startsWith('image/')).map(a=>`
+        <div style="display:inline-block;margin:8px;vertical-align:top">
+            <img src="${a.dataUrl}" style="max-width:240px;max-height:200px;border-radius:6px;border:1px solid #ddd;display:block">
+            <p style="font-size:11px;color:#666;text-align:center;margin:4px 0 0">${escHtml(a.name)}</p>
+        </div>`).join('');
+
+    const docHtml=(inc.adjuntos||[]).filter(a=>!a.type||!a.type.startsWith('image/')).map(a=>`
+        <div style="padding:8px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;margin:4px 0;font-size:13px">
+            ${docIcon(a.name,a.type)} ${escHtml(a.name)}
+        </div>`).join('');
+
+    const win=window.open('','_blank','width=960,height=750');
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>Reporte Incidente ${escHtml(inc.incidentId||inc.id)}</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1e293b;padding:0}
+        .header{background:linear-gradient(135deg,${brandColor},#1e293b);color:white;padding:0}
+        .header-top{display:flex;align-items:center;justify-content:space-between;padding:22px 36px 18px}
+        .header-logo{background:white;padding:8px 14px;border-radius:8px;display:flex;align-items:center;min-width:80px;min-height:44px}
+        .header-info{text-align:right}
+        .header .inc-id{font-size:12px;font-weight:700;letter-spacing:1px;opacity:.75;margin-bottom:3px}
+        .header h1{font-size:20px;font-weight:800;margin-bottom:3px}
+        .header .sub{font-size:13px;opacity:.8}
+        .header-bar{height:4px;background:rgba(255,255,255,0.25)}
+        .body{padding:28px 36px}
+        .badges{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+        .badge{padding:4px 14px;border-radius:12px;font-size:13px;font-weight:700}
+        .info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+        .info-box{background:#f8fafc;padding:11px;border-radius:8px}
+        .info-box.blue{background:#eff6ff;border:1px solid #bfdbfe}
+        .info-box.yellow{background:#fefce8;border:1px solid #fde047}
+        .info-box .lbl{font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:3px}
+        .info-box.blue .lbl{color:#1e40af}
+        .info-box.yellow .lbl{color:#713f12}
+        .info-box .val{font-weight:700;font-size:13px}
+        .info-box.blue .val{color:#1e40af}
+        .info-box.yellow .val{color:#92400e}
+        .section-title{font-weight:700;font-size:12px;color:${brandColor};text-transform:uppercase;letter-spacing:.5px;
+                       margin-bottom:8px;margin-top:18px;border-left:3px solid ${brandColor};padding-left:8px}
+        .section-title.indigo{color:#4338ca;border-left-color:#4338ca}
+        .text-box{background:#f8fafc;padding:14px;border-radius:8px;font-size:14px;line-height:1.7;color:#374151}
+        .text-box.green{background:#f0fdf4;border:1px solid #bbf7d0}
+        .text-box.red{background:#fff1f2;border:1px solid #fecdd3}
+        .text-box.indigo{background:#eef2ff;border:1px solid #c7d2fe}
+        .analisis-block{border:2px solid #e0e7ff;border-radius:10px;padding:18px;margin-top:18px;background:#fafafe}
+        .analisis-header{font-weight:800;color:#4338ca;font-size:14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+        .analisis-tag{font-size:11px;font-weight:600;padding:3px 10px;border-radius:10px}
+        .photos{margin-top:16px}
+        .footer{margin-top:28px;padding-top:14px;border-top:2px solid ${brandColor}22;font-size:11px;color:#94a3b8;
+                display:flex;justify-content:space-between;align-items:center}
+        .footer-brand{font-weight:700;color:${brandColor}}
+        @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+    </style>
+    </head><body>
+    <div class="header">
+        <div class="header-top">
+            <div class="header-logo">${logoHtml||`<span style="color:${brandColor};font-weight:800;font-size:14px">🏗️ Sistema Concreto</span>`}</div>
+            <div class="header-info">
+                <div class="inc-id">REPORTE DE INCIDENTE &nbsp;|&nbsp; ${escHtml(inc.incidentId||inc.id)}</div>
+                <h1>${escHtml(inc.titulo)}</h1>
+                <div class="sub">${formatFechaInc(inc.fecha)}${inc.proyecto?' &nbsp;•&nbsp; '+escHtml(inc.proyecto):''}</div>
+            </div>
+        </div>
+        <div class="header-bar"></div>
+    </div>
+    <div class="body">
+        <div class="badges">
+            <span class="badge" style="background:${sevColor[inc.severidad]||'#64748b'}22;color:${sevColor[inc.severidad]||'#64748b'}">
+                Severidad: ${sevLabel[inc.severidad]||inc.severidad}
+            </span>
+            <span class="badge" style="background:${brandColor}18;color:${brandColor}">
+                Estado: ${estLabel[inc.estado]||inc.estado}
+            </span>
+            ${inc.tipo?`<span class="badge" style="background:#f1f5f9;color:#475569">🏷️ ${escHtml(inc.tipo)}</span>`:''}
+        </div>
+        <div class="info-grid">
+            ${inc.clienteNombre&&inc.clienteNombre!='— Seleccionar cliente —'?`<div class="info-box"><div class="lbl">Cliente</div><div class="val">👤 ${escHtml(inc.clienteNombre.split('—')[0].trim())}</div></div>`:''}
+            ${inc.contacto?`<div class="info-box"><div class="lbl">Contacto</div><div class="val">📞 ${escHtml(inc.contacto)}</div></div>`:''}
+            ${inc.proyecto?`<div class="info-box"><div class="lbl">Proyecto</div><div class="val">📁 ${escHtml(inc.proyecto)}</div></div>`:''}
+            ${inc.ubicacion?`<div class="info-box"><div class="lbl">Ubicación</div><div class="val">📍 ${escHtml(inc.ubicacion)}</div></div>`:''}
+            ${inc.mezclaCodigo?`<div class="info-box blue"><div class="lbl">Código de Mezcla</div><div class="val">🧪 ${escHtml(inc.mezclaCodigo)}</div></div>`:''}
+            ${inc.mezclaDescripcion?`<div class="info-box blue"><div class="lbl">Descripción Mezcla</div><div class="val">${escHtml(inc.mezclaDescripcion)}</div></div>`:''}
+            ${inc.responsable?`<div class="info-box"><div class="lbl">Responsable</div><div class="val">🔧 ${escHtml(inc.responsable)}</div></div>`:''}
+            ${inc.fechaSeguimiento?`<div class="info-box yellow"><div class="lbl">📆 Fecha de Seguimiento</div><div class="val">${formatFechaSolo(inc.fechaSeguimiento)}</div>${inc.seguimientoNotas?`<div style="font-size:12px;color:#92400e;margin-top:2px">${escHtml(inc.seguimientoNotas)}</div>`:''}</div>`:''}
+        </div>
+        ${inc.descripcion?`<div class="section-title">Descripción del Incidente</div>
+        <div class="text-box">${escHtml(inc.descripcion)}</div>`:''}
+        ${inc.accion?`<div class="section-title">Acción Correctiva</div>
+        <div class="text-box green">${escHtml(inc.accion)}</div>`:''}
+        ${inc.analisisTexto||inc.analisisCausa||inc.analisisConclusiones||inc.analisisFecha?`
+        <div class="analisis-block">
+            <div class="analisis-header">
+                🔍 Análisis e Investigación
+                ${inc.analisisFecha?`<span class="analisis-tag" style="background:#e0e7ff;color:#4338ca">📅 ${formatFechaSolo(inc.analisisFecha)}</span>`:''}
+                ${inc.analisisInvestigador?`<span class="analisis-tag" style="background:#f1f5f9;color:#475569">👤 ${escHtml(inc.analisisInvestigador)}</span>`:''}
+            </div>
+            ${inc.analisisCausa?`<div class="section-title" style="margin-top:0">Causa Raíz</div><div class="text-box red">${escHtml(inc.analisisCausa)}</div>`:''}
+            ${inc.analisisTexto?`<div class="section-title indigo">Análisis Detallado</div><div class="text-box indigo">${escHtml(inc.analisisTexto)}</div>`:''}
+            ${inc.analisisConclusiones?`<div class="section-title">Conclusiones y Recomendaciones</div><div class="text-box green">${escHtml(inc.analisisConclusiones)}</div>`:''}
+        </div>`:''}
+        ${imgHtml?`<div class="section-title photos">Fotografías</div><div>${imgHtml}</div>`:''}
+        ${docHtml?`<div class="section-title">Documentos Adjuntos</div><div>${docHtml}</div>`:''}
+        <div class="footer">
+            <span>Creado: ${formatFechaInc(inc.creado)} &nbsp;|&nbsp; Modificado: ${formatFechaInc(inc.modificado)}</span>
+            <span class="footer-brand">🏗️ Sistema de Gestión de Concreto</span>
+        </div>
+    </div>
+    <script>window.onload=function(){window.print();}<\/script>
+    </body></html>`);
+    win.document.close();
+}
+
+/* ── Edit ────────────────────────────────────────────────── */
+function editarIncidente(id){
+    const list=cargarIncidentes();
+    const inc=list.find(i=>i.id===id);
+    if(!inc) return;
+
+    document.getElementById('inc-edit-id').value=inc.id;
+    document.getElementById('inc-id-display').textContent=inc.incidentId||inc.id;
+    document.getElementById('inc-titulo').value=inc.titulo||'';
+    document.getElementById('inc-fecha').value=(inc.fecha||'').slice(0,16);
+    document.getElementById('inc-cliente').value=inc.cliente||'';
+    incClienteChanged();
+    document.getElementById('inc-contacto').value=inc.contacto||'';
+    document.getElementById('inc-proyecto').value=inc.proyecto||'';
+    document.getElementById('inc-ubicacion').value=inc.ubicacion||'';
+    document.getElementById('inc-mezcla-codigo').value=inc.mezclaCodigo||'';
+    document.getElementById('inc-mezcla-descripcion').value=inc.mezclaDescripcion||'';
+    document.getElementById('inc-severidad').value=inc.severidad||'medium';
+    document.getElementById('inc-tipo').value=inc.tipo||'';
+    document.getElementById('inc-responsable').value=inc.responsable||'';
+    document.getElementById('inc-estado').value=inc.estado||'open';
+    document.getElementById('inc-fecha-seguimiento').value=inc.fechaSeguimiento||'';
+    document.getElementById('inc-seguimiento-notas').value=inc.seguimientoNotas||'';
+    document.getElementById('inc-descripcion').value=inc.descripcion||'';
+    document.getElementById('inc-accion').value=inc.accion||'';
+    document.getElementById('inc-analisis-fecha').value=inc.analisisFecha||'';
+    document.getElementById('inc-analisis-investigador').value=inc.analisisInvestigador||'';
+    document.getElementById('inc-analisis-causa').value=inc.analisisCausa||'';
+    document.getElementById('inc-analisis-texto').value=inc.analisisTexto||'';
+    document.getElementById('inc-analisis-conclusiones').value=inc.analisisConclusiones||'';
+
+    incPendingFiles=[];
+    const gallery=document.getElementById('inc-new-gallery');
+    gallery.innerHTML=''; gallery.dataset.incid=inc.id;
+    (inc.adjuntos||[]).forEach((a,i)=>addGalleryItem(gallery,a,i,false));
+
+    // Open the form, update title to show editing
+    document.getElementById('inc-form-title').textContent = `Editando: ${inc.incidentId||inc.id}`;
+    incToggleForm(true);
+    document.getElementById('inc-form-card').scrollIntoView({behavior:'smooth'});
+    document.getElementById('inc-titulo').focus();
+}
+
+/* ── Delete ──────────────────────────────────────────────── */
+function eliminarIncidente(id){
+    if(!confirm('¿Eliminar este incidente? Esta acción no se puede deshacer.')) return;
+    let list=cargarIncidentes().filter(i=>i.id!==id);
+    guardarIncidentesStore(list);
+    renderIncidentes(); updateIncStats();
+}
+
+/* ── Stats ───────────────────────────────────────────────── */
+function updateIncStats(){
+    const list=cargarIncidentes();
+    document.getElementById('inc-total').textContent=list.length;
+    document.getElementById('inc-open').textContent=list.filter(i=>i.estado==='open').length;
+    document.getElementById('inc-progress').textContent=list.filter(i=>i.estado==='progress').length;
+    document.getElementById('inc-resolved').textContent=list.filter(i=>['resolved','closed'].includes(i.estado)).length;
+    document.getElementById('inc-critical').textContent=list.filter(i=>i.severidad==='critical').length;
+}
+
+/* ── Export ──────────────────────────────────────────────── */
+function exportarIncidentes(){
+    const list=cargarIncidentes();
+    if(!list.length){ alert('No hay incidentes para exportar.'); return; }
+    const exportData=list.map(inc=>({...inc, adjuntos:(inc.adjuntos||[]).map(a=>({name:a.name,type:a.type}))}));
+    const blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=`incidentes_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+}
+
+/* ── Tab refresh ─────────────────────────────────────────── */
+document.querySelectorAll('.tab').forEach(t=>{
+    t.addEventListener('click',function(){
+        if(this.textContent.includes('Incident')){
+            populateIncClienteSelect();
+            renderIncProyectos();
+            renderIncidentes();
+            updateIncStats();
+        }
+    });
+});
+</script>
 </body>
 </html>
