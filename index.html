@@ -754,6 +754,7 @@
             <div class="tab" onclick="switchTab('gradaciones')">🪨 Gradaciones</div>
             <div class="tab" onclick="switchTab('calendario')">📅 Calendario Roturas</div>
             <div class="tab" onclick="switchTab('ai-optimizer')">🤖 AI Optimizer</div>
+            <div class="tab" onclick="switchTab('aci214')">📊 ACI 214R</div>
             <div class="tab" onclick="switchTab('incidents')">🚨 Incident Management</div>
         </div>
 
@@ -2601,6 +2602,10 @@
         // ============ EXPORTAR / IMPORTAR DATA ============
         async function exportarTodaLaData() {
             try {
+                // ACI 214R data from localStorage
+                let aci214data = {};
+                try { aci214data = JSON.parse(localStorage.getItem('aci214_data') || '{}'); } catch(e) {}
+
                 const data = {
                     version: '1.0',
                     exportDate: new Date().toISOString(),
@@ -2613,7 +2618,11 @@
                     campo_evaluaciones: await getAllRecords('campo_evaluaciones'),
                     incidentes: JSON.parse(localStorage.getItem('incidentes_v1') || '[]'),
                     inc_proyectos: JSON.parse(localStorage.getItem('inc_proyectos_v1') || '[]'),
-                    gradaciones: JSON.parse(localStorage.getItem('gradaciones_db') || '[]')
+                    gradaciones: JSON.parse(localStorage.getItem('gradaciones_db') || '[]'),
+                    aci214: {
+                        results:    aci214data.R   || [],
+                        mixDesigns: aci214data.MX  || {}
+                    }
                 };
                 
                 // Incluir logo si existe
@@ -2663,7 +2672,9 @@
                       'Trial Mixes: '        + (data.trials||[]).length + '\n' +
                       'Eval. de Campo: '     + (data.campo_evaluaciones||[]).length + '\n' +
                       'Incidentes: '         + (data.incidentes||[]).length + '\n' +
-                      'Gradaciones: '        + (data.gradaciones||[]).length);
+                      'Gradaciones: '        + (data.gradaciones||[]).length + '\n' +
+                      'ACI 214R — Resultados: ' + (data.aci214.results||[]).length + '\n' +
+                      'ACI 214R — Mix Designs: ' + Object.keys(data.aci214.mixDesigns||{}).length);
                 
             } catch (error) {
                 console.error('Error exportando:', error);
@@ -2721,19 +2732,23 @@
             var ces = (data.campo_evaluaciones || []).length;
             var ins = (data.incidentes || []).length;
             var grs = (data.gradaciones || []).length;
+            var a214r = ((data.aci214 && data.aci214.results) || []).length;
+            var a214m = Object.keys((data.aci214 && data.aci214.mixDesigns) || {}).length;
 
             var lines = [
                 'IMPORTAR BACKUP',
                 '',
-                'Clientes:       ' + cls,
-                'Proyectos:      ' + prs,
-                'Materiales:     ' + mts,
-                'Cotizaciones:   ' + cts,
-                'Mix Designs:    ' + mds,
-                'Trial Mixes:    ' + trs,
-                'Eval Campo:     ' + ces,
-                'Incidentes:     ' + ins,
-                'Gradaciones:    ' + grs,
+                'Clientes:              ' + cls,
+                'Proyectos:             ' + prs,
+                'Materiales:            ' + mts,
+                'Cotizaciones:          ' + cts,
+                'Mix Designs:           ' + mds,
+                'Trial Mixes:           ' + trs,
+                'Eval Campo:            ' + ces,
+                'Incidentes:            ' + ins,
+                'Gradaciones:           ' + grs,
+                'ACI 214R Resultados:   ' + a214r,
+                'ACI 214R Mix Designs:  ' + a214m,
                 '',
                 'Los registros existentes no seran eliminados.',
                 'Presiona OK para continuar.'
@@ -2805,6 +2820,31 @@
                 localStorage.setItem('gradaciones_db', JSON.stringify(mergedGrad));
                 imported += newGrad.length;
                 skipped  += (data.gradaciones.length - newGrad.length);
+            }
+
+            // Restore ACI 214R data (merge into existing localStorage)
+            if (data.aci214) {
+                try {
+                    var existing214 = {};
+                    try { existing214 = JSON.parse(localStorage.getItem('aci214_data') || '{}'); } catch(e) {}
+                    var existingR  = existing214.R  || [];
+                    var existingMX = existing214.MX || {};
+                    var incomingR  = data.aci214.results    || [];
+                    var incomingMX = data.aci214.mixDesigns || {};
+                    // Merge results — avoid duplicates by date+mix+fc1+fc2
+                    var existingKeys = new Set(existingR.map(function(r){ return r.date+'|'+r.mix+'|'+r.fc1+'|'+r.fc2; }));
+                    var newR = incomingR.filter(function(r){ return !existingKeys.has(r.date+'|'+r.mix+'|'+r.fc1+'|'+r.fc2); });
+                    var mergedR = existingR.concat(newR);
+                    // Merge mix designs — incoming overwrites only if key doesn't exist
+                    var mergedMX = Object.assign({}, incomingMX, existingMX);
+                    localStorage.setItem('aci214_data', JSON.stringify({ R: mergedR, MX: mergedMX }));
+                    imported += newR.length;
+                    skipped  += (incomingR.length - newR.length);
+                    // Refresh ACI 214 module if loaded
+                    if (typeof a214Init === 'function') {
+                        try { a214R = mergedR; a214MX = mergedMX; a214RefreshSelects(); a214RenderResTbl(); a214RenderMixTbl(); a214UpdAll(); } catch(e) {}
+                    }
+                } catch(eAci) { console.warn('ACI 214 import error:', eAci); }
             }
 
             // Restore logo
@@ -3079,6 +3119,11 @@
                 setTimeout(aiAttachSieveLiveListeners, 100);
             }
             if (tabName === 'dashboard') updateDashboard();
+            if (tabName === 'aci214') {
+                if (typeof a214CargarTrialMixes === 'function') {
+                    a214CargarTrialMixes().then(()=>{ if (typeof a214UpdAll === 'function') a214UpdAll(); });
+                } else if (typeof a214UpdAll === 'function') a214UpdAll();
+            }
         }
 
         // ============ LOGO ============
@@ -13705,6 +13750,322 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
         </div>
         <!-- ===== END INCIDENT MANAGEMENT TAB ===== -->
 
+        <!-- ===== ACI 214R TAB ===== -->
+        <div id="tab-aci214" class="tab-content">
+        <style>
+        #tab-aci214{--navy214:#f8fafc;--steel214:#2563eb;--blue214:#2563EB;--cyan214:#0284c7;--amber214:#d97706;--green214:#059669;--red214:#dc2626;--purple214:#7c3aed;--surface214:#f1f5f9;--card214:#ffffff;--border214:#e2e8f0;--text214:#1e293b;--muted214:#64748b;}
+        #tab-aci214{background:var(--bg,#f8fafc);border-radius:12px;padding:1.5rem;color:var(--text214);}
+        #tab-aci214 .a214-header{background:linear-gradient(135deg,var(--primary,#2563eb)0%,var(--primary-dark,#1e40af)60%);border:1px solid var(--border214);border-radius:8px;padding:1rem 1.5rem;margin-bottom:1.2rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;}
+        #tab-aci214 .a214-hb{background:var(--blue214);color:#fff;font-family:'Bebas Neue',cursive,'Arial Black',sans-serif;font-size:1.6rem;letter-spacing:2px;padding:.2rem 1rem;clip-path:polygon(0 0,95% 0,100% 100%,5% 100%);}
+        #tab-aci214 .a214-ht h1{font-family:'Bebas Neue',cursive,'Arial Black',sans-serif;font-size:1.1rem;letter-spacing:3px;color:#fff;line-height:1;}
+        #tab-aci214 .a214-ht p{font-size:.65rem;color:var(--cyan214);letter-spacing:2px;text-transform:uppercase;margin-top:.2rem;font-family:monospace;}
+        #tab-aci214 .a214-hm{margin-left:auto;display:flex;gap:.7rem;align-items:center;flex-wrap:wrap;}
+        #tab-aci214 .a214-pill{background:rgba(37,99,235,.15);border:1px solid var(--border214);border-radius:4px;padding:.25rem .7rem;font-family:monospace;font-size:.65rem;color:var(--cyan214);letter-spacing:1px;}
+        #tab-aci214 .a214-tabbar{background:#fff;border:1px solid var(--border214);border-radius:8px;display:flex;overflow-x:auto;margin-bottom:1rem;}
+        #tab-aci214 .a214-tabbar::-webkit-scrollbar{height:3px;}
+        #tab-aci214 .a214-tabbar::-webkit-scrollbar-thumb{background:var(--blue214);}
+        #tab-aci214 .a214-tab{padding:.7rem 1.2rem;font-family:monospace;font-size:.68rem;letter-spacing:1px;color:var(--muted214);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s;text-transform:uppercase;background:none;border-top:none;border-left:none;border-right:none;}
+        #tab-aci214 .a214-tab:hover{color:var(--text214);}
+        #tab-aci214 .a214-tab.active{color:var(--blue214);border-bottom-color:var(--blue214);}
+        #tab-aci214 .a214-tc{display:none;}
+        #tab-aci214 .a214-tc.active{display:block;animation:a214fu .2s ease;}
+        @keyframes a214fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+        #tab-aci214 .a214-card{background:#fff;border:1px solid var(--border214);border-radius:8px;padding:1.2rem;margin-bottom:1.2rem;box-shadow:0 1px 3px rgba(0,0,0,0.06);}
+        #tab-aci214 .a214-ct{font-family:inherit;font-size:.95rem;font-weight:700;letter-spacing:.5px;color:var(--primary,#2563eb);margin-bottom:.8rem;display:flex;align-items:center;gap:.5rem;}
+        #tab-aci214 .a214-ct::before{content:'';display:inline-block;width:3px;height:.8rem;background:var(--primary,#2563eb);border-radius:2px;}
+        #tab-aci214 .a214-sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:.8rem;margin-bottom:1.2rem;}
+        #tab-aci214 .a214-sb{background:#f8fafc;border:1px solid var(--border214);border-radius:6px;padding:.9rem 1rem;position:relative;overflow:hidden;}
+        #tab-aci214 .a214-sb::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+        #tab-aci214 .a214-sb.bl::before{background:var(--blue214);}#tab-aci214 .a214-sb.cy::before{background:var(--cyan214);}
+        #tab-aci214 .a214-sb.am::before{background:var(--amber214);}#tab-aci214 .a214-sb.gr::before{background:var(--green214);}
+        #tab-aci214 .a214-sb.re::before{background:var(--red214);}#tab-aci214 .a214-sb.pu::before{background:var(--purple214);}
+        #tab-aci214 .a214-sl{font-family:monospace;font-size:.6rem;color:var(--muted214);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:.25rem;}
+        #tab-aci214 .a214-sv{font-family:'Bebas Neue',cursive,'Arial Black',sans-serif;font-size:1.7rem;letter-spacing:1px;line-height:1;}
+        #tab-aci214 .a214-su{font-family:monospace;font-size:.62rem;color:var(--muted214);margin-top:.1rem;}
+        #tab-aci214 .a214-sb.bl .a214-sv{color:var(--blue214);}#tab-aci214 .a214-sb.cy .a214-sv{color:var(--cyan214);}
+        #tab-aci214 .a214-sb.am .a214-sv{color:var(--amber214);}#tab-aci214 .a214-sb.gr .a214-sv{color:var(--green214);}
+        #tab-aci214 .a214-sb.re .a214-sv{color:var(--red214);}#tab-aci214 .a214-sb.pu .a214-sv{color:var(--purple214);}
+        #tab-aci214 .a214-tw{overflow-x:auto;border-radius:6px;border:1px solid var(--border214);}
+        #tab-aci214 table{width:100%;border-collapse:collapse;}
+        #tab-aci214 thead th{background:var(--primary,#2563eb);color:#fff;font-family:monospace;font-size:.6rem;letter-spacing:1px;text-transform:uppercase;padding:.6rem .7rem;text-align:center;border-bottom:1px solid var(--border214);white-space:nowrap;position:sticky;top:0;z-index:2;}
+        #tab-aci214 thead th:first-child{text-align:left;}
+        #tab-aci214 tbody tr{border-bottom:1px solid #f1f5f9;transition:background .15s;}
+        #tab-aci214 tbody tr:hover{background:#f0f9ff;}
+        #tab-aci214 tbody td{padding:.5rem .7rem;font-family:monospace;font-size:.72rem;text-align:center;color:var(--text214);}
+        #tab-aci214 tbody td:first-child,#tab-aci214 tbody td:nth-child(2),#tab-aci214 tbody td:nth-child(3){text-align:left;}
+        #tab-aci214 .a214-ir{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.6rem;margin-bottom:.8rem;}
+        #tab-aci214 .a214-ig{display:flex;flex-direction:column;gap:.2rem;}
+        #tab-aci214 .a214-ig label{font-family:monospace;font-size:.6rem;color:var(--muted214);letter-spacing:1px;text-transform:uppercase;}
+        #tab-aci214 .a214-ig input,#tab-aci214 .a214-ig select{background:#fff;border:1px solid #cbd5e1;border-radius:4px;color:var(--text214);font-family:monospace;font-size:.75rem;padding:.4rem .65rem;outline:none;transition:border-color .2s;}
+        #tab-aci214 .a214-ig input:focus,#tab-aci214 .a214-ig select:focus{border-color:var(--blue214);}
+        #tab-aci214 .a214-ig select option{background:#fff;}
+        #tab-aci214 .a214-btn{font-family:inherit;letter-spacing:.5px;font-size:.78rem;padding:.45rem 1.2rem;border:none;border-radius:4px;cursor:pointer;transition:all .2s;white-space:nowrap;font-weight:600;}
+        #tab-aci214 .a214-btn-p{background:var(--primary,#2563eb);color:#fff;}#tab-aci214 .a214-btn-p:hover{background:var(--primary-dark,#1e40af);}
+        #tab-aci214 .a214-btn-d{background:#fef2f2;color:var(--red214);border:1px solid #fca5a5;}
+        #tab-aci214 .a214-btn-a{background:#fffbeb;color:var(--amber214);border:1px solid #fcd34d;}
+        #tab-aci214 .a214-btn-g{background:#f0fdf4;color:var(--green214);border:1px solid #86efac;}
+        #tab-aci214 .a214-btn-c{background:#eff6ff;color:var(--blue214);border:1px solid #93c5fd;}
+        #tab-aci214 .a214-br{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.7rem;align-items:center;}
+        #tab-aci214 .pass214{color:var(--green214);font-weight:600;}#tab-aci214 .fail214{color:var(--red214);font-weight:600;}
+        #tab-aci214 .mac214{color:var(--amber214);}#tab-aci214 .mrc214{color:#A78BFA;}
+        #tab-aci214 .avc214{color:var(--green214);}#tab-aci214 .sdc214{color:#F87171;}
+        #tab-aci214 .a214-cbadge{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .9rem;border-radius:100px;font-family:'Bebas Neue',cursive,sans-serif;font-size:.9rem;letter-spacing:2px;}
+        #tab-aci214 .a214-chip{display:inline-flex;align-items:center;gap:.3rem;padding:.18rem .65rem;border-radius:100px;font-family:monospace;font-size:.65rem;font-weight:600;justify-content:center;}
+        #tab-aci214 .a214-chp{background:rgba(16,185,129,.15);color:var(--green214);border:1px solid var(--green214);}
+        #tab-aci214 .a214-chf{background:rgba(239,68,68,.15);color:var(--red214);border:1px solid var(--red214);}
+        #tab-aci214 .bex214{background:#dcfce7;color:#166534;border:1px solid #86efac;}
+        #tab-aci214 .bvg214{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd;}
+        #tab-aci214 .bgo214{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;}
+        #tab-aci214 .bfa214{background:#fffbeb;color:#92400e;border:1px solid #fcd34d;}
+        #tab-aci214 .bpo214{background:#fef2f2;color:#991b1b;border:1px solid #fca5a5;}
+        #tab-aci214 .a214-cg{display:grid;gap:.6rem;}
+        #tab-aci214 .a214-cr{display:grid;grid-template-columns:2fr 2fr 1.2fr 1.2fr 1fr;gap:.6rem;align-items:center;background:#f8fafc;border:1px solid var(--border214);border-radius:6px;padding:.75rem .9rem;font-size:.75rem;}
+        #tab-aci214 .a214-cw{background:#f8fafc;border:1px solid var(--border214);border-radius:6px;padding:1rem;margin-top:.8rem;}
+        #tab-aci214 .a214-fe{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;}
+        #tab-aci214 .a214-fq{background:#f8fafc;border:1px solid var(--border214);border-radius:6px;padding:.9rem;}
+        #tab-aci214 .a214-ql{color:var(--muted214);font-size:.62rem;letter-spacing:1px;margin-bottom:.25rem;text-transform:uppercase;font-family:monospace;}
+        #tab-aci214 .a214-qf{color:var(--blue214);font-size:.8rem;margin-bottom:.35rem;font-family:monospace;}
+        #tab-aci214 .a214-qr{color:var(--text214);font-family:monospace;font-size:1.1rem;font-weight:700;letter-spacing:.5px;}
+        #tab-aci214 .a214-mix-tag{display:inline-block;padding:.12rem .45rem;border-radius:3px;font-family:monospace;font-size:.65rem;font-weight:600;letter-spacing:.5px;}
+        #tab-aci214 .a214-nmf{display:none;background:#f8fafc;border:1px solid var(--border214);border-radius:6px;padding:.9rem;margin-bottom:.9rem;}
+        #tab-aci214 .a214-rc{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.9rem;margin-bottom:1.2rem;}
+        #tab-aci214 .a214-rml{display:grid;gap:.5rem;max-height:200px;overflow-y:auto;padding-right:.2rem;}
+        #tab-aci214 .a214-rmi{display:flex;align-items:center;gap:.6rem;background:#f8fafc;border:1px solid var(--border214);border-radius:5px;padding:.55rem .8rem;cursor:pointer;transition:border-color .2s;}
+        #tab-aci214 .a214-rmi:hover{border-color:var(--blue214);}
+        #tab-aci214 .a214-rmi input[type=checkbox]{accent-color:var(--blue214);width:14px;height:14px;cursor:pointer;flex-shrink:0;}
+        #tab-aci214 .a214-ro{display:flex;flex-direction:column;gap:.45rem;}
+        #tab-aci214 .a214-ror{display:flex;align-items:center;gap:.6rem;background:#f8fafc;border:1px solid var(--border214);border-radius:5px;padding:.5rem .8rem;cursor:pointer;font-family:monospace;font-size:.73rem;transition:border-color .2s;}
+        #tab-aci214 .a214-ror:hover{border-color:var(--blue214);}
+        #tab-aci214 .a214-ror input[type=checkbox]{accent-color:var(--blue214);width:13px;height:13px;cursor:pointer;}
+        #tab-aci214 .a214-pf2{display:grid;grid-template-columns:1fr 1fr;gap:.55rem;}
+        #tab-aci214 .a214-pfi{display:flex;flex-direction:column;gap:.15rem;}
+        #tab-aci214 .a214-pf2 label{font-family:monospace;font-size:.58rem;color:var(--muted214);letter-spacing:1px;text-transform:uppercase;}
+        #tab-aci214 .a214-pf2 input{background:#fff;border:1px solid #cbd5e1;border-radius:4px;color:var(--text214);font-family:monospace;font-size:.73rem;padding:.38rem .6rem;outline:none;width:100%;}
+        #tab-aci214 .a214-pf2 input:focus{border-color:var(--blue214);}
+        #tab-aci214 select option{background:#fff;}
+        </style>
+
+        <!-- Header -->
+        <div class="a214-header">
+            <div class="a214-hb">ACI 214R</div>
+            <div class="a214-ht">
+                <h1>CONCRETE STRENGTH EVALUATION DATABASE</h1>
+                <p>Imperial Units &middot; psi &middot; ACI 214R-11 / ACI 318-19</p>
+            </div>
+            <div class="a214-hm">
+                <button class="a214-btn a214-btn-g" onclick="a214ExportJSON()">&#8595; EXPORT</button>
+                <button class="a214-btn a214-btn-c" onclick="a214ImportJSON()">&#8593; IMPORT</button>
+                <div class="a214-pill" id="a214-date-pill">—</div>
+                <div class="a214-pill" id="a214-count-pill">0 SAMPLES</div>
+            </div>
+        </div>
+
+        <!-- Inner tab bar -->
+        <div class="a214-tabbar">
+            <button class="a214-tab active" data-a214tab="data">&#128229; Data Entry</button>
+            <button class="a214-tab" data-a214tab="stats">&#128202; Statistics</button>
+            <button class="a214-tab" data-a214tab="criteria">&#9989; ACI Criteria</button>
+            <button class="a214-tab" data-a214tab="charts">&#128200; Control Charts</button>
+            <button class="a214-tab" data-a214tab="summary">&#127942; Summary</button>
+            <button class="a214-tab" data-a214tab="report">&#128424; Report</button>
+            <button class="a214-tab" data-a214tab="ref">&#128203; ACI Ref</button>
+        </div>
+
+        <!-- DATA ENTRY -->
+        <div class="a214-tc active" id="a214-tab-data">
+            <div class="a214-card">
+                <div class="a214-ct">Add Test Result</div>
+                <div class="a214-ir">
+                    <div class="a214-ig"><label>Date</label><input type="date" id="a214-in-date"></div>
+                    <div class="a214-ig"><label>Lot / Element</label><input type="text" id="a214-in-lot" placeholder="Col C1, Slab S1..."></div>
+                    <div class="a214-ig"><label>Location</label><input type="text" id="a214-in-loc" placeholder="Level 1, Grid A-3"></div>
+                    <div class="a214-ig"><label>Age (days)</label><input type="number" id="a214-in-age" value="28" min="1"></div>
+                    <div class="a214-ig"><label>Cylinder 1 (psi)</label><input type="number" id="a214-in-fc1" placeholder="4200" step="10"></div>
+                    <div class="a214-ig"><label>Cylinder 2 (psi)</label><input type="number" id="a214-in-fc2" placeholder="4350" step="10"></div>
+                    <div class="a214-ig"><label>f'c Design (psi)</label><input type="number" id="a214-in-fcd" value="4000" step="100"></div>
+                    <div class="a214-ig"><label>Mix Design Code <span style="font-size:.55rem;color:#0284c7;letter-spacing:.5px">(Trial Mixes)</span></label>
+                        <div style="display:flex;gap:.35rem">
+                            <select id="a214-in-mix" style="flex:1" onchange="a214AutoFcd()"><option value="">&#8212; Seleccionar Trial Mix &#8212;</option></select>
+                            <button class="a214-btn a214-btn-c" onclick="a214CargarTrialMixes()" title="Recargar Trial Mixes desde IndexedDB" style="padding:.38rem .6rem;font-size:.68rem">&#8635;</button>
+                        </div>
+                        <div id="a214-mix-badge" style="display:none;margin-top:.3rem;padding:.3rem .6rem;background:#eff6ff;border:1px solid #bfdbfe;border-radius:4px;font-family:monospace;font-size:.65rem;color:#1e40af;line-height:1.5"></div>
+                    </div>
+                </div>
+                <!-- Panel de info del Trial Mix seleccionado -->
+                <div id="a214-trial-info" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:.8rem 1rem;margin-bottom:.8rem">
+                    <div style="font-family:monospace;font-size:.62rem;color:#1e40af;letter-spacing:1px;text-transform:uppercase;margin-bottom:.5rem;display:flex;align-items:center;gap:.5rem">
+                        <span style="width:3px;height:.7rem;background:#2563eb;border-radius:2px;display:inline-block"></span>
+                        Trial Mix Seleccionado
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.4rem" id="a214-trial-info-grid"></div>
+                </div>
+                <div class="a214-br">
+                    <button class="a214-btn a214-btn-p" onclick="a214AddResult()">+ ADD RESULT</button>
+                    <button class="a214-btn a214-btn-a" onclick="a214LoadSample()">LOAD SAMPLE (30)</button>
+                    <button class="a214-btn a214-btn-d" onclick="a214ClearAll()">CLEAR ALL</button>
+                    <button class="a214-btn a214-btn-p" onclick="a214ExportCSV()" style="margin-left:auto">&#8595; EXPORT CSV</button>
+                </div>
+            </div>
+            <div class="a214-card"><div class="a214-ct">Mix Design Register</div>
+                <div class="a214-tw"><table><thead><tr>
+                    <th style="text-align:left">Mix Code</th><th>f'c (psi)</th><th>w/c</th><th>Cement</th><th>Water</th><th>C.Agg</th><th>F.Agg</th><th>Admixtures</th><th>Supplier</th><th>Samples</th><th>Avg (psi)</th><th>Del</th>
+                </tr></thead><tbody id="a214-mix-body"><tr><td colspan="12" style="text-align:center;color:var(--muted214);padding:1.5rem">No mix designs.</td></tr></tbody></table></div>
+            </div>
+            <div class="a214-card"><div class="a214-ct">Test Results Register</div>
+                <div class="a214-tw"><table><thead><tr>
+                    <th style="text-align:left">N&#176;</th><th style="text-align:left">Date</th><th style="text-align:left">Lot</th>
+                    <th>Mix Code</th><th>Age</th><th>fc1</th><th>fc2</th><th>Avg (psi)</th><th>f'c (psi)</th>
+                    <th>Diff</th><th>%</th><th>MA-5</th><th>Mov.Rng</th><th>Cum.Mean</th><th>Cum.SD</th><th>Del</th>
+                </tr></thead><tbody id="a214-res-body"><tr><td colspan="16" style="text-align:center;color:var(--muted214);padding:2rem">No data. Add results or load sample.</td></tr></tbody></table></div>
+            </div>
+        </div>
+
+        <!-- STATISTICS -->
+        <div class="a214-tc" id="a214-tab-stats">
+            <div style="display:flex;align-items:center;gap:.8rem;margin-bottom:.8rem">
+                <span style="font-family:monospace;font-size:.68rem;color:var(--muted214);text-transform:uppercase;letter-spacing:1px">Filter Mix:</span>
+                <select id="a214-sf" onchange="a214UpdStats()" style="background:#fff;border:1px solid #cbd5e1;border-radius:4px;color:#1e293b;font-family:monospace;font-size:.75rem;padding:.35rem .7rem;outline:none"><option value="ALL">ALL MIXES</option></select>
+            </div>
+            <div class="a214-sg">
+                <div class="a214-sb bl"><div class="a214-sl">Samples (n)</div><div class="a214-sv" id="a214-st-n">&#8212;</div><div class="a214-su">COUNT</div></div>
+                <div class="a214-sb cy"><div class="a214-sl">Mean (x&#772;)</div><div class="a214-sv" id="a214-st-mean">&#8212;</div><div class="a214-su">psi</div></div>
+                <div class="a214-sb re"><div class="a214-sl">Std Dev (s)</div><div class="a214-sv" id="a214-st-s">&#8212;</div><div class="a214-su">psi</div></div>
+                <div class="a214-sb am"><div class="a214-sl">Coef. Var. (V)</div><div class="a214-sv" id="a214-st-v">&#8212;</div><div class="a214-su">%</div></div>
+                <div class="a214-sb gr"><div class="a214-sl">f'c Design</div><div class="a214-sv" id="a214-st-fcd">&#8212;</div><div class="a214-su">psi</div></div>
+                <div class="a214-sb pu"><div class="a214-sl">MA-5</div><div class="a214-sv" id="a214-st-ma">&#8212;</div><div class="a214-su">psi</div></div>
+                <div class="a214-sb bl"><div class="a214-sl">Mean MR&#772;</div><div class="a214-sv" id="a214-st-mr">&#8212;</div><div class="a214-su">psi</div></div>
+                <div class="a214-sb cy"><div class="a214-sl">Minimum</div><div class="a214-sv" id="a214-st-min">&#8212;</div><div class="a214-su">psi</div></div>
+                <div class="a214-sb am"><div class="a214-sl">Maximum</div><div class="a214-sv" id="a214-st-max">&#8212;</div><div class="a214-su">psi</div></div>
+                <div class="a214-sb gr"><div class="a214-sl">Range (R)</div><div class="a214-sv" id="a214-st-range">&#8212;</div><div class="a214-su">psi</div></div>
+                <div class="a214-sb pu"><div class="a214-sl">% over f'c</div><div class="a214-sv" id="a214-st-pct">&#8212;</div><div class="a214-su">%</div></div>
+                <div class="a214-sb re"><div class="a214-sl">f'cr Required</div><div class="a214-sv" id="a214-st-fcr">&#8212;</div><div class="a214-su">psi</div></div>
+            </div>
+            <div class="a214-card"><div class="a214-ct">ACI 214R Classification</div>
+                <div style="margin-bottom:.8rem" id="a214-cls-badge"><span class="a214-cbadge bgo214">&#8212;</span></div>
+                <div class="a214-tw"><table><thead><tr><th>Category</th><th>V (%)</th><th>Description</th><th>Status</th></tr></thead><tbody>
+                    <tr><td style="color:var(--green214);font-weight:700">Excellent</td><td>&lt;10%</td><td style="text-align:left">Best control</td><td><span class="a214-chip" id="a214-sc-exc">&#8212;</span></td></tr>
+                    <tr><td style="color:var(--cyan214);font-weight:700">Very Good</td><td>10&#8211;15%</td><td style="text-align:left">Good control</td><td><span class="a214-chip" id="a214-sc-vg">&#8212;</span></td></tr>
+                    <tr><td style="color:#60A5FA;font-weight:700">Good</td><td>15&#8211;20%</td><td style="text-align:left">Acceptable</td><td><span class="a214-chip" id="a214-sc-good">&#8212;</span></td></tr>
+                    <tr><td style="color:var(--amber214);font-weight:700">Fair</td><td>20&#8211;25%</td><td style="text-align:left">Poor control</td><td><span class="a214-chip" id="a214-sc-fair">&#8212;</span></td></tr>
+                    <tr><td style="color:var(--red214);font-weight:700">Poor</td><td>&gt;25%</td><td style="text-align:left">Immediate action</td><td><span class="a214-chip" id="a214-sc-poor">&#8212;</span></td></tr>
+                </tbody></table></div>
+            </div>
+            <div class="a214-card"><div class="a214-ct">Statistical Parameters</div>
+                <div class="a214-tw"><table><thead><tr><th style="text-align:left">Parameter</th><th style="text-align:left">Formula</th><th>Value</th><th>Unit</th><th>Ref.</th></tr></thead><tbody id="a214-params-body"></tbody></table></div>
+            </div>
+        </div>
+
+        <!-- CRITERIA -->
+        <div class="a214-tc" id="a214-tab-criteria">
+            <div style="display:flex;align-items:center;gap:.8rem;margin-bottom:.8rem">
+                <span style="font-family:monospace;font-size:.68rem;color:var(--muted214);text-transform:uppercase;letter-spacing:1px">Filter Mix:</span>
+                <select id="a214-cf" onchange="a214UpdCrit()" style="background:#fff;border:1px solid #cbd5e1;border-radius:4px;color:#1e293b;font-family:monospace;font-size:.75rem;padding:.35rem .7rem;outline:none"><option value="ALL">ALL MIXES</option></select>
+            </div>
+            <div class="a214-card"><div class="a214-ct">Acceptance Criteria &#8212; ACI 318-19 &sect;26.12 / ACI 214R &sect;6</div>
+                <div class="a214-cg">
+                    <div class="a214-cr" style="background:var(--steel214);font-family:monospace;font-size:.6rem;letter-spacing:1px;color:var(--cyan214);text-transform:uppercase"><span>Criterion</span><span>Description</span><span style="text-align:center">Limit</span><span style="text-align:center">Value</span><span style="text-align:center">Status</span></div>
+                    <div id="a214-crit-rows"></div>
+                </div>
+            </div>
+            <div class="a214-card"><div class="a214-ct">f'cr Calculation &#8212; ACI 318-19 &sect;26.4.3</div>
+                <div class="a214-fe">
+                    <div class="a214-fq"><div class="a214-ql">Eq. 26.4.3.1(a)</div><div class="a214-qf">f'cr = f'c + 1.34&middot;s</div><div class="a214-qr" id="a214-fcr-a">&#8212;</div></div>
+                    <div class="a214-fq"><div class="a214-ql">Eq. 26.4.3.1(b) [f'c &le; 5,000 psi]</div><div class="a214-qf">f'cr = f'c + 2.33&middot;s &minus; 500</div><div class="a214-qr" id="a214-fcr-b">&#8212;</div></div>
+                </div>
+                <div class="a214-fq" style="margin-top:.8rem;border-color:var(--amber214)"><div class="a214-ql">f'cr Required (max of both)</div><div class="a214-qf">f'cr = max(Eq.a, Eq.b)</div><div class="a214-qr" id="a214-fcr-req">&#8212;</div></div>
+            </div>
+        </div>
+
+        <!-- CHARTS -->
+        <div class="a214-tc" id="a214-tab-charts">
+            <div style="display:flex;align-items:center;gap:.8rem;margin-bottom:.8rem">
+                <span style="font-family:monospace;font-size:.68rem;color:var(--muted214);text-transform:uppercase;letter-spacing:1px">Filter Mix:</span>
+                <select id="a214-chf" onchange="a214RenderCharts()" style="background:#fff;border:1px solid #cbd5e1;border-radius:4px;color:#1e293b;font-family:monospace;font-size:.75rem;padding:.35rem .7rem;outline:none"><option value="ALL">ALL MIXES</option></select>
+            </div>
+            <div class="a214-card"><div class="a214-ct">X&#772; Control Chart</div><div class="a214-cw" style="height:280px"><canvas id="a214-ch-xbar"></canvas></div></div>
+            <div class="a214-card"><div class="a214-ct">Moving Range Chart (MR)</div><div class="a214-cw" style="height:220px"><canvas id="a214-ch-mr"></canvas></div></div>
+            <div class="a214-card"><div class="a214-ct">Cumulative Mean &amp; Std Dev</div><div class="a214-cw" style="height:220px"><canvas id="a214-ch-trend"></canvas></div></div>
+        </div>
+
+        <!-- SUMMARY -->
+        <div class="a214-tc" id="a214-tab-summary">
+            <div class="a214-card"><div class="a214-ct">Executive Summary</div><div id="a214-sum-content" style="color:var(--muted214);padding:.8rem;font-family:monospace">No data loaded.</div></div>
+        </div>
+
+        <!-- REPORT -->
+        <div class="a214-tc" id="a214-tab-report">
+            <div class="a214-rc">
+                <div class="a214-card" style="margin-bottom:0">
+                    <div class="a214-ct">1 &middot; Select Mix(es)</div>
+                    <div class="a214-rml" id="a214-rpt-mix-list"><div style="color:var(--muted214);font-family:monospace;font-size:.73rem;padding:.4rem">No mix designs found.</div></div>
+                    <div style="margin-top:.6rem;display:flex;gap:.4rem">
+                        <button class="a214-btn a214-btn-a" style="font-size:.68rem;padding:.3rem .65rem" onclick="a214RptAll()">ALL</button>
+                        <button class="a214-btn a214-btn-d" style="font-size:.68rem;padding:.3rem .65rem" onclick="a214RptNone()">NONE</button>
+                    </div>
+                </div>
+                <div class="a214-card" style="margin-bottom:0">
+                    <div class="a214-ct">2 &middot; Report Sections</div>
+                    <div class="a214-ro">
+                        <label class="a214-ror"><input type="checkbox" id="a214-rpt-mixinfo" checked>Mix Design Info</label>
+                        <label class="a214-ror"><input type="checkbox" id="a214-rpt-summary" checked>Summary Statistics</label>
+                        <label class="a214-ror"><input type="checkbox" id="a214-rpt-criteria" checked>ACI Acceptance Criteria</label>
+                        <label class="a214-ror"><input type="checkbox" id="a214-rpt-table" checked>Data Table</label>
+                        <label class="a214-ror"><input type="checkbox" id="a214-rpt-xbar" checked>X&#772; Control Chart</label>
+                        <label class="a214-ror"><input type="checkbox" id="a214-rpt-mr" checked>Moving Range Chart</label>
+                        <label class="a214-ror"><input type="checkbox" id="a214-rpt-trend">Cumulative Trend Chart</label>
+                    </div>
+                </div>
+                <div class="a214-card" style="margin-bottom:0">
+                    <div class="a214-ct">3 &middot; Project Info</div>
+                    <div class="a214-pf2">
+                        <div class="a214-pfi"><label>Project Name</label><input type="text" id="a214-rp-name" placeholder="Project XYZ"></div>
+                        <div class="a214-pfi"><label>Project No.</label><input type="text" id="a214-rp-no" placeholder="2025-001"></div>
+                        <div class="a214-pfi"><label>Engineer / Inspector</label><input type="text" id="a214-rp-eng" placeholder="J. Smith, P.E."></div>
+                        <div class="a214-pfi"><label>Contractor</label><input type="text" id="a214-rp-cont" placeholder="ABC Construction"></div>
+                        <div class="a214-pfi"><label>Report Date</label><input type="date" id="a214-rp-date"></div>
+                        <div class="a214-pfi"><label>Specification</label><input type="text" id="a214-rp-spec" placeholder="ACI 318-19, IBC 2021"></div>
+                    </div>
+                    <div style="margin-top:.8rem;display:flex;flex-direction:column;gap:.4rem">
+                        <button class="a214-btn a214-btn-p" onclick="a214OpenReport()" style="width:100%">&#128424; OPEN PRINT REPORT</button>
+                        <button class="a214-btn a214-btn-g" onclick="a214PreviewReport()" style="width:100%;font-size:.75rem;padding:.42rem">&#128065; PREVIEW</button>
+                    </div>
+                </div>
+            </div>
+            <div id="a214-rpt-preview" style="display:none">
+                <div class="a214-card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem">
+                        <div class="a214-ct" style="margin-bottom:0">Report Preview</div>
+                        <button class="a214-btn a214-btn-d" style="font-size:.68rem;padding:.28rem .7rem" onclick="document.getElementById('a214-rpt-preview').style.display='none'">&#10005; CLOSE</button>
+                    </div>
+                    <div id="a214-rpt-preview-inner" style="background:#fff;border-radius:6px;padding:1.2rem;color:#000"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- REFERENCE -->
+        <div class="a214-tc" id="a214-tab-ref">
+            <div class="a214-card"><div class="a214-ct">ACI 214R-11 Quick Reference &#8212; Imperial Units (psi)</div>
+                <div class="a214-tw"><table><thead><tr><th style="text-align:left">Term</th><th style="text-align:left">Definition</th><th style="text-align:left">Formula / Limit</th><th style="text-align:left">Reference</th></tr></thead>
+                <tbody>
+                    <tr><td><b>x&#772;</b></td><td>Arithmetic mean</td><td>x&#772; = &Sigma;xi / n</td><td>ACI 214R Eq. 4-1</td></tr>
+                    <tr><td><b>s</b></td><td>Sample standard deviation</td><td>s = &radic;[&Sigma;(xi&#8722;x&#772;)&sup2;/(n&#8722;1)]</td><td>ACI 214R Eq. 4-2</td></tr>
+                    <tr><td><b>V</b></td><td>Coefficient of Variation</td><td>V = s / x&#772; &times; 100 (%)</td><td>ACI 214R Eq. 4-3</td></tr>
+                    <tr><td><b>MA-5</b></td><td>Moving average last 5</td><td>(xi+xi&#8209;1+xi&#8209;2+xi&#8209;3+xi&#8209;4)/5</td><td>ACI 214R &sect;5.3</td></tr>
+                    <tr><td><b>MR</b></td><td>Moving range consecutive</td><td>MRi = |xi &#8722; xi&#8209;1|</td><td>ACI 214R &sect;5.3</td></tr>
+                    <tr><td><b>UCL / LCL</b></td><td>Control limits (x&#772; chart)</td><td>x&#772; &plusmn; 3s</td><td>ACI 214R &sect;5.3</td></tr>
+                    <tr><td><b>UCL_MR</b></td><td>MR upper control limit (n=2)</td><td>3.267 &times; MR&#772;</td><td>ACI 214R &sect;5.3</td></tr>
+                    <tr><td><b>f'cr</b></td><td>Required avg compressive strength</td><td>max(f'c+1.34s, f'c+2.33s&#8722;500)</td><td>ACI 318 &sect;26.4.3</td></tr>
+                    <tr><td><b>Criterion 1</b></td><td>Avg of 3 consecutive &ge; f'c</td><td>x&#772;(3) &ge; f'c</td><td>ACI 318 &sect;26.12.3.1(a)</td></tr>
+                    <tr><td><b>Criterion 2</b></td><td>No result &lt; f'c&#8722;500 (f'c &le; 5,000)</td><td>min &ge; f'c&#8722;500</td><td>ACI 318 &sect;26.12.3.1(b)</td></tr>
+                    <tr><td><b>Criterion 3</b></td><td>No result &lt; 0.90f'c (f'c &gt; 5,000)</td><td>min &ge; 0.90f'c</td><td>ACI 318 &sect;26.12.3.1(b)</td></tr>
+                </tbody></table></div>
+            </div>
+        </div>
+
+        </div>
+        <!-- ===== END ACI 214R TAB ===== -->
+
+
         <!-- Lightbox for incident media -->
         <div id="incident-lightbox" onclick="cerrarLightbox()">
             <button class="lb-close" onclick="cerrarLightbox()">&times;</button>
@@ -13904,6 +14265,340 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
             </div>
         </div>
     </div>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         ACI 214R — CONCRETE STRENGTH EVALUATION
+         ═══════════════════════════════════════════════════════════ -->
+    <div id="tab-aci214" class="tab-content">
+
+        <!-- ACI 214 inner styles (namespaced to avoid conflicts) -->
+        <style>
+        #tab-aci214{--a14-navy:#f8fafc;--a14-steel:#2563eb;--a14-blue:#2563EB;--a14-cyan:#0284c7;--a14-amber:#d97706;--a14-green:#059669;--a14-red:#dc2626;--a14-purple:#7c3aed;--a14-surface:#f1f5f9;--a14-card:#ffffff;--a14-border:#e2e8f0;--a14-text:#1e293b;--a14-muted:#64748b;}
+        #tab-aci214{background:var(--bg,#f8fafc);border-radius:12px;padding:0;overflow:hidden;position:relative;}
+        #tab-aci214::before{content:'';display:none;}
+        .a14-header{position:relative;z-index:10;background:linear-gradient(135deg,var(--primary,#2563eb)0%,var(--primary-dark,#1e40af)60%);border-bottom:1px solid var(--a14-border);padding:1.2rem 2rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;}
+        .a14-hb{background:var(--a14-blue);color:#fff;font-family:'Bebas Neue',cursive,sans-serif;font-size:1.8rem;letter-spacing:2px;padding:.25rem 1rem;clip-path:polygon(0 0,95% 0,100% 100%,5% 100%);white-space:nowrap;flex-shrink:0;}
+        .a14-ht h2{font-size:1.1rem;letter-spacing:2px;color:#fff;line-height:1;margin:0;font-weight:700;}
+        .a14-ht p{font-size:.68rem;color:rgba(255,255,255,0.85);letter-spacing:2px;text-transform:uppercase;margin-top:.2rem;font-family:monospace;}
+        .a14-hm{margin-left:auto;display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;}
+        .a14-pill{background:rgba(37,99,235,.15);border:1px solid var(--a14-border);border-radius:4px;padding:.25rem .7rem;font-family:monospace;font-size:.68rem;color:var(--a14-blue);letter-spacing:1px;}
+        .a14-tab-bar{position:relative;z-index:10;background:#fff;border-bottom:1px solid var(--a14-border);display:flex;overflow-x:auto;padding:0 1.5rem;}
+        .a14-tab-bar::-webkit-scrollbar{height:3px;}.a14-tab-bar::-webkit-scrollbar-thumb{background:var(--a14-blue);}
+        .a14-tab{padding:.75rem 1.2rem;font-family:monospace;font-size:.7rem;letter-spacing:1px;color:var(--a14-muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s;text-transform:uppercase;background:none;border-top:none;border-left:none;border-right:none;}
+        .a14-tab:hover{color:var(--a14-text);}.a14-tab.a14-active{color:var(--a14-blue);border-bottom-color:var(--a14-blue);}
+        .a14-main{position:relative;z-index:5;padding:1.5rem;}
+        .a14-tc{display:none;}.a14-tc.a14-active{display:block;animation:a14fu .25s ease;}
+        @keyframes a14fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+        .a14-card{background:#fff;border:1px solid var(--a14-border);border-radius:8px;padding:1.25rem;margin-bottom:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.06);}
+        .a14-ct{font-family:inherit;font-size:1rem;font-weight:700;letter-spacing:.3px;color:var(--primary,#2563eb);margin-bottom:.85rem;display:flex;align-items:center;gap:.5rem;}
+        .a14-ct::before{content:'';display:inline-block;width:3px;height:.85rem;background:var(--primary,#2563eb);border-radius:2px;}
+        .a14-sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:.85rem;margin-bottom:1.25rem;}
+        .a14-sb{background:#f8fafc;border:1px solid var(--a14-border);border-radius:6px;padding:.9rem 1.1rem;position:relative;overflow:hidden;}
+        .a14-sb::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+        .a14-sb.bl::before{background:var(--a14-blue);}.a14-sb.cy::before{background:var(--a14-cyan);}.a14-sb.am::before{background:var(--a14-amber);}.a14-sb.gr::before{background:var(--a14-green);}.a14-sb.re::before{background:var(--a14-red);}.a14-sb.pu::before{background:var(--a14-purple);}
+        .a14-sl{font-family:monospace;font-size:.62rem;color:var(--a14-muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:.25rem;}
+        .a14-sv{font-family:inherit;font-size:1.5rem;font-weight:700;letter-spacing:.5px;line-height:1;}
+        .a14-su{font-family:monospace;font-size:.65rem;color:var(--a14-muted);margin-top:.1rem;}
+        .a14-sb.bl .a14-sv{color:var(--a14-blue);}.a14-sb.cy .a14-sv{color:var(--a14-cyan);}.a14-sb.am .a14-sv{color:var(--a14-amber);}.a14-sb.gr .a14-sv{color:var(--a14-green);}.a14-sb.re .a14-sv{color:var(--a14-red);}.a14-sb.pu .a14-sv{color:var(--a14-purple);}
+        .a14-tw{overflow-x:auto;border-radius:6px;border:1px solid var(--a14-border);}
+        .a14-tw table{width:100%;border-collapse:collapse;}
+        .a14-tw thead th{background:var(--primary,#2563eb);color:#fff;font-family:monospace;font-size:.62rem;letter-spacing:1px;text-transform:uppercase;padding:.65rem .75rem;text-align:center;border-bottom:1px solid var(--a14-border);white-space:nowrap;position:sticky;top:0;z-index:2;}
+        .a14-tw thead th:first-child,.a14-tw thead th:nth-child(2),.a14-tw thead th:nth-child(3){text-align:left;}
+        .a14-tw tbody tr{border-bottom:1px solid #f1f5f9;transition:background .15s;}
+        .a14-tw tbody tr:hover{background:#f0f9ff;}
+        .a14-tw tbody td{padding:.55rem .75rem;font-family:monospace;font-size:.72rem;text-align:center;color:var(--a14-text);}
+        .a14-tw tbody td:first-child,.a14-tw tbody td:nth-child(2),.a14-tw tbody td:nth-child(3){text-align:left;}
+        .a14-pass{color:#166534;font-weight:600;}.a14-fail{color:#991b1b;font-weight:600;}
+        .a14-mac{color:var(--a14-amber);background:#fffbeb;}.a14-mrc{color:var(--a14-purple);background:#f5f3ff;}
+        .a14-avc{color:var(--a14-green);background:#f0fdf4;}.a14-sdc{color:var(--a14-red);background:#fef2f2;}
+        .a14-ir{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:.65rem;margin-bottom:.85rem;}
+        .a14-ig{display:flex;flex-direction:column;gap:.2rem;}
+        .a14-ig label{font-family:monospace;font-size:.62rem;color:var(--a14-muted);letter-spacing:1px;text-transform:uppercase;}
+        .a14-ig input,.a14-ig select{background:#fff;border:1px solid #cbd5e1;border-radius:4px;color:var(--a14-text);font-family:monospace;font-size:.78rem;padding:.42rem .7rem;outline:none;transition:border-color .2s;}
+        .a14-ig input:focus,.a14-ig select:focus{border-color:var(--a14-blue);}
+        .a14-ig select option{background:#fff;}
+        .a14-btn{font-family:inherit;letter-spacing:.5px;font-size:.82rem;padding:.5rem 1.2rem;border:none;border-radius:4px;cursor:pointer;transition:all .2s;white-space:nowrap;font-weight:600;}
+        .a14-btn-p{background:var(--primary,#2563eb);color:#fff;}.a14-btn-p:hover{background:var(--primary-dark,#1e40af);}
+        .a14-btn-d{background:#fef2f2;color:var(--a14-red);border:1px solid #fca5a5;}.a14-btn-d:hover{background:#fee2e2;}
+        .a14-btn-a{background:#fffbeb;color:var(--a14-amber);border:1px solid #fcd34d;}.a14-btn-a:hover{background:#fef3c7;}
+        .a14-btn-g{background:#f0fdf4;color:var(--a14-green);border:1px solid #86efac;}.a14-btn-g:hover{background:#dcfce7;}
+        .a14-btn-c{background:#eff6ff;color:var(--a14-blue);border:1px solid #93c5fd;}.a14-btn-c:hover{background:#dbeafe;}
+        .a14-br{display:flex;gap:.65rem;flex-wrap:wrap;margin-top:.75rem;align-items:center;}
+        .a14-cbadge{display:inline-flex;align-items:center;gap:.5rem;padding:.3rem .9rem;border-radius:100px;font-family:'Bebas Neue',cursive,sans-serif;font-size:.95rem;letter-spacing:2px;}
+        .a14-bex{background:#dcfce7;color:#166534;border:1px solid #86efac;}
+        .a14-bvg{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd;}
+        .a14-bgo{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;}
+        .a14-bfa{background:#fffbeb;color:#92400e;border:1px solid #fcd34d;}
+        .a14-bpo{background:#fef2f2;color:#991b1b;border:1px solid #fca5a5;}
+        .a14-cg{display:grid;gap:.65rem;}
+        .a14-cr{display:grid;grid-template-columns:2fr 2fr 1.2fr 1.2fr 1fr;gap:.65rem;align-items:center;background:#f8fafc;border:1px solid var(--a14-border);border-radius:6px;padding:.8rem .9rem;font-size:.78rem;}
+        .a14-cn{font-weight:600;color:var(--a14-text);}.a14-crf{font-family:monospace;font-size:.68rem;color:var(--a14-muted);}
+        .a14-cv{font-family:monospace;font-weight:600;text-align:center;}
+        .a14-chip{display:inline-flex;align-items:center;gap:.25rem;padding:.2rem .7rem;border-radius:100px;font-family:monospace;font-size:.68rem;font-weight:600;justify-content:center;}
+        .a14-chp{background:#dcfce7;color:#166534;border:1px solid #86efac;}
+        .a14-chf{background:#fef2f2;color:#991b1b;border:1px solid #fca5a5;}
+        .a14-cw{background:#f8fafc;border:1px solid var(--a14-border);border-radius:6px;padding:1.1rem;margin-top:.85rem;}
+        .a14-fe{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;}
+        .a14-fq{background:#f8fafc;border:1px solid var(--a14-border);border-radius:6px;padding:.9rem;font-family:monospace;}
+        .a14-fq .a14-ql{color:var(--a14-muted);font-size:.65rem;letter-spacing:1px;margin-bottom:.25rem;text-transform:uppercase;}
+        .a14-fq .a14-qf{color:var(--a14-blue);font-size:.82rem;margin-bottom:.35rem;}
+        .a14-fq .a14-qr{color:var(--a14-amber);font-family:monospace;font-size:1.1rem;font-weight:700;}
+        .a14-mix-tag{display:inline-block;padding:.12rem .5rem;border-radius:3px;font-family:monospace;font-size:.68rem;font-weight:600;letter-spacing:.5px;}
+        .a14-rc{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.9rem;margin-bottom:1.25rem;}
+        .a14-rml{display:grid;gap:.4rem;max-height:220px;overflow-y:auto;padding-right:.2rem;}
+        .a14-rmi{display:flex;align-items:center;gap:.65rem;background:#f8fafc;border:1px solid var(--a14-border);border-radius:5px;padding:.55rem .85rem;cursor:pointer;transition:border-color .2s;}
+        .a14-rmi:hover{border-color:var(--a14-blue);}
+        .a14-rmi input[type=checkbox]{accent-color:var(--a14-blue);width:14px;height:14px;cursor:pointer;flex-shrink:0;}
+        .a14-ro{display:flex;flex-direction:column;gap:.45rem;}
+        .a14-ror{display:flex;align-items:center;gap:.6rem;background:#f8fafc;border:1px solid var(--a14-border);border-radius:5px;padding:.5rem .85rem;cursor:pointer;font-family:monospace;font-size:.75rem;transition:border-color .2s;}
+        .a14-ror:hover{border-color:var(--a14-blue);}
+        .a14-ror input[type=checkbox]{accent-color:var(--a14-blue);width:13px;height:13px;cursor:pointer;}
+        .a14-pf2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;}
+        .a14-pf2 .a14-pfi{display:flex;flex-direction:column;gap:.15rem;}
+        .a14-pf2 label{font-family:monospace;font-size:.6rem;color:var(--a14-muted);letter-spacing:1px;text-transform:uppercase;}
+        .a14-pf2 input{background:#fff;border-color:#cbd5e1;border:1px solid var(--a14-border);border-radius:4px;color:var(--a14-text);font-family:monospace;font-size:.75rem;padding:.38rem .62rem;outline:none;width:100%;}
+        .a14-pf2 input:focus{border-color:var(--a14-blue);}
+        .a14-nmf{display:none;background:#f8fafc;border:1px solid var(--a14-border);border-radius:6px;padding:.9rem;margin-bottom:.9rem;}
+        @media(max-width:768px){.a14-rc{grid-template-columns:1fr;}.a14-cr{grid-template-columns:1fr 1fr;}.a14-fe{grid-template-columns:1fr;}}
+        </style>
+
+        <!-- Header -->
+        <div class="a14-header">
+            <div class="a14-hb">ACI 214R</div>
+            <div class="a14-ht">
+                <h2>CONCRETE STRENGTH EVALUATION DATABASE</h2>
+                <p>Imperial Units &middot; psi &middot; ACI 214R-11 / ACI 318-19</p>
+            </div>
+            <div class="a14-hm">
+                <button class="a14-btn a14-btn-g" onclick="a14ExportJSON()">&#8595; EXPORT</button>
+                <button class="a14-btn a14-btn-c" onclick="a14ImportJSON()">&#8593; IMPORT</button>
+                <div class="a14-pill" id="a14-date-pill">—</div>
+                <div class="a14-pill" id="a14-count-pill">0 SAMPLES</div>
+            </div>
+        </div>
+
+        <!-- Inner tab bar -->
+        <div class="a14-tab-bar">
+            <button class="a14-tab a14-active" data-a14tab="data">&#128229; Data Entry</button>
+            <button class="a14-tab" data-a14tab="stats">&#128202; Statistics</button>
+            <button class="a14-tab" data-a14tab="criteria">&#9989; ACI Criteria</button>
+            <button class="a14-tab" data-a14tab="charts">&#128200; Control Charts</button>
+            <button class="a14-tab" data-a14tab="summary">&#127942; Summary</button>
+            <button class="a14-tab" data-a14tab="report">&#128424; Report</button>
+            <button class="a14-tab" data-a14tab="ref">&#128203; ACI Ref</button>
+        </div>
+
+        <div class="a14-main">
+
+        <!-- DATA ENTRY -->
+        <div class="a14-tc a14-active" id="a14-tab-data">
+            <div class="a14-card">
+                <div class="a14-ct">Add Test Result</div>
+                <div class="a14-ir">
+                    <div class="a14-ig"><label>Date</label><input type="date" id="a14-in-date"></div>
+                    <div class="a14-ig"><label>Lot / Element</label><input type="text" id="a14-in-lot" placeholder="Col C1, Slab S1..."></div>
+                    <div class="a14-ig"><label>Location</label><input type="text" id="a14-in-loc" placeholder="Level 1, Grid A-3"></div>
+                    <div class="a14-ig"><label>Age (days)</label><input type="number" id="a14-in-age" value="28" min="1"></div>
+                    <div class="a14-ig"><label>Cylinder 1 (psi)</label><input type="number" id="a14-in-fc1" placeholder="4200" step="10"></div>
+                    <div class="a14-ig"><label>Cylinder 2 (psi)</label><input type="number" id="a14-in-fc2" placeholder="4350" step="10"></div>
+                    <div class="a14-ig"><label>f'c Design (psi)</label><input type="number" id="a14-in-fcd" value="4000" step="100"></div>
+                    <div class="a14-ig"><label>Mix Design Code</label>
+                        <div style="display:flex;gap:.4rem">
+                            <select id="a14-in-mix" style="flex:1" onchange="a14AutoFcd()"><option value="">&#8212; None &#8212;</option></select>
+                            <button class="a14-btn a14-btn-a" onclick="a14ToggleNM()" style="padding:.42rem .65rem;font-size:.7rem">+ NEW</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="a14-nmf" id="a14-nmf">
+                    <div style="font-family:monospace;font-size:.68rem;color:var(--primary,#2563eb);letter-spacing:1px;margin-bottom:.65rem;text-transform:uppercase;border-bottom:1px solid var(--a14-border);padding-bottom:.45rem">New Mix Design</div>
+                    <div class="a14-ir" style="margin-bottom:.5rem">
+                        <div class="a14-ig"><label>Mix Code *</label><input type="text" id="a14-nm-code" placeholder="MIX-4000-A"></div>
+                        <div class="a14-ig"><label>f'c Design (psi) *</label><input type="number" id="a14-nm-fcd" value="4000" step="100"></div>
+                        <div class="a14-ig"><label>w/c Ratio</label><input type="number" id="a14-nm-wc" step="0.01" placeholder="0.44"></div>
+                        <div class="a14-ig"><label>Cement (lb/yd³)</label><input type="number" id="a14-nm-cement" placeholder="564"></div>
+                        <div class="a14-ig"><label>Water (lb/yd³)</label><input type="number" id="a14-nm-water" placeholder="248"></div>
+                        <div class="a14-ig"><label>Coarse Agg.</label><input type="number" id="a14-nm-ca" placeholder="1825"></div>
+                        <div class="a14-ig"><label>Fine Agg.</label><input type="number" id="a14-nm-fa" placeholder="1340"></div>
+                        <div class="a14-ig"><label>Admixtures</label><input type="text" id="a14-nm-adm" placeholder="WR, HRWR..."></div>
+                        <div class="a14-ig"><label>Supplier</label><input type="text" id="a14-nm-sup" placeholder="Ready-Mix Co."></div>
+                        <div class="a14-ig"><label>Notes</label><input type="text" id="a14-nm-notes" placeholder="Optional"></div>
+                    </div>
+                    <div class="a14-br"><button class="a14-btn a14-btn-p" onclick="a14SaveMix()">SAVE MIX</button><button class="a14-btn a14-btn-d" onclick="a14ToggleNM()">CANCEL</button></div>
+                </div>
+                <div class="a14-br">
+                    <button class="a14-btn a14-btn-p" onclick="a14AddResult()">+ ADD RESULT</button>
+                    <button class="a14-btn a14-btn-a" onclick="a14LoadSample()">LOAD SAMPLE (30)</button>
+                    <button class="a14-btn a14-btn-d" onclick="a14ClearAll()">CLEAR ALL</button>
+                    <button class="a14-btn a14-btn-p" onclick="a14ExportCSV()" style="margin-left:auto">&#8595; EXPORT CSV</button>
+                </div>
+            </div>
+            <div class="a14-card">
+                <div class="a14-ct">Mix Design Register</div>
+                <div class="a14-tw"><table><thead><tr>
+                    <th style="text-align:left">Mix Code</th><th>f'c (psi)</th><th>w/c</th><th>Cement</th><th>Water</th><th>C.Agg</th><th>F.Agg</th><th>Admixtures</th><th>Supplier</th><th>Samples</th><th>Avg (psi)</th><th>Del</th>
+                </tr></thead><tbody id="a14-mix-body"><tr><td colspan="12" style="text-align:center;color:var(--a14-muted);padding:1.5rem">No mix designs.</td></tr></tbody></table></div>
+            </div>
+            <div class="a14-card">
+                <div class="a14-ct">Test Results Register</div>
+                <div class="a14-tw"><table><thead><tr>
+                    <th style="text-align:left">N&#176;</th><th style="text-align:left">Date</th><th style="text-align:left">Lot</th>
+                    <th>Mix Code</th><th>Age</th><th>fc1</th><th>fc2</th><th>Avg (psi)</th><th>f'c (psi)</th>
+                    <th>Diff</th><th>%</th><th>MA-5</th><th>Mov.Rng</th><th>Cum.Mean</th><th>Cum.SD</th><th>Del</th>
+                </tr></thead><tbody id="a14-res-body"><tr><td colspan="16" style="text-align:center;color:var(--a14-muted);padding:2rem">No data. Add results or load sample.</td></tr></tbody></table></div>
+            </div>
+        </div>
+
+        <!-- STATISTICS -->
+        <div class="a14-tc" id="a14-tab-stats">
+            <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem">
+                <span style="font-family:monospace;font-size:.7rem;color:var(--a14-muted);text-transform:uppercase;letter-spacing:1px">Filter Mix:</span>
+                <select id="a14-sf" onchange="a14UpdStats()" style="background:#fff;border:1px solid #cbd5e1;border-radius:4px;color:#1e293b;font-family:monospace;font-size:.78rem;padding:.36rem .7rem;outline:none"><option value="ALL">ALL MIXES</option></select>
+            </div>
+            <div class="a14-sg">
+                <div class="a14-sb bl"><div class="a14-sl">Samples (n)</div><div class="a14-sv" id="a14-st-n">&#8212;</div><div class="a14-su">COUNT</div></div>
+                <div class="a14-sb cy"><div class="a14-sl">Mean (x&#772;)</div><div class="a14-sv" id="a14-st-mean">&#8212;</div><div class="a14-su">psi</div></div>
+                <div class="a14-sb re"><div class="a14-sl">Std Dev (s)</div><div class="a14-sv" id="a14-st-s">&#8212;</div><div class="a14-su">psi</div></div>
+                <div class="a14-sb am"><div class="a14-sl">Coef. Var. (V)</div><div class="a14-sv" id="a14-st-v">&#8212;</div><div class="a14-su">%</div></div>
+                <div class="a14-sb gr"><div class="a14-sl">f'c Design</div><div class="a14-sv" id="a14-st-fcd">&#8212;</div><div class="a14-su">psi</div></div>
+                <div class="a14-sb pu"><div class="a14-sl">MA-5</div><div class="a14-sv" id="a14-st-ma">&#8212;</div><div class="a14-su">psi</div></div>
+                <div class="a14-sb bl"><div class="a14-sl">Mean MR&#772;</div><div class="a14-sv" id="a14-st-mr">&#8212;</div><div class="a14-su">psi</div></div>
+                <div class="a14-sb cy"><div class="a14-sl">Minimum</div><div class="a14-sv" id="a14-st-min">&#8212;</div><div class="a14-su">psi</div></div>
+                <div class="a14-sb am"><div class="a14-sl">Maximum</div><div class="a14-sv" id="a14-st-max">&#8212;</div><div class="a14-su">psi</div></div>
+                <div class="a14-sb gr"><div class="a14-sl">Range (R)</div><div class="a14-sv" id="a14-st-range">&#8212;</div><div class="a14-su">psi</div></div>
+                <div class="a14-sb pu"><div class="a14-sl">% over f'c</div><div class="a14-sv" id="a14-st-pct">&#8212;</div><div class="a14-su">%</div></div>
+                <div class="a14-sb re"><div class="a14-sl">f'cr Required</div><div class="a14-sv" id="a14-st-fcr">&#8212;</div><div class="a14-su">psi</div></div>
+            </div>
+            <div class="a14-card">
+                <div class="a14-ct">ACI 214R Classification</div>
+                <div style="margin-bottom:1rem" id="a14-cls-badge"><span class="a14-cbadge a14-bgo">&#8212;</span></div>
+                <div class="a14-tw"><table><thead><tr><th>Category</th><th>V (%)</th><th>Description</th><th>Status</th></tr></thead><tbody>
+                    <tr><td style="color:var(--a14-green);font-weight:700">Excellent</td><td>&lt;10%</td><td style="text-align:left">Best control</td><td><span class="a14-chip" id="a14-sc-exc">&#8212;</span></td></tr>
+                    <tr><td style="color:#0284c7;font-weight:700">Very Good</td><td>10&#8211;15%</td><td style="text-align:left">Good control</td><td><span class="a14-chip" id="a14-sc-vg">&#8212;</span></td></tr>
+                    <tr><td style="color:#60A5FA;font-weight:700">Good</td><td>15&#8211;20%</td><td style="text-align:left">Acceptable</td><td><span class="a14-chip" id="a14-sc-good">&#8212;</span></td></tr>
+                    <tr><td style="color:var(--a14-amber);font-weight:700">Fair</td><td>20&#8211;25%</td><td style="text-align:left">Poor control</td><td><span class="a14-chip" id="a14-sc-fair">&#8212;</span></td></tr>
+                    <tr><td style="color:var(--a14-red);font-weight:700">Poor</td><td>&gt;25%</td><td style="text-align:left">Immediate action</td><td><span class="a14-chip" id="a14-sc-poor">&#8212;</span></td></tr>
+                </tbody></table></div>
+            </div>
+            <div class="a14-card">
+                <div class="a14-ct">Statistical Parameters</div>
+                <div class="a14-tw"><table><thead><tr><th style="text-align:left">Parameter</th><th style="text-align:left">Formula</th><th>Value</th><th>Unit</th><th>Ref.</th></tr></thead><tbody id="a14-params-body"></tbody></table></div>
+            </div>
+        </div>
+
+        <!-- CRITERIA -->
+        <div class="a14-tc" id="a14-tab-criteria">
+            <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem">
+                <span style="font-family:monospace;font-size:.7rem;color:var(--a14-muted);text-transform:uppercase;letter-spacing:1px">Filter Mix:</span>
+                <select id="a14-cf" onchange="a14UpdCrit()" style="background:#fff;border:1px solid #cbd5e1;border-radius:4px;color:#1e293b;font-family:monospace;font-size:.78rem;padding:.36rem .7rem;outline:none"><option value="ALL">ALL MIXES</option></select>
+            </div>
+            <div class="a14-card">
+                <div class="a14-ct">Acceptance Criteria &#8212; ACI 318-19 &sect;26.12 / ACI 214R &sect;6</div>
+                <div class="a14-cg">
+                    <div class="a14-cr" style="background:#2563eb;font-family:monospace;font-size:.63rem;letter-spacing:1px;color:#fff;text-transform:uppercase"><span>Criterion</span><span>Description</span><span style="text-align:center">Limit</span><span style="text-align:center">Value</span><span style="text-align:center">Status</span></div>
+                    <div id="a14-crit-rows"></div>
+                </div>
+            </div>
+            <div class="a14-card">
+                <div class="a14-ct">f'cr Calculation &#8212; ACI 318-19 &sect;26.4.3</div>
+                <div class="a14-fe">
+                    <div class="a14-fq"><div class="a14-ql">Eq. 26.4.3.1(a)</div><div class="a14-qf">f'cr = f'c + 1.34&middot;s</div><div class="a14-qr" id="a14-fcr-a">&#8212;</div></div>
+                    <div class="a14-fq"><div class="a14-ql">Eq. 26.4.3.1(b) [f'c &le; 5,000 psi]</div><div class="a14-qf">f'cr = f'c + 2.33&middot;s &minus; 500</div><div class="a14-qr" id="a14-fcr-b">&#8212;</div></div>
+                </div>
+                <div class="a14-fq" style="margin-top:1rem;border-color:var(--a14-amber)"><div class="a14-ql">f'cr Required (max of both)</div><div class="a14-qf">f'cr = max(Eq.a, Eq.b)</div><div class="a14-qr" id="a14-fcr-req">&#8212;</div></div>
+            </div>
+        </div>
+
+        <!-- CHARTS -->
+        <div class="a14-tc" id="a14-tab-charts">
+            <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem">
+                <span style="font-family:monospace;font-size:.7rem;color:var(--a14-muted);text-transform:uppercase;letter-spacing:1px">Filter Mix:</span>
+                <select id="a14-chf" onchange="a14RenderCharts()" style="background:#fff;border:1px solid #cbd5e1;border-radius:4px;color:#1e293b;font-family:monospace;font-size:.78rem;padding:.36rem .7rem;outline:none"><option value="ALL">ALL MIXES</option></select>
+            </div>
+            <div class="a14-card"><div class="a14-ct">X&#772; Control Chart</div><div class="a14-cw" style="height:280px"><canvas id="a14-ch-xbar"></canvas></div></div>
+            <div class="a14-card"><div class="a14-ct">Moving Range Chart (MR)</div><div class="a14-cw" style="height:220px"><canvas id="a14-ch-mr"></canvas></div></div>
+            <div class="a14-card"><div class="a14-ct">Cumulative Mean &amp; Std Dev</div><div class="a14-cw" style="height:220px"><canvas id="a14-ch-trend"></canvas></div></div>
+        </div>
+
+        <!-- SUMMARY -->
+        <div class="a14-tc" id="a14-tab-summary">
+            <div class="a14-card"><div class="a14-ct">Executive Summary</div><div id="a14-sum-content" style="color:var(--a14-muted);padding:.85rem;font-family:monospace">No data loaded.</div></div>
+        </div>
+
+        <!-- REPORT -->
+        <div class="a14-tc" id="a14-tab-report">
+            <div class="a14-rc">
+                <div class="a14-card" style="margin-bottom:0">
+                    <div class="a14-ct">1 &middot; Select Mix(es)</div>
+                    <div class="a14-rml" id="a14-rpt-mix-list"><div style="color:var(--a14-muted);font-family:monospace;font-size:.75rem;padding:.5rem">No mix designs found.</div></div>
+                    <div style="margin-top:.65rem;display:flex;gap:.5rem">
+                        <button class="a14-btn a14-btn-a" style="font-size:.7rem;padding:.32rem .7rem" onclick="a14RptAll()">ALL</button>
+                        <button class="a14-btn a14-btn-d" style="font-size:.7rem;padding:.32rem .7rem" onclick="a14RptNone()">NONE</button>
+                    </div>
+                </div>
+                <div class="a14-card" style="margin-bottom:0">
+                    <div class="a14-ct">2 &middot; Report Sections</div>
+                    <div class="a14-ro">
+                        <label class="a14-ror"><input type="checkbox" id="a14-rpt-mixinfo" checked>Mix Design Info</label>
+                        <label class="a14-ror"><input type="checkbox" id="a14-rpt-summary" checked>Summary Statistics</label>
+                        <label class="a14-ror"><input type="checkbox" id="a14-rpt-criteria" checked>ACI Acceptance Criteria</label>
+                        <label class="a14-ror"><input type="checkbox" id="a14-rpt-table" checked>Data Table</label>
+                        <label class="a14-ror"><input type="checkbox" id="a14-rpt-xbar" checked>X&#772; Control Chart</label>
+                        <label class="a14-ror"><input type="checkbox" id="a14-rpt-mr" checked>Moving Range Chart</label>
+                        <label class="a14-ror"><input type="checkbox" id="a14-rpt-trend">Cumulative Trend Chart</label>
+                    </div>
+                </div>
+                <div class="a14-card" style="margin-bottom:0">
+                    <div class="a14-ct">3 &middot; Project Info</div>
+                    <div class="a14-pf2">
+                        <div class="a14-pfi"><label>Project Name</label><input type="text" id="a14-rp-name" placeholder="Project XYZ"></div>
+                        <div class="a14-pfi"><label>Project No.</label><input type="text" id="a14-rp-no" placeholder="2025-001"></div>
+                        <div class="a14-pfi"><label>Engineer / Inspector</label><input type="text" id="a14-rp-eng" placeholder="J. Smith, P.E."></div>
+                        <div class="a14-pfi"><label>Contractor</label><input type="text" id="a14-rp-cont" placeholder="ABC Construction"></div>
+                        <div class="a14-pfi"><label>Report Date</label><input type="date" id="a14-rp-date"></div>
+                        <div class="a14-pfi"><label>Specification</label><input type="text" id="a14-rp-spec" placeholder="ACI 318-19, IBC 2021"></div>
+                    </div>
+                    <div style="margin-top:.9rem;display:flex;flex-direction:column;gap:.45rem">
+                        <button class="a14-btn a14-btn-p" onclick="a14OpenReport()" style="width:100%">&#128424; OPEN PRINT REPORT</button>
+                        <button class="a14-btn a14-btn-g" onclick="a14PreviewReport()" style="width:100%;font-size:.75rem;padding:.44rem">&#128065; PREVIEW</button>
+                    </div>
+                </div>
+            </div>
+            <div id="a14-rpt-preview" style="display:none">
+                <div class="a14-card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+                        <div class="a14-ct" style="margin-bottom:0">Report Preview</div>
+                        <button class="a14-btn a14-btn-d" style="font-size:.7rem;padding:.3rem .75rem" onclick="document.getElementById('a14-rpt-preview').style.display='none'">&#10005; CLOSE</button>
+                    </div>
+                    <div id="a14-rpt-preview-inner" style="background:#fff;border-radius:6px;padding:1.25rem;color:#000"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- REFERENCE -->
+        <div class="a14-tc" id="a14-tab-ref">
+            <div class="a14-card">
+                <div class="a14-ct">ACI 214R-11 Quick Reference &#8212; Imperial Units (psi)</div>
+                <div class="a14-tw"><table><thead><tr><th style="text-align:left">Term</th><th style="text-align:left">Definition</th><th style="text-align:left">Formula / Limit</th><th style="text-align:left">Reference</th></tr></thead>
+                <tbody>
+                    <tr><td><b>x&#772;</b></td><td>Arithmetic mean</td><td>x&#772; = &Sigma;xi / n</td><td>ACI 214R Eq. 4-1</td></tr>
+                    <tr><td><b>s</b></td><td>Sample standard deviation</td><td>s = &radic;[&Sigma;(xi&#8722;x&#772;)&sup2;/(n&#8722;1)]</td><td>ACI 214R Eq. 4-2</td></tr>
+                    <tr><td><b>V</b></td><td>Coefficient of Variation</td><td>V = s / x&#772; &times; 100 (%)</td><td>ACI 214R Eq. 4-3</td></tr>
+                    <tr><td><b>MA-5</b></td><td>Moving average last 5</td><td>(xi+xi&#8209;1+xi&#8209;2+xi&#8209;3+xi&#8209;4)/5</td><td>ACI 214R &sect;5.3</td></tr>
+                    <tr><td><b>MR</b></td><td>Moving range consecutive</td><td>MRi = |xi &#8722; xi&#8209;1|</td><td>ACI 214R &sect;5.3</td></tr>
+                    <tr><td><b>UCL / LCL</b></td><td>Control limits (x&#772; chart)</td><td>x&#772; &plusmn; 3s</td><td>ACI 214R &sect;5.3</td></tr>
+                    <tr><td><b>UCL_MR</b></td><td>MR upper control limit (n=2)</td><td>3.267 &times; MR&#772;</td><td>ACI 214R &sect;5.3</td></tr>
+                    <tr><td><b>f'cr</b></td><td>Required avg compressive strength</td><td>max(f'c+1.34s, f'c+2.33s&#8722;500)</td><td>ACI 318 &sect;26.4.3</td></tr>
+                    <tr><td><b>Criterion 1</b></td><td>Avg of 3 consecutive &ge; f'c</td><td>x&#772;(3) &ge; f'c</td><td>ACI 318 &sect;26.12.3.1(a)</td></tr>
+                    <tr><td><b>Criterion 2</b></td><td>No result &lt; f'c&#8722;500 (f'c &le; 5,000)</td><td>min &ge; f'c&#8722;500</td><td>ACI 318 &sect;26.12.3.1(b)</td></tr>
+                    <tr><td><b>Criterion 3</b></td><td>No result &lt; 0.90f'c (f'c &gt; 5,000)</td><td>min &ge; 0.90f'c</td><td>ACI 318 &sect;26.12.3.1(b)</td></tr>
+                </tbody></table></div>
+            </div>
+        </div>
+
+        </div><!-- end a14-main -->
+    </div><!-- end tab-aci214 -->
 
 <script>
 /* ============================================================
@@ -14778,6 +15473,532 @@ document.querySelectorAll('.tab').forEach(t=>{
         }
     });
 });
+</script>
+
+<script>
+/* ============================================================
+   ACI 214R MODULE — Namespaced to avoid conflicts
+   ============================================================ */
+(function(){
+// ── STATE ──
+let a214R=[], a214MX={};
+let a214cXbar=null, a214cMR=null, a214cTrend=null;
+const A214_COLORS=['#06B6D4','#F59E0B','#10B981','#8B5CF6','#EF4444','#60A5FA','#F87171','#34D399','#FBBF24','#A78BFA'];
+const a214mxColor=k=>{const ks=Object.keys(a214MX);const i=ks.indexOf(k);return A214_COLORS[i%A214_COLORS.length]||'#64748B';};
+const a214fmt=(v,d=0)=>v==null?'&#8212;':(+v).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const a214fmtP=(v,d=0)=>v==null?'—':(+v).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const ag=id=>document.getElementById(id);
+const av=id=>ag(id)?ag(id).value:'';
+
+// ── INIT ──
+function a214Init(){
+    const dp=ag('a214-date-pill');
+    if(dp) dp.textContent=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}).toUpperCase();
+    const inDate=ag('a214-in-date'); if(inDate) inDate.value=new Date().toISOString().slice(0,10);
+    const rpDate=ag('a214-rp-date'); if(rpDate) rpDate.value=new Date().toISOString().slice(0,10);
+    // Load persisted data
+    try{const saved=localStorage.getItem('aci214_data');if(saved){const d=JSON.parse(saved);a214R=d.R||[];a214MX=d.MX||{};}}catch(e){}
+    // Cargar Trial Mixes desde IndexedDB y luego inicializar UI
+    a214CargarTrialMixes().then(()=>{
+        a214RefreshSelects(); a214RenderResTbl(); a214RenderMixTbl(); a214UpdAll();
+    }).catch(()=>{
+        a214RefreshSelects(); a214RenderResTbl(); a214RenderMixTbl(); a214UpdAll();
+    });
+}
+
+function a214Save(){
+    try{localStorage.setItem('aci214_data',JSON.stringify({R:a214R,MX:a214MX}));}catch(e){}
+}
+
+// ── INNER TABS ──
+document.querySelectorAll('[data-a214tab]').forEach(btn=>{
+    btn.onclick=()=>{
+        document.querySelectorAll('[data-a214tab]').forEach(b=>b.classList.remove('active'));
+        document.querySelectorAll('#tab-aci214 .a214-tc').forEach(c=>c.classList.remove('active'));
+        btn.classList.add('active');
+        const tc=ag('a214-tab-'+btn.dataset.a214tab);
+        if(tc) tc.classList.add('active');
+        if(btn.dataset.a214tab==='charts') a214RenderCharts();
+        if(btn.dataset.a214tab==='stats') a214UpdStats();
+        if(btn.dataset.a214tab==='criteria') a214UpdCrit();
+        if(btn.dataset.a214tab==='summary') a214UpdSum();
+        if(btn.dataset.a214tab==='report') a214BuildRptList();
+    };
+});
+
+// ── COMPUTED ──
+const a214fR=mix=>(!mix||mix==='ALL')?a214R:a214R.filter(r=>r.mix===mix);
+const a214avgs=rs=>(rs||a214R).map(r=>(r.fc1+r.fc2)/2);
+const a214ma5=av=>av.map((_,i)=>i<4?null:av.slice(i-4,i+1).reduce((a,b)=>a+b,0)/5);
+const a214movR=av=>av.map((v,i)=>i===0?null:Math.abs(v-av[i-1]));
+const a214cumMean=av=>av.map((_,i)=>av.slice(0,i+1).reduce((a,b)=>a+b,0)/(i+1));
+const a214cumSD=av=>av.map((_,i)=>{if(i===0)return null;const s=av.slice(0,i+1),m=s.reduce((a,b)=>a+b,0)/s.length;return Math.sqrt(s.reduce((a,b)=>a+(b-m)**2,0)/i);});
+
+function a214CalcStats(rs){
+    const a=a214avgs(rs);if(!a.length)return null;
+    const n=a.length,mean=a.reduce((x,y)=>x+y,0)/n;
+    const s=n>1?Math.sqrt(a.reduce((x,y)=>x+(y-mean)**2,0)/(n-1)):0;
+    const V=mean>0?s/mean*100:0,min=Math.min(...a),max=Math.max(...a);
+    const mr=a214movR(a).filter(v=>v!=null);
+    const mrM=mr.length?mr.reduce((x,y)=>x+y,0)/mr.length:0;
+    const fcd=rs[rs.length-1].fcd;
+    const fa=fcd+1.34*s,fb=fcd+2.33*s-500,fcr=Math.max(fa,fb);
+    const lma=a214ma5(a).filter(v=>v!=null);
+    return{n,mean,s,V,min,max,fcd,mrM,fa,fb,fcr,ma5v:lma.length?lma[lma.length-1]:null,ucl:mean+3*s,lcl:mean-3*s,uclMR:3.267*mrM};
+}
+
+// ── MIX DESIGNS ──
+// ── TRIAL MIXES → ACI 214 INTEGRATION ──
+// Cache de trial mixes cargados desde IndexedDB
+let a214TrialCache = [];  // array de trials con datos del mix design base
+let a214MixCache  = {};   // key: mixDesignId(string) → datos únicos del mix design con sus trials
+
+window.a214CargarTrialMixes = async function(){
+    try {
+        const trials = await getAllRecords('trials');
+        const mixes  = await getAllRecords('mixdesigns');
+        a214TrialCache = [];
+        a214MixCache   = {};
+
+        trials.forEach(t => {
+            const mix = mixes.find(m => m.id === t.mixDesignId);
+            if (!mix) return;
+
+            const pesoC = parseFloat(mix.pesoCemento) || 0;
+            const pesoW = parseFloat(mix.pesoAgua)    || 0;
+            const wc    = (pesoC > 0 && pesoW > 0) ? (pesoW / pesoC).toFixed(3) : '—';
+            const scm1  = parseFloat(mix.pesoSCM1) || 0;
+            const scm2  = parseFloat(mix.pesoSCM2) || 0;
+            const scm3  = parseFloat(mix.pesoSCM3) || 0;
+            const totalC = pesoC + scm1 + scm2 + scm3;
+            const ca    = (parseFloat(mix.pesoGrueso) || 0) + (parseFloat(mix.pesoIntermedio) || 0);
+            const r     = mix.resultados || {};
+            const faVal = r.arena1 ? (parseFloat(r.arena1.peso)||0) + (r.arena2 ? parseFloat(r.arena2.peso)||0 : 0) : 0;
+            const adm   = [mix.nombreAditivo1, mix.nombreAditivo2, mix.nombreAditivo3].filter(a=>a&&a.trim()).join(', ') || '—';
+            const fcd   = parseFloat(mix.resistencia) || 0;
+            const mixIdStr = mix.mixId || ('MIX-' + String(mix.id).padStart(4,'0'));
+            const displayName = mix.nombre || mixIdStr;
+
+            const trialData = {
+                trialId: t.trialId, trialDbId: t.id,
+                mixDesignId: mix.id, mixDesignNombre: displayName, mixIdStr, fcd, wc,
+                cement: totalC > 0 ? totalC.toFixed(1) : '—',
+                water:  pesoW > 0 ? pesoW.toFixed(1) : '—',
+                ca:     ca > 0 ? ca.toFixed(1) : '—',
+                fa:     faVal > 0 ? faVal.toFixed(1) : '—',
+                adm, tipoCemento: mix.tipoCemento||'—', aplicacion: mix.aplicacion||'—',
+                fecha: t.fecha||'', slump: t.slump||'—',
+                cilindros: t.cilindros||[], tecnico: t.tecnico||'—',
+            };
+            a214TrialCache.push(trialData);
+
+            // Agrupar por mixDesignId — UNA entrada por Mix Design
+            const key = String(mix.id);
+            if (!a214MixCache[key]) {
+                a214MixCache[key] = {
+                    mixDesignId: mix.id, mixDesignNombre: displayName, mixIdStr, fcd, wc,
+                    cement: trialData.cement, water: trialData.water,
+                    ca: trialData.ca, fa: trialData.fa, adm,
+                    tipoCemento: mix.tipoCemento||'—', aplicacion: mix.aplicacion||'—',
+                    trials: [],
+                };
+            }
+            a214MixCache[key].trials.push(trialData);
+        });
+
+        a214RefreshSelects();
+        const cnt = Object.keys(a214MixCache).length;
+        const msg = document.createElement('div');
+        msg.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#2563eb;color:#fff;padding:8px 16px;border-radius:6px;font-family:monospace;font-size:.75rem;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.2)';
+        msg.textContent = cnt > 0 ? `\u2713 ${cnt} Mix Design${cnt>1?'s':''} cargado${cnt>1?'s':''}` : '\u26a0\ufe0f No hay Trial Mixes registrados';
+        document.body.appendChild(msg);
+        setTimeout(()=>msg.remove(), 2500);
+    } catch(e) {
+        console.warn('a214CargarTrialMixes:', e);
+    }
+};
+
+// Al seleccionar un Mix Design en el selector
+window.a214AutoFcd = function(){
+    const key       = av('a214-in-mix');  // mixDesignId como string (o nombre de mix manual)
+    const infoPanel = ag('a214-trial-info');
+    const infoGrid  = ag('a214-trial-info-grid');
+    const badge     = ag('a214-mix-badge');
+
+    if(!key){
+        if(infoPanel) infoPanel.style.display = 'none';
+        if(badge)     badge.style.display = 'none';
+        return;
+    }
+
+    const mx = a214MixCache[key];
+    if(mx){
+        // Registrar en a214MX con el nombre del Mix Design como clave (para estadísticas y filtros)
+        a214MX[mx.mixDesignNombre] = {
+            fcd: mx.fcd, wc: mx.wc, cement: mx.cement, water: mx.water,
+            ca: mx.ca, fa: mx.fa, adm: mx.adm,
+            supplier: mx.tipoCemento,
+            notes: mx.mixDesignNombre + (mx.aplicacion !== '—' ? ' \u00b7 ' + mx.aplicacion : ''),
+            fromTrial: true, mixDesignId: mx.mixDesignId,
+        };
+        // f'c Design
+        const el = ag('a214-in-fcd');
+        if(el && mx.fcd > 0) el.value = mx.fcd;
+        // Badge resumen
+        if(badge){
+            badge.style.display = 'block';
+            badge.innerHTML = `<b>${mx.mixDesignNombre}</b> &nbsp;&middot;&nbsp; f'c = <b>${mx.fcd} psi</b> &nbsp;&middot;&nbsp; ${mx.trials.length} trial${mx.trials.length>1?'s':''}`;
+        }
+        // Panel detallado
+        if(infoPanel && infoGrid){
+            const trialList = mx.trials.map(t=>`<span style="background:#dbeafe;color:#1e40af;padding:.1rem .4rem;border-radius:3px;margin-right:.3rem;font-family:monospace;font-size:.68rem">${t.trialId}</span>`).join('');
+            const campos = [
+                ["Mix Design",   mx.mixDesignNombre],
+                ["Mix ID",       mx.mixIdStr],
+                ["f'c Design",   mx.fcd > 0 ? mx.fcd + ' psi' : '—'],
+                ["w/c",          mx.wc],
+                ["Cemento",      mx.cement + ' lb/yd\u00b3'],
+                ["Agua",         mx.water  + ' lb/yd\u00b3'],
+                ["Ag. Grueso",   mx.ca     + ' lb/yd\u00b3'],
+                ["Ag. Fino",     mx.fa     + ' lb/yd\u00b3'],
+                ["Aditivos",     mx.adm],
+                ["Tipo Cemento", mx.tipoCemento],
+                ["Aplicaci\u00f3n",   mx.aplicacion],
+                ["Trials",       mx.trials.length + ' registrado' + (mx.trials.length>1?'s':'')],
+            ];
+            infoGrid.innerHTML = campos.map(([l,v])=>
+                `<div style="background:#fff;border:1px solid #bfdbfe;border-radius:4px;padding:.3rem .5rem">
+                    <div style="font-size:.58rem;color:#64748b;text-transform:uppercase;letter-spacing:.5px">${l}</div>
+                    <div style="font-size:.72rem;font-weight:600;color:#1e293b;font-family:monospace">${v}</div>
+                </div>`
+            ).join('') + `<div style="grid-column:1/-1;background:#fff;border:1px solid #bfdbfe;border-radius:4px;padding:.3rem .5rem">
+                <div style="font-size:.58rem;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.25rem">Trial IDs asociados</div>
+                <div>${trialList}</div>
+            </div>`;
+            infoPanel.style.display = 'block';
+        }
+    } else if(a214MX[key]){
+        // Mix manual
+        const el = ag('a214-in-fcd');
+        if(el) el.value = a214MX[key].fcd;
+        if(infoPanel) infoPanel.style.display = 'none';
+        if(badge){ badge.style.display='block'; badge.innerHTML=`<b>${key}</b> &nbsp;&middot;&nbsp; f'c = <b>${a214MX[key].fcd} psi</b>`; }
+    }
+};
+
+window.a214ToggleNM=function(){};
+window.a214SaveMix=function(){};
+window.a214DeleteMix=function(k){if(!confirm('Delete mix "'+k+'"?'))return;delete a214MX[k];a214RefreshSelects();a214RenderMixTbl();a214Save();};
+
+function a214RefreshSelects(){
+    // ── Selects de FILTRO (Stats, Criteria, Charts) — muestran nombre del Mix Design ──
+    ['a214-sf','a214-cf','a214-chf'].forEach(id=>{
+        const el=ag(id); if(!el)return;
+        const cv=el.value;
+        el.innerHTML='<option value="ALL">ALL MIXES</option>';
+        Object.values(a214MixCache).forEach(mx=>{
+            const o=document.createElement('option');
+            o.value=mx.mixDesignNombre;
+            o.textContent=mx.mixDesignNombre + (mx.fcd>0?' — '+mx.fcd+' psi':'');
+            el.appendChild(o);
+        });
+        Object.keys(a214MX).filter(k=>!a214MX[k].fromTrial).forEach(k=>{
+            const o=document.createElement('option');o.value=k;o.textContent=k;el.appendChild(o);
+        });
+        if(cv) el.value=cv;
+    });
+
+    // ── Selector DATA ENTRY — muestra Mix Design, una opción por mix único ──
+    const sel = ag('a214-in-mix');
+    if(!sel) return;
+    const cv = sel.value;
+    sel.innerHTML = '<option value="">— Seleccionar Mix Design —</option>';
+
+    Object.values(a214MixCache).forEach(mx=>{
+        const o = document.createElement('option');
+        o.value = String(mx.mixDesignId);   // value = ID del mix design
+        o.textContent = mx.mixDesignNombre
+            + (mx.fcd > 0 ? '  —  f\'c ' + mx.fcd + ' psi' : '')
+            + '  (' + mx.trials.length + ' trial' + (mx.trials.length>1?'s':'') + ')';
+        sel.appendChild(o);
+    });
+
+    // Mixes manuales
+    const manuales = Object.keys(a214MX).filter(k=>!a214MX[k].fromTrial);
+    if(manuales.length > 0){
+        const og = document.createElement('optgroup');
+        og.label = '\u270f\ufe0f Mixes Manuales';
+        manuales.forEach(k=>{
+            const o=document.createElement('option');
+            o.value=k; o.textContent=k; og.appendChild(o);
+        });
+        sel.appendChild(og);
+    }
+
+    if(cv) sel.value=cv;
+}
+
+
+function a214RenderMixTbl(){
+    const tb=ag('a214-mix-body');const ks=Object.keys(a214MX);
+    if(!ks.length){tb.innerHTML='<tr><td colspan="12" style="text-align:center;color:var(--muted214);padding:1.5rem">No mix designs.</td></tr>';return;}
+    tb.innerHTML=ks.map(k=>{
+        const m=a214MX[k],smp=a214R.filter(r=>r.mix===k),a=smp.length?smp.reduce((s,r)=>s+(r.fc1+r.fc2)/2,0)/smp.length:null;
+        const c=a214mxColor(k);
+        return`<tr><td><span class="a214-mix-tag" style="background:${c}22;color:${c};border:1px solid ${c}44">${k}</span></td>
+        <td>${a214fmt(m.fcd)}</td><td>${m.wc}</td><td>${m.cement}</td><td>${m.water}</td><td>${m.ca}</td><td>${m.fa}</td><td>${m.adm}</td><td>${m.supplier}</td>
+        <td>${smp.length}</td><td>${a!=null?a214fmt(a,0):'&#8212;'}</td>
+        <td><button onclick="a214DeleteMix('${k}')" style="background:rgba(239,68,68,.15);border:1px solid #EF4444;color:#EF4444;border-radius:4px;padding:.15rem .45rem;cursor:pointer;font-size:.65rem">&#10005;</button></td></tr>`;
+    }).join('');
+}
+
+// ── RESULTS TABLE ──
+function a214RenderResTbl(){
+    const tb=ag('a214-res-body');
+    const cp=ag('a214-count-pill');if(cp)cp.textContent=a214R.length+' SAMPLES';
+    if(!a214R.length){tb.innerHTML='<tr><td colspan="16" style="text-align:center;color:var(--muted214);padding:2rem">No data.</td></tr>';return;}
+    const avs=a214avgs(),ma=a214ma5(avs),mr=a214movR(avs),cm=a214cumMean(avs),cs=a214cumSD(avs);
+    tb.innerHTML=a214R.map((r,i)=>{
+        const a=avs[i],d=a-r.fcd,p=(a/r.fcd-1)*100,c=r.mix&&r.mix!=='—'?a214mxColor(r.mix):'#64748B';
+        return`<tr><td>${i+1}</td><td>${r.date||'&#8212;'}</td><td>${r.lot}</td>
+        <td><span class="a214-mix-tag" style="background:${c}22;color:${c};border:1px solid ${c}44">${r.mix||'&#8212;'}</span></td>
+        <td>${r.age}</td><td style="color:#60A5FA">${a214fmtP(r.fc1)}</td><td style="color:#60A5FA">${a214fmtP(r.fc2)}</td>
+        <td style="font-weight:700;color:#06B6D4">${a214fmtP(a)}</td><td>${a214fmtP(r.fcd)}</td>
+        <td class="${d>=0?'pass214':'fail214'}">${d>=0?'+':''}${a214fmtP(d)}</td>
+        <td class="${p>=0?'pass214':'fail214'}">${p>=0?'+':''}${a214fmtP(p,1)}%</td>
+        <td class="mac214">${ma[i]!=null?a214fmtP(ma[i]):'&#8212;'}</td>
+        <td class="mrc214">${mr[i]!=null?a214fmtP(mr[i]):'&#8212;'}</td>
+        <td class="avc214">${a214fmtP(cm[i])}</td>
+        <td class="sdc214">${cs[i]!=null?a214fmtP(cs[i]):'&#8212;'}</td>
+        <td><button onclick="a214DelRow(${i})" style="background:rgba(239,68,68,.15);border:1px solid #EF4444;color:#EF4444;border-radius:4px;padding:.15rem .45rem;cursor:pointer;font-size:.65rem">&#10005;</button></td></tr>`;
+    }).join('');
+}
+
+window.a214AddResult=function(){
+    const fc1=parseFloat(ag('a214-in-fc1').value),fc2=parseFloat(ag('a214-in-fc2').value);
+    if(isNaN(fc1)||isNaN(fc2)){alert('Enter both cylinder values.');return;}
+    const key=av('a214-in-mix');  // mixDesignId (string) o nombre de mix manual
+    // Resolver nombre del Mix Design y fcd
+    const mxObj  = a214MixCache[key];
+    const mixName = mxObj ? mxObj.mixDesignNombre : (a214MX[key] ? key : key||'—');
+    const fcd     = mxObj && mxObj.fcd > 0 ? mxObj.fcd
+                  : (a214MX[key] ? a214MX[key].fcd
+                  : parseFloat(ag('a214-in-fcd').value)||4000);
+    // Guardar el resultado con mixName como clave (consistente con los filtros)
+    a214R.push({date:av('a214-in-date'),lot:ag('a214-in-lot').value||'—',loc:ag('a214-in-loc').value||'—',age:parseInt(ag('a214-in-age').value)||28,fc1,fc2,fcd,mix:mixName});
+    ag('a214-in-fc1').value='';ag('a214-in-fc2').value='';
+    a214RenderResTbl();a214RenderMixTbl();a214UpdAll();a214Save();
+};
+window.a214DelRow=function(i){a214R.splice(i,1);a214RenderResTbl();a214RenderMixTbl();a214UpdAll();a214Save();};
+window.a214ClearAll=function(){if(!a214R.length||confirm('Clear all data?')){a214R=[];a214RenderResTbl();a214RenderMixTbl();a214UpdAll();a214Save();}};
+
+// ── LOAD SAMPLE ──
+window.a214LoadSample=function(){
+    if(a214R.length&&!confirm('Replace current data with sample data?'))return;
+    a214MX={'MIX-4000-A':{fcd:4000,wc:'0.44',cement:'564',water:'248',ca:'1,825',fa:'1,340',adm:'WR Type A',supplier:'Ready-Mix Inc.',notes:'Standard mix'},
+            'MIX-4000-B':{fcd:4000,wc:'0.46',cement:'540',water:'248',ca:'1,850',fa:'1,310',adm:'None',supplier:'City Concrete',notes:'Alt supplier'},
+            'MIX-5000-A':{fcd:5000,wc:'0.38',cement:'640',water:'243',ca:'1,780',fa:'1,280',adm:'HRWR Type F',supplier:'Ready-Mix Inc.',notes:'High strength'}};
+    a214RefreshSelects();a214R=[];
+    const seed=[[4380,4250,'MIX-4000-A'],[4520,4480,'MIX-4000-A'],[4310,4390,'MIX-4000-B'],[4600,4550,'MIX-5000-A'],[4200,4180,'MIX-4000-A'],[4450,4430,'MIX-4000-B'],[4680,4620,'MIX-5000-A'],[4290,4310,'MIX-4000-A'],[4530,4470,'MIX-4000-B'],[4410,4380,'MIX-4000-A'],[4350,4320,'MIX-4000-A'],[4590,4610,'MIX-5000-A'],[4470,4490,'MIX-4000-B'],[4260,4240,'MIX-4000-A'],[4700,4680,'MIX-5000-A'],[4380,4400,'MIX-4000-A'],[4520,4540,'MIX-4000-B'],[4310,4290,'MIX-4000-A'],[4630,4570,'MIX-5000-A'],[4440,4460,'MIX-4000-A'],[4290,4270,'MIX-4000-B'],[4560,4580,'MIX-4000-A'],[4420,4380,'MIX-5000-A'],[4650,4670,'MIX-4000-A'],[4330,4310,'MIX-4000-B'],[4490,4510,'MIX-4000-A'],[4370,4350,'MIX-5000-A'],[4610,4590,'MIX-4000-A'],[4280,4300,'MIX-4000-B'],[4540,4560,'MIX-4000-A']];
+    const lots=['Column C1','Column C2','Beam B1','Slab S1','Wall W1','Column C3','Beam B2','Slab S2','Column C4','Footing F1'];
+    const locs=['Level 1','Level 2','Level 3','Level 4','Level 5'];
+    const base=new Date('2024-01-08');
+    seed.forEach(([f1,f2,mix],i)=>{const d=new Date(base);d.setDate(d.getDate()+i*7);a214R.push({date:d.toISOString().slice(0,10),lot:lots[i%10],loc:locs[Math.floor(i/5)%5],age:28,fc1:f1,fc2:f2,fcd:a214MX[mix].fcd,mix});});
+    a214RenderResTbl();a214RenderMixTbl();a214UpdAll();a214Save();
+};
+
+// ── EXPORT / IMPORT JSON ──
+window.a214ExportJSON=function(){
+    if(!a214R.length&&!Object.keys(a214MX).length){alert('No data to export.');return;}
+    const blob={version:'ACI214-v1',exportDate:new Date().toISOString(),mixDesigns:a214MX,results:a214R};
+    const a=document.createElement('a');
+    a.href='data:application/json,'+encodeURIComponent(JSON.stringify(blob,null,2));
+    a.download='ACI214_Database_'+new Date().toISOString().slice(0,10)+'.json';
+    a.click();
+};
+window.a214ImportJSON=function(){
+    const inp=document.createElement('input');inp.type='file';inp.accept='.json';
+    inp.onchange=e=>{
+        const f=e.target.files[0];if(!f)return;
+        const fr=new FileReader();
+        fr.onload=ev=>{
+            try{
+                const d=JSON.parse(ev.target.result);
+                if(!d.results||!d.mixDesigns){alert('Invalid file. Must be an ACI 214R JSON backup.');return;}
+                if((a214R.length||Object.keys(a214MX).length)&&!confirm('Replace current data with imported data ('+d.results.length+' samples, '+Object.keys(d.mixDesigns).length+' mixes)?'))return;
+                a214MX=d.mixDesigns;a214R=d.results;
+                a214RefreshSelects();a214RenderResTbl();a214RenderMixTbl();a214UpdAll();a214Save();
+                alert('Imported: '+a214R.length+' samples, '+Object.keys(a214MX).length+' mix designs.');
+            }catch(err){alert('Error: '+err.message);}
+        };
+        fr.readAsText(f);
+    };
+    inp.click();
+};
+
+// ── EXPORT CSV ──
+window.a214ExportCSV=function(){
+    if(!a214R.length){alert('No data.');return;}
+    const avs=a214avgs(),ma=a214ma5(avs),mr=a214movR(avs),cm=a214cumMean(avs),cs=a214cumSD(avs);
+    const h='N,Date,Lot,Location,Mix Code,Age(d),fc1(psi),fc2(psi),Avg(psi),fc(psi),Diff(psi),%fc,MA-5(psi),MR(psi),CumMean(psi),CumSD(psi)';
+    const rows=a214R.map((r,i)=>[i+1,r.date,r.lot,r.loc,r.mix||'—',r.age,r.fc1,r.fc2,avs[i].toFixed(0),r.fcd,(avs[i]-r.fcd).toFixed(0),((avs[i]/r.fcd-1)*100).toFixed(2),ma[i]!=null?ma[i].toFixed(0):'',mr[i]!=null?mr[i].toFixed(0):'',cm[i].toFixed(0),cs[i]!=null?cs[i].toFixed(0):''].join(','));
+    const a=document.createElement('a');a.href='data:text/csv,'+encodeURIComponent([h,...rows].join('\n'));a.download='ACI214_Data.csv';a.click();
+};
+
+// ── UPDATE STATS ──
+window.a214UpdStats=function(){
+    const mix=ag('a214-sf')?.value||'ALL';const st=a214CalcStats(a214fR(mix));
+    const ids=['a214-st-n','a214-st-mean','a214-st-s','a214-st-v','a214-st-fcd','a214-st-ma','a214-st-mr','a214-st-min','a214-st-max','a214-st-range','a214-st-pct','a214-st-fcr'];
+    if(!st){ids.forEach(id=>{const el=ag(id);if(el)el.innerHTML='&#8212;';});return;}
+    ag('a214-st-n').textContent=st.n;ag('a214-st-mean').textContent=a214fmtP(st.mean);ag('a214-st-s').textContent=a214fmtP(st.s);
+    ag('a214-st-v').textContent=a214fmtP(st.V,1);ag('a214-st-fcd').textContent=a214fmtP(st.fcd);
+    ag('a214-st-ma').textContent=st.ma5v!=null?a214fmtP(st.ma5v):'—';ag('a214-st-mr').textContent=a214fmtP(st.mrM);
+    ag('a214-st-min').textContent=a214fmtP(st.min);ag('a214-st-max').textContent=a214fmtP(st.max);
+    ag('a214-st-range').textContent=a214fmtP(st.max-st.min);ag('a214-st-pct').textContent=a214fmtP((st.mean/st.fcd-1)*100,1);ag('a214-st-fcr').textContent=a214fmtP(st.fcr);
+    const V=st.V;let cls,lbl;
+    if(V<10){cls='bex214';lbl='EXCELLENT';}else if(V<15){cls='bvg214';lbl='VERY GOOD';}else if(V<20){cls='bgo214';lbl='GOOD';}else if(V<25){cls='bfa214';lbl='FAIR';}else{cls='bpo214';lbl='POOR';}
+    const cb=ag('a214-cls-badge');if(cb)cb.innerHTML=`<span class="a214-cbadge ${cls}">${lbl} &mdash; V = ${a214fmtP(V,1)}%</span>`;
+    [{id:'a214-sc-exc',c:V<10},{id:'a214-sc-vg',c:V>=10&&V<15},{id:'a214-sc-good',c:V>=15&&V<20},{id:'a214-sc-fair',c:V>=20&&V<25},{id:'a214-sc-poor',c:V>=25}].forEach(x=>{
+        const el=ag(x.id);if(!el)return;
+        if(x.c){el.className='a214-chip a214-chp';el.textContent='✓ ACTIVE';}
+        else{el.className='a214-chip';el.style.cssText='background:transparent;border:1px solid var(--border214);color:var(--muted214)';el.textContent='—';}
+    });
+    const prms=[['n','n',st.n,'—','§4.1'],["x̄","Σxi/n",a214fmtP(st.mean),'psi','Eq.4-1'],['s','√[Σ(xi-x̄)²/(n-1)]',a214fmtP(st.s),'psi','Eq.4-2'],['V','s/x̄×100',a214fmtP(V,2)+'%','%','Eq.4-3'],["f'c",'Specified',a214fmtP(st.fcd),'psi','§2.1'],['MA-5','Σ(last5)/5',st.ma5v!=null?a214fmtP(st.ma5v):'—','psi','§5.3'],["MR̄","Σ|xi-xi-1|/(n-1)",a214fmtP(st.mrM),'psi','§5.3'],['UCL','x̄+3s',a214fmtP(st.ucl),'psi','§5.3'],['LCL','x̄−3s',a214fmtP(st.lcl),'psi','§5.3'],["f'cr",'max(Eq.a,b)',a214fmtP(st.fcr),'psi','§26.4.3']];
+    const pb=ag('a214-params-body');if(pb)pb.innerHTML=prms.map(([p,f,v,u,r])=>`<tr><td style="text-align:left;font-family:monospace;font-size:.72rem">${p}</td><td style="text-align:left;font-family:monospace;font-size:.65rem;color:var(--muted214)">${f}</td><td style="font-family:'Bebas Neue',cursive,sans-serif;font-size:.9rem;color:#06B6D4">${v}</td><td style="font-family:monospace;font-size:.63rem;color:var(--muted214)">${u}</td><td style="font-family:monospace;font-size:.63rem;color:var(--muted214)">${r}</td></tr>`).join('');
+};
+
+// ── UPDATE CRITERIA ──
+window.a214UpdCrit=function(){
+    const mix=ag('a214-cf')?.value||'ALL';const rs=a214fR(mix),st=a214CalcStats(rs),avs=a214avgs(rs);
+    const div=ag('a214-crit-rows');div.innerHTML='';
+    if(!st){div.innerHTML='<div style="color:var(--muted214);font-family:monospace;padding:.8rem">No data.</div>';return;}
+    const last3=avs.length>=3?avs.slice(-3).reduce((a,b)=>a+b,0)/3:null;
+    const mkChip=ok=>`<span class="a214-chip ${ok?'a214-chp':'a214-chf'}">${ok?'&#10003; PASS':'&#10007; FAIL'}</span>`;
+    [{name:'Criterion 1',desc:"Avg 3 consecutive ≥ f'c",lim:`≥ ${a214fmtP(st.fcd)} psi`,val:last3!=null?a214fmtP(last3)+' psi':'N/A (< 3)',ok:last3!=null&&last3>=st.fcd,ref:'§26.12.3.1(a)'},
+     {name:'Criterion 2',desc:"min ≥ f'c − 500 (f'c ≤ 5,000)",lim:`≥ ${a214fmtP(st.fcd-500)} psi`,val:a214fmtP(st.min)+' psi',ok:st.min>=st.fcd-500,ref:'§26.12.3.1(b)'},
+     {name:'Criterion 3',desc:"min ≥ 0.90f'c (f'c > 5,000)",lim:`≥ ${a214fmtP(.9*st.fcd)} psi`,val:a214fmtP(st.min)+' psi',ok:st.min>=.9*st.fcd,ref:'§26.12.3.1(b)'},
+     {name:'Criterion 4',desc:"Mean ≥ f'cr",lim:`≥ ${a214fmtP(st.fcr)} psi`,val:a214fmtP(st.mean)+' psi',ok:st.mean>=st.fcr,ref:'ACI 214R §6.2'},
+     {name:'Criterion 5',desc:"MA-5 ≥ f'c",lim:`≥ ${a214fmtP(st.fcd)} psi`,val:st.ma5v!=null?a214fmtP(st.ma5v)+' psi':'N/A',ok:st.ma5v!=null&&st.ma5v>=st.fcd,ref:'ACI 214R §5.3'}
+    ].forEach(r=>{div.innerHTML+=`<div class="a214-cr"><div><div style="font-weight:600;color:var(--text214)">${r.name}</div><div style="font-family:monospace;font-size:.67rem;color:var(--muted214)">${r.desc}</div></div><div style="font-family:monospace;font-size:.67rem;color:var(--muted214)">${r.ref}</div><div style="font-family:monospace;font-weight:600;text-align:center;color:var(--muted214)">${r.lim}</div><div style="font-family:monospace;font-weight:600;text-align:center;color:#06B6D4">${r.val}</div><div style="text-align:center">${mkChip(r.ok)}</div></div>`;});
+    const fa=ag('a214-fcr-a'),fb=ag('a214-fcr-b'),fr=ag('a214-fcr-req');
+    if(fa)fa.textContent=a214fmtP(st.fa)+' psi';if(fb)fb.textContent=a214fmtP(st.fb)+' psi';if(fr)fr.textContent=a214fmtP(st.fcr)+' psi';
+};
+
+// ── CHARTS ──
+window.a214RenderCharts=function(){
+    const mix=ag('a214-chf')?.value||'ALL';
+    const rs=a214fR(mix),avs=a214avgs(rs);
+    if(!avs.length)return;
+    const st=a214CalcStats(rs),labels=avs.map((_,i)=>i+1);
+    const ma=a214ma5(avs),mr=a214movR(avs),cm=a214cumMean(avs),cs=a214cumSD(avs);
+    const opt={plugins:{legend:{labels:{color:'#94A3B8',font:{family:'monospace',size:10}}}},scales:{x:{ticks:{color:'#64748B',font:{family:'monospace',size:9}},grid:{color:'rgba(30,58,110,.5)'}},y:{ticks:{color:'#64748B',font:{family:'monospace',size:9}},grid:{color:'rgba(30,58,110,.5)'}}}};
+    if(a214cXbar)a214cXbar.destroy();if(a214cMR)a214cMR.destroy();if(a214cTrend)a214cTrend.destroy();
+    const cx=ag('a214-ch-xbar'),cm2=ag('a214-ch-mr'),ct=ag('a214-ch-trend');
+    if(cx)a214cXbar=new Chart(cx,{type:'line',data:{labels,datasets:[{label:'Sample Avg',data:avs,borderColor:'#60A5FA',backgroundColor:'rgba(96,165,250,.07)',borderWidth:2,pointRadius:3,tension:.3},{label:'MA-5',data:ma,borderColor:'#F59E0B',borderWidth:2.5,pointRadius:0,tension:.4},{label:"f'c",data:avs.map(()=>st.fcd),borderColor:'#10B981',borderWidth:1.5,borderDash:[6,4],pointRadius:0},{label:'UCL',data:avs.map(()=>st.ucl),borderColor:'#EF4444',borderWidth:1.5,borderDash:[4,3],pointRadius:0},{label:'LCL',data:avs.map(()=>st.lcl),borderColor:'#EF4444',borderWidth:1.5,borderDash:[4,3],pointRadius:0}]},options:{responsive:true,maintainAspectRatio:false,...opt}});
+    if(cm2)a214cMR=new Chart(cm2,{type:'bar',data:{labels,datasets:[{label:'Moving Range',data:mr,backgroundColor:'rgba(139,92,246,.4)',borderColor:'#8B5CF6',borderWidth:1},{label:'UCL_MR',data:avs.map(()=>st.uclMR),type:'line',borderColor:'#EF4444',borderWidth:2,borderDash:[5,3],pointRadius:0}]},options:{responsive:true,maintainAspectRatio:false,...opt}});
+    if(ct)a214cTrend=new Chart(ct,{type:'line',data:{labels,datasets:[{label:'Cumul. Mean',data:cm,borderColor:'#10B981',backgroundColor:'rgba(16,185,129,.07)',borderWidth:2.5,pointRadius:0,tension:.4,fill:true},{label:'Cumul. SD',data:cs,borderColor:'#F87171',borderWidth:2,borderDash:[5,3],pointRadius:0,tension:.4}]},options:{responsive:true,maintainAspectRatio:false,...opt}});
+};
+
+// ── SUMMARY ──
+window.a214UpdSum=function(){
+    const st=a214CalcStats(a214R);const div=ag('a214-sum-content');
+    if(!st){div.innerHTML='<span style="color:var(--muted214)">No data.</span>';return;}
+    const V=st.V;let cls,cc;
+    if(V<10){cls='EXCELLENT';cc='#10B981';}else if(V<15){cls='VERY GOOD';cc='#06B6D4';}else if(V<20){cls='GOOD';cc='#60A5FA';}else if(V<25){cls='FAIR';cc='#F59E0B';}else{cls='POOR';cc='#EF4444';}
+    div.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:1rem"><div style="font-size:.6rem;letter-spacing:2px;color:var(--muted214);margin-bottom:.35rem">QUALITY CLASS</div><div style="font-family:monospace;font-size:1.5rem;font-weight:700;color:${cc}">${cls}</div><div style="color:var(--muted214);font-size:.72rem;margin-top:.2rem">V = ${a214fmtP(V,2)}% | s = ${a214fmtP(st.s)} psi</div></div>
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:1rem"><div style="font-size:.6rem;letter-spacing:2px;color:var(--muted214);margin-bottom:.35rem">f'cr REQUIRED</div><div style="font-family:monospace;font-size:1.5rem;font-weight:700;color:#d97706">${a214fmtP(st.fcr)} psi</div><div style="color:var(--muted214);font-size:.72rem;margin-top:.2rem">f'c = ${a214fmtP(st.fcd)} psi | s = ${a214fmtP(st.s)} psi</div></div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:.73rem;font-family:monospace">
+        ${[['Samples',st.n],['Mean',a214fmtP(st.mean)+' psi'],['Std Dev',a214fmtP(st.s)+' psi'],['Coef. Var.',a214fmtP(V,2)+'%'],['MA-5',st.ma5v!=null?a214fmtP(st.ma5v)+' psi':'N/A'],['MR Mean',a214fmtP(st.mrM)+' psi'],['Min',a214fmtP(st.min)+' psi'],['Max',a214fmtP(st.max)+' psi'],['UCL',a214fmtP(st.ucl)+' psi'],['LCL',a214fmtP(st.lcl)+' psi'],["f'cr Eq.a",a214fmtP(st.fa)+' psi'],["f'cr Eq.b",a214fmtP(st.fb)+' psi'],["f'cr Required",a214fmtP(st.fcr)+' psi']]
+        .map(([k,v],i)=>`<tr style="border-bottom:1px solid rgba(30,58,110,.4);background:${i%2?'rgba(37,99,235,.04)':'transparent'}"><td style="padding:.45rem .7rem;color:var(--muted214)">${k}</td><td style="padding:.45rem .7rem;color:#06B6D4;text-align:right;font-weight:600">${v}</td></tr>`).join('')}
+    </table>`;
+};
+
+// ── REPORT ──
+window.a214BuildRptList=function(){
+    const list=ag('a214-rpt-mix-list');const ks=Object.keys(a214MX);
+    if(!ks.length){list.innerHTML='<div style="color:var(--muted214);font-family:monospace;font-size:.73rem;padding:.4rem">No mix designs. Add data first.</div>';return;}
+    const items=[{v:'ALL',lbl:'ALL MIXES',cnt:a214R.length,c:'#64748B'},...ks.map(k=>({v:k,lbl:k,cnt:a214R.filter(r=>r.mix===k).length,c:a214mxColor(k)}))];
+    list.innerHTML=items.map(({v,lbl,cnt,c})=>`<label class="a214-rmi">
+        <input type="checkbox" class="a214-rpt-cb" value="${v}" ${v==='ALL'?'checked':''} onchange="a214HandleCb(this)">
+        <span class="a214-mix-tag" style="background:${c}22;color:${c};border:1px solid ${c}44">${lbl}</span>
+        <span style="font-family:monospace;font-size:.72rem;color:var(--text214);flex:1">${v==='ALL'?'All data':'Mix: '+v}</span>
+        <span style="font-family:monospace;font-size:.65rem;color:var(--muted214)">${cnt}</span>
+    </label>`).join('');
+};
+window.a214HandleCb=function(cb){
+    if(cb.value==='ALL')document.querySelectorAll('.a214-rpt-cb').forEach(c=>{if(c.value!=='ALL')c.checked=false;});
+    else{const a=document.querySelector('.a214-rpt-cb[value="ALL"]');if(a)a.checked=false;}
+};
+window.a214RptAll=function(){document.querySelectorAll('.a214-rpt-cb').forEach(c=>c.checked=true);};
+window.a214RptNone=function(){document.querySelectorAll('.a214-rpt-cb').forEach(c=>c.checked=false);};
+function a214GetSelMixes(){const ch=[...document.querySelectorAll('.a214-rpt-cb:checked')].map(c=>c.value);return ch.includes('ALL')||!ch.length?['ALL']:ch;}
+function a214GetRptData(ml){return ml.includes('ALL')?a214R:a214R.filter(r=>ml.includes(r.mix));}
+function a214GetRptOpts(){return{mixinfo:ag('a214-rpt-mixinfo').checked,summary:ag('a214-rpt-summary').checked,criteria:ag('a214-rpt-criteria').checked,table:ag('a214-rpt-table').checked,xbar:ag('a214-rpt-xbar').checked,mr:ag('a214-rpt-mr').checked,trend:ag('a214-rpt-trend').checked};}
+function a214GetRptProj(){return{name:av('a214-rp-name')||'—',no:av('a214-rp-no')||'—',eng:av('a214-rp-eng')||'—',cont:av('a214-rp-cont')||'—',date:av('a214-rp-date')||'—',spec:av('a214-rp-spec')||'—'};}
+
+function a214BuildReportHTML(rs,ml,opts,proj){
+    const st=a214CalcStats(rs),avs=a214avgs(rs),ma=a214ma5(avs),mr=a214movR(avs),cm=a214cumMean(avs),cs=a214cumSD(avs);
+    const V=st.V;let cls,cc;
+    if(V<10){cls='EXCELLENT';cc='#059669';}else if(V<15){cls='VERY GOOD';cc='#0891B2';}else if(V<20){cls='GOOD';cc='#2563EB';}else if(V<25){cls='FAIR';cc='#D97706';}else{cls='POOR';cc='#DC2626';}
+    const last3=avs.length>=3?avs.slice(-3).reduce((a,b)=>a+b,0)/3:null;
+    const crit=[{n:"Criterion 1",ok:last3!=null&&last3>=st.fcd,v:last3!=null?a214fmtP(last3)+' psi':'N/A',l:'&ge; '+a214fmtP(st.fcd)+' psi',ref:'ACI 318 &sect;26.12.3.1(a)',desc:"Avg 3 consecutive &ge; f'c"},{n:"Criterion 2",ok:st.min>=st.fcd-500,v:a214fmtP(st.min)+' psi',l:'&ge; '+a214fmtP(st.fcd-500)+' psi',ref:'ACI 318 &sect;26.12.3.1(b)',desc:"No result &lt; f'c &minus; 500"},{n:"Criterion 3",ok:st.min>=.9*st.fcd,v:a214fmtP(st.min)+' psi',l:'&ge; '+a214fmtP(.9*st.fcd)+' psi',ref:'ACI 318 &sect;26.12.3.1(b)',desc:"No result &lt; 0.90f'c"},{n:"Criterion 4",ok:st.mean>=st.fcr,v:a214fmtP(st.mean)+' psi',l:'&ge; '+a214fmtP(st.fcr)+' psi',ref:'ACI 214R &sect;6.2',desc:"Mean &ge; f'cr"},{n:"Criterion 5",ok:st.ma5v!=null&&st.ma5v>=st.fcd,v:st.ma5v!=null?a214fmtP(st.ma5v)+' psi':'N/A',l:'&ge; '+a214fmtP(st.fcd)+' psi',ref:'ACI 214R &sect;5.3',desc:"MA-5 &ge; f'c"}];
+    const mkKeys=ml.includes('ALL')?[]:ml.filter(k=>a214MX[k]);
+    const TH=v=>`<th style="background:#1B3A6B;color:#fff;padding:4px 6px;border:1px solid #999;font-size:8px;text-transform:uppercase;letter-spacing:.5px;-webkit-print-color-adjust:exact;print-color-adjust:exact">${v}</th>`;
+    const TD=(v,ex)=>`<td style="padding:3px 5px;border:1px solid #ddd;text-align:center;${ex||''}">${v}</td>`;
+    const SEC=t=>`<div style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:#0A1628;border-bottom:2.5px solid #2563EB;padding-bottom:3px;margin:16px 0 8px 0">${t}</div>`;
+    let h=`<div style="background:#0A1628;color:#fff;padding:14px 18px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:flex-start;-webkit-print-color-adjust:exact;print-color-adjust:exact;border-radius:4px">
+        <div><div style="font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:3px;line-height:1">ACI 214R &mdash; CONCRETE STRENGTH EVALUATION REPORT</div><div style="font-size:9px;color:#06B6D4;margin-top:3px;letter-spacing:1.5px">IMPERIAL UNITS &middot; psi &middot; ACI 214R-11 / ACI 318-19</div></div>
+        <div style="text-align:right;font-size:9px;color:#93C5FD;line-height:1.8;font-family:monospace"><b style="color:#fff">PROJECT:</b> ${proj.name} &nbsp;<b style="color:#fff">NO.:</b> ${proj.no}<br><b style="color:#fff">ENGINEER:</b> ${proj.eng} &nbsp;<b style="color:#fff">DATE:</b> ${proj.date}<br><b style="color:#fff">CONTRACTOR:</b> ${proj.cont} &nbsp;<b style="color:#fff">SPEC:</b> ${proj.spec}<br><b style="color:#fff">MIX(ES):</b> ${ml.includes('ALL')?'All Mixes':ml.join(', ')} &nbsp;<b style="color:#fff">SAMPLES:</b> ${rs.length}</div></div>`;
+    if(opts.mixinfo&&mkKeys.length){h+=SEC('MIX DESIGN INFORMATION');h+=`<table style="width:100%;border-collapse:collapse;font-size:8px;font-family:monospace"><thead><tr>${['Mix Code',"f'c (psi)",'w/c','Cement (lb/yd³)','Water (lb/yd³)','Coarse Agg.','Fine Agg.','Admixtures','Supplier','Notes'].map(TH).join('')}</tr></thead><tbody>${mkKeys.map((k,i)=>{const m=a214MX[k];return`<tr style="${i%2?'background:#f0f4ff;-webkit-print-color-adjust:exact':''}">${TD('<b>'+k+'</b>')}${[a214fmtP(m.fcd),m.wc,m.cement,m.water,m.ca,m.fa,m.adm,m.supplier,m.notes].map(v=>TD(v)).join('')}</tr>`;}).join('')}</tbody></table>`;}
+    if(opts.summary){h+=SEC('STATISTICAL SUMMARY &mdash; '+rs.length+' SAMPLES &nbsp;|&nbsp; QUALITY: <span style="color:'+cc+'">'+cls+'</span>');h+=`<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:9px">${[['Quality Class',cls,cc],['Mean x&#772;',a214fmtP(st.mean)+' psi','#0A1628'],['Std Dev s',a214fmtP(st.s)+' psi','#0A1628'],['Coef. Var. V',a214fmtP(V,1)+'%',V<10?'#059669':V<20?'#2563EB':V<25?'#D97706':'#DC2626'],["f'c Design",a214fmtP(st.fcd)+' psi','#0A1628'],["f'cr Required",a214fmtP(st.fcr)+' psi','#D97706'],['MA-5',st.ma5v!=null?a214fmtP(st.ma5v)+' psi':'N/A','#0A1628'],['MR&#772;',a214fmtP(st.mrM)+' psi','#0A1628'],['Minimum',a214fmtP(st.min)+' psi','#0A1628'],['Maximum',a214fmtP(st.max)+' psi','#0A1628'],['UCL (+3s)',a214fmtP(st.ucl)+' psi','#DC2626'],['LCL (&minus;3s)',a214fmtP(st.lcl)+' psi','#DC2626']].map(([l,v,c])=>`<div style="border:1px solid #BFDBFE;border-top:3px solid #2563EB;border-radius:3px;padding:5px 6px;-webkit-print-color-adjust:exact;print-color-adjust:exact"><div style="font-size:6.5px;color:#666;text-transform:uppercase;letter-spacing:.4px;margin-bottom:1px">${l}</div><div style="font-family:'Bebas Neue',sans-serif;font-size:13px;color:${c};line-height:1">${v}</div></div>`).join('')}</div><div style="background:#F0F9FF;border:1px solid #BAE6FD;border-radius:3px;padding:5px 9px;font-size:8px;font-family:monospace;margin-bottom:7px"><b>f'cr Eq.a</b> (f'c+1.34s)=${a214fmtP(st.fa)} psi &nbsp;|&nbsp; <b>f'cr Eq.b</b> (f'c+2.33s&minus;500)=${a214fmtP(st.fb)} psi &nbsp;|&nbsp; <b style="color:#D97706">f'cr REQUIRED = ${a214fmtP(st.fcr)} psi</b></div>`;}
+    if(opts.criteria){h+=SEC('ACI 318-19 &sect;26.12 / ACI 214R &sect;6 &mdash; ACCEPTANCE CRITERIA');h+=`<table style="width:100%;border-collapse:collapse;font-size:8.5px;font-family:monospace"><thead><tr>${['Criterion','Description','Limit','Current Value','Status','Reference'].map(TH).join('')}</tr></thead><tbody>${crit.map((c,i)=>`<tr style="${i%2?'background:#f5f8ff;-webkit-print-color-adjust:exact':''}">${TD(c.n,'text-align:left;font-weight:700')}${TD(c.desc,'text-align:left')}${TD(c.l)}${TD(c.v)}<td style="padding:4px 6px;border:1px solid #ddd;text-align:center;font-weight:700;color:${c.ok?'#059669':'#DC2626'}">${c.ok?'&#10003; PASS':'&#10007; FAIL'}</td>${TD(c.ref,'text-align:left;font-size:7.5px;color:#666')}</tr>`).join('')}</tbody></table>`;}
+    if(opts.table){h+=SEC('TEST RESULTS DATA TABLE &mdash; '+rs.length+' samples');h+=`<table style="width:100%;border-collapse:collapse;font-size:7.5px;font-family:monospace"><thead><tr>${['N&#176;','Date','Lot / Element','Mix Code','Age (d)','fc1 (psi)','fc2 (psi)','Avg (psi)',"f'c (psi)",'Diff','%','MA-5','Mov.Rng','Cum.Mean','Cum.SD'].map(TH).join('')}</tr></thead><tbody>${rs.map((r,i)=>{const a=avs[i],d=a-r.fcd,p=(a/r.fcd-1)*100,bg=i%2?'background:#f5f8ff;-webkit-print-color-adjust:exact':'';return`<tr style="${bg}">${TD(i+1)}${TD(r.date)}<td style="padding:3px 5px;border:1px solid #ddd;text-align:left">${r.lot}</td>${TD(r.mix||'&#8212;')}${TD(r.age)}${TD(a214fmtP(r.fc1))}${TD(a214fmtP(r.fc2))}<td style="padding:3px 5px;border:1px solid #ddd;text-align:center;font-weight:700">${a214fmtP(a)}</td>${TD(a214fmtP(r.fcd))}<td style="padding:3px 5px;border:1px solid #ddd;text-align:center;font-weight:700;color:${d>=0?'#059669':'#DC2626'}">${d>=0?'+':''}${a214fmtP(d)}</td><td style="padding:3px 5px;border:1px solid #ddd;text-align:center;font-weight:700;color:${p>=0?'#059669':'#DC2626'}">${p>=0?'+':''}${a214fmtP(p,1)}%</td>${TD(ma[i]!=null?a214fmtP(ma[i]):'&#8212;')}${TD(mr[i]!=null?a214fmtP(mr[i]):'&#8212;')}${TD(a214fmtP(cm[i]))}${TD(cs[i]!=null?a214fmtP(cs[i]):'&#8212;')}</tr>`;}).join('')}</tbody></table>`;}
+    return h;
+}
+
+window.a214PreviewReport=function(){
+    const ml=a214GetSelMixes(),rs=a214GetRptData(ml);
+    if(!rs.length){alert('No data for selected mix(es).');return;}
+    ag('a214-rpt-preview-inner').innerHTML=a214BuildReportHTML(rs,ml,{...a214GetRptOpts(),xbar:false,mr:false,trend:false},a214GetRptProj());
+    ag('a214-rpt-preview').style.display='block';
+    ag('a214-rpt-preview').scrollIntoView({behavior:'smooth'});
+};
+
+window.a214OpenReport=function(){
+    const ml=a214GetSelMixes(),rs=a214GetRptData(ml);
+    if(!rs.length){alert('No data for selected mix(es).');return;}
+    const opts=a214GetRptOpts(),proj=a214GetRptProj();
+    const st=a214CalcStats(rs),avs=a214avgs(rs),ma=a214ma5(avs),mr=a214movR(avs),cm=a214cumMean(avs),cs=a214cumSD(avs);
+    const CD=JSON.stringify({labels:avs.map((_,i)=>i+1),av:avs,ma,mr,cm,cs,ucl:avs.map(()=>st.ucl),lcl:avs.map(()=>st.lcl),fcd:avs.map(()=>st.fcd),uclMR:avs.map(()=>st.uclMR)});
+    const body=a214BuildReportHTML(rs,ml,opts,proj);
+    const chartSection=(opts.xbar||opts.mr||opts.trend)?`<div style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:#0A1628;border-bottom:2.5px solid #2563EB;padding-bottom:3px;margin:16px 0 8px">CONTROL CHARTS &mdash; ACI 214R &sect;5.3</div>${opts.xbar?'<div style="margin-bottom:14px"><div style="font-size:9px;font-weight:700;color:#0A1628;margin-bottom:4px">X&#772; CONTROL CHART</div><canvas id="cx" style="width:100%;height:200px"></canvas></div>':''}${opts.mr?'<div style="margin-bottom:14px"><div style="font-size:9px;font-weight:700;color:#0A1628;margin-bottom:4px">MOVING RANGE CHART (MR)</div><canvas id="cm" style="width:100%;height:140px"></canvas></div>':''}${opts.trend?'<div style="margin-bottom:14px"><div style="font-size:9px;font-weight:700;color:#0A1628;margin-bottom:4px">CUMULATIVE MEAN &amp; STD DEV TREND</div><canvas id="ct" style="width:100%;height:140px"></canvas></div>':''}`:''
+    ;
+    const sigBlock=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:30px;margin-top:24px;padding-top:6px">${["Prepared by &mdash; Engineer of Record","Reviewed by &mdash; Project Manager","Approved by &mdash; Owner"].map(l=>`<div style="border-top:1px solid #000;padding-top:4px;font-size:7.5px;color:#555;font-family:monospace">${l}</div>`).join('')}</div>`;
+    const printWin=window.open('','_blank','width=960,height=780,scrollbars=yes,resizable=yes');
+    if(!printWin){alert('Popup blocked! Please allow popups and try again.');return;}
+    printWin.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>ACI 214R Report — ${proj.name}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'DM Mono',monospace;font-size:9px;color:#000;background:#fff;padding:10mm 12mm;}@page{margin:10mm 12mm;size:letter;}@media print{.toolbar{display:none!important;}body{padding:0;}}.toolbar{display:flex;gap:10px;align-items:center;padding:10px 14px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:4px;margin-bottom:16px;}.pbtn{font-family:'Bebas Neue',sans-serif;letter-spacing:1.5px;font-size:13px;padding:7px 18px;border:none;border-radius:4px;cursor:pointer;}.pbtn-p{background:#2563EB;color:#fff;}.pbtn-x{background:#EF4444;color:#fff;}.tip{font-size:8px;color:#666;margin-left:auto;line-height:1.4;}</style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"><\/script>
+    </head><body>
+    <div class="toolbar"><button class="pbtn pbtn-p" onclick="window.print()">&#128424; PRINT / SAVE AS PDF</button><button class="pbtn pbtn-x" onclick="window.close()">&#10005; CLOSE</button><span class="tip">In print dialog, select <b>Save as PDF</b>. Set margins to "None" for best results.</span></div>
+    ${body}${chartSection}${sigBlock}
+    <script>(function(){var D=${CD};var B={responsive:false,animation:false,plugins:{legend:{labels:{font:{family:'DM Mono',size:9},color:'#444'}}},scales:{x:{ticks:{font:{family:'DM Mono',size:8},color:'#555'},grid:{color:'rgba(0,0,0,.06)'}},y:{ticks:{font:{family:'DM Mono',size:8},color:'#555'},grid:{color:'rgba(0,0,0,.06)'}}}};function mk(id,cfg){var el=document.getElementById(id);if(!el)return;el.width=el.parentElement.offsetWidth||700;el.height=parseInt(el.style.height)||180;new Chart(el,Object.assign({},cfg,{options:Object.assign({},B)}));}${opts.xbar?`mk('cx',{type:'line',data:{labels:D.labels,datasets:[{label:'Sample Avg',data:D.av,borderColor:'#2563EB',borderWidth:2,pointRadius:3,tension:.3,fill:false},{label:'MA-5',data:D.ma,borderColor:'#F59E0B',borderWidth:2.5,pointRadius:0,tension:.4},{label:"f'c",data:D.fcd,borderColor:'#10B981',borderWidth:1.5,borderDash:[6,4],pointRadius:0},{label:'UCL',data:D.ucl,borderColor:'#EF4444',borderWidth:1.5,borderDash:[4,3],pointRadius:0},{label:'LCL',data:D.lcl,borderColor:'#EF4444',borderWidth:1.5,borderDash:[4,3],pointRadius:0}]}});`:''}${opts.mr?`mk('cm',{type:'bar',data:{labels:D.labels,datasets:[{label:'Moving Range',data:D.mr,backgroundColor:'rgba(139,92,246,.4)',borderColor:'#8B5CF6',borderWidth:1},{label:'UCL_MR',data:D.uclMR,type:'line',borderColor:'#EF4444',borderWidth:2,borderDash:[5,3],pointRadius:0}]}});`:''}${opts.trend?`mk('ct',{type:'line',data:{labels:D.labels,datasets:[{label:'Cumul. Mean',data:D.cm,borderColor:'#10B981',backgroundColor:'rgba(16,185,129,.07)',borderWidth:2.5,pointRadius:0,tension:.4,fill:true},{label:'Cumul. SD',data:D.cs,borderColor:'#F87171',borderWidth:2,borderDash:[5,3],pointRadius:0}]}});`:''}})();<\/script>
+    </body></html>`);
+    printWin.document.close();
+};
+
+// ── UPDATE ALL ──
+window.a214UpdAll=function(){a214UpdStats();a214UpdCrit();a214UpdSum();const tc=ag('a214-tab-charts');if(tc&&tc.classList.contains('active'))a214RenderCharts();};
+
+// ── INIT on load ──
+a214Init();
+
+// Expose for switchTab
+window.a214Init = a214Init;
+})();
 </script>
 </body>
 </html>
