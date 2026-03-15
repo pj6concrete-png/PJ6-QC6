@@ -1246,8 +1246,12 @@
                             <input type="number" id="precio-cemento" step="0.01" value="8.50">
                         </div>
                     </div>
-
-                    <!-- SCM SECTION -->
+                    <div class="form-grid cols-1">
+                        <div class="form-group">
+                            <label>Proveedor Cemento</label>
+                            <input type="text" id="proveedor-cemento" placeholder="Nombre del proveedor...">
+                        </div>
+                    </div>
                     <div style="background:linear-gradient(135deg,#faf5ff,#ede9fe);border:2px solid #c4b5fd;border-radius:10px;padding:18px;margin-bottom:18px">
                         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
                             <h3 style="margin:0;color:#5b21b6">🧪 Materiales Cementicios Suplementarios (SCM)</h3>
@@ -1421,6 +1425,12 @@
                             <input type="number" id="puc-grueso" step="0.1" value="105">
                         </div>
                     </div>
+                    <div class="form-grid cols-1">
+                        <div class="form-group">
+                            <label>Proveedor Agregado Grueso</label>
+                            <input type="text" id="proveedor-grueso" placeholder="Nombre del proveedor...">
+                        </div>
+                    </div>
 
                     <h3>🔷 Agregado Intermedio - Propiedades y Peso</h3>
                     <div class="form-grid cols-4">
@@ -1449,6 +1459,12 @@
                         <div class="form-group">
                             <label>Peso Unitario Compactado (lb/ft³)</label>
                             <input type="number" id="puc-intermedio" step="0.1" value="100">
+                        </div>
+                    </div>
+                    <div class="form-grid cols-1">
+                        <div class="form-group">
+                            <label>Proveedor Agregado Intermedio</label>
+                            <input type="text" id="proveedor-intermedio" placeholder="Nombre del proveedor...">
                         </div>
                     </div>
 
@@ -1493,6 +1509,12 @@
                             <input type="number" id="pct-arena1" step="1" value="60" min="0" max="100" oninput="ajustarPorcentajesArenas(1)">
                         </div>
                     </div>
+                    <div class="form-grid cols-1">
+                        <div class="form-group">
+                            <label>Proveedor Arena 1</label>
+                            <input type="text" id="proveedor-arena1" placeholder="Nombre del proveedor...">
+                        </div>
+                    </div>
 
                     <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin-bottom: 15px; margin-top: 20px;">
                         <strong>Arena 2:</strong>
@@ -1523,6 +1545,12 @@
                         <div class="form-group">
                             <label>% en Mezcla de Arenas</label>
                             <input type="number" id="pct-arena2" step="1" value="40" min="0" max="100" oninput="ajustarPorcentajesArenas(2)">
+                        </div>
+                    </div>
+                    <div class="form-grid cols-1">
+                        <div class="form-group">
+                            <label>Proveedor Arena 2</label>
+                            <input type="text" id="proveedor-arena2" placeholder="Nombre del proveedor...">
                         </div>
                     </div>
 
@@ -1615,6 +1643,54 @@
                         <div class="form-group">
                             <label>Precio ($/gal)</label>
                             <input type="number" id="precio-aditivo3" step="0.01" value="0">
+                        </div>
+                    </div>
+
+                    <div style="background: #fef2f2; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #dc2626;">
+                        <strong>⚖️ Aditivo lb/yd³ — 1:</strong> <span style="font-size:0.8rem;color:#6b7280;font-weight:normal">Dosificado en lb por yarda cúbica</span>
+                    </div>
+                    <div class="form-grid cols-4">
+                        <div class="form-group">
+                            <label>Nombre Aditivo</label>
+                            <select id="nombre-aditivo4">
+                                <option value="">Ninguno</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Dosis (lb/yd³)</label>
+                            <input type="number" id="dosis-aditivo4" step="0.01" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Gravedad Específica</label>
+                            <input type="number" id="ge-aditivo4" step="0.01" value="1.0">
+                        </div>
+                        <div class="form-group">
+                            <label>Precio ($/lb)</label>
+                            <input type="number" id="precio-aditivo4" step="0.01" value="0">
+                        </div>
+                    </div>
+
+                    <div style="background: #fff1f2; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #f43f5e;">
+                        <strong>⚖️ Aditivo lb/yd³ — 2:</strong> <span style="font-size:0.8rem;color:#6b7280;font-weight:normal">Dosificado en lb por yarda cúbica</span>
+                    </div>
+                    <div class="form-grid cols-4">
+                        <div class="form-group">
+                            <label>Nombre Aditivo</label>
+                            <select id="nombre-aditivo5">
+                                <option value="">Ninguno</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Dosis (lb/yd³)</label>
+                            <input type="number" id="dosis-aditivo5" step="0.01" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Gravedad Específica</label>
+                            <input type="number" id="ge-aditivo5" step="0.01" value="1.0">
+                        </div>
+                        <div class="form-group">
+                            <label>Precio ($/lb)</label>
+                            <input type="number" id="precio-aditivo5" step="0.01" value="0">
                         </div>
                     </div>
 
@@ -2479,7 +2555,10 @@
                     logoEmpresa = e.target.result;
                     preview.src = logoEmpresa;
                     preview.style.display = 'block';
-                    console.log('Logo cargado exitosamente');
+                    // Save to IndexedDB so all reports use the same logo
+                    guardarLogo(logoEmpresa);
+                    mostrarLogo(logoEmpresa);
+                    console.log('Logo cargado y guardado exitosamente');
                 };
                 
                 reader.readAsDataURL(input.files[0]);
@@ -2602,10 +2681,6 @@
         // ============ EXPORTAR / IMPORTAR DATA ============
         async function exportarTodaLaData() {
             try {
-                // ACI 214R data from localStorage
-                let aci214data = {};
-                try { aci214data = JSON.parse(localStorage.getItem('aci214_data') || '{}'); } catch(e) {}
-
                 const data = {
                     version: '1.0',
                     exportDate: new Date().toISOString(),
@@ -2618,11 +2693,7 @@
                     campo_evaluaciones: await getAllRecords('campo_evaluaciones'),
                     incidentes: JSON.parse(localStorage.getItem('incidentes_v1') || '[]'),
                     inc_proyectos: JSON.parse(localStorage.getItem('inc_proyectos_v1') || '[]'),
-                    gradaciones: JSON.parse(localStorage.getItem('gradaciones_db') || '[]'),
-                    aci214: {
-                        results:    aci214data.R   || [],
-                        mixDesigns: aci214data.MX  || {}
-                    }
+                    gradaciones: JSON.parse(localStorage.getItem('gradaciones_db') || '[]')
                 };
                 
                 // Incluir logo si existe
@@ -2672,9 +2743,7 @@
                       'Trial Mixes: '        + (data.trials||[]).length + '\n' +
                       'Eval. de Campo: '     + (data.campo_evaluaciones||[]).length + '\n' +
                       'Incidentes: '         + (data.incidentes||[]).length + '\n' +
-                      'Gradaciones: '        + (data.gradaciones||[]).length + '\n' +
-                      'ACI 214R — Resultados: ' + (data.aci214.results||[]).length + '\n' +
-                      'ACI 214R — Mix Designs: ' + Object.keys(data.aci214.mixDesigns||{}).length);
+                      'Gradaciones: '        + (data.gradaciones||[]).length);
                 
             } catch (error) {
                 console.error('Error exportando:', error);
@@ -2732,23 +2801,19 @@
             var ces = (data.campo_evaluaciones || []).length;
             var ins = (data.incidentes || []).length;
             var grs = (data.gradaciones || []).length;
-            var a214r = ((data.aci214 && data.aci214.results) || []).length;
-            var a214m = Object.keys((data.aci214 && data.aci214.mixDesigns) || {}).length;
 
             var lines = [
                 'IMPORTAR BACKUP',
                 '',
-                'Clientes:              ' + cls,
-                'Proyectos:             ' + prs,
-                'Materiales:            ' + mts,
-                'Cotizaciones:          ' + cts,
-                'Mix Designs:           ' + mds,
-                'Trial Mixes:           ' + trs,
-                'Eval Campo:            ' + ces,
-                'Incidentes:            ' + ins,
-                'Gradaciones:           ' + grs,
-                'ACI 214R Resultados:   ' + a214r,
-                'ACI 214R Mix Designs:  ' + a214m,
+                'Clientes:       ' + cls,
+                'Proyectos:      ' + prs,
+                'Materiales:     ' + mts,
+                'Cotizaciones:   ' + cts,
+                'Mix Designs:    ' + mds,
+                'Trial Mixes:    ' + trs,
+                'Eval Campo:     ' + ces,
+                'Incidentes:     ' + ins,
+                'Gradaciones:    ' + grs,
                 '',
                 'Los registros existentes no seran eliminados.',
                 'Presiona OK para continuar.'
@@ -2820,31 +2885,6 @@
                 localStorage.setItem('gradaciones_db', JSON.stringify(mergedGrad));
                 imported += newGrad.length;
                 skipped  += (data.gradaciones.length - newGrad.length);
-            }
-
-            // Restore ACI 214R data (merge into existing localStorage)
-            if (data.aci214) {
-                try {
-                    var existing214 = {};
-                    try { existing214 = JSON.parse(localStorage.getItem('aci214_data') || '{}'); } catch(e) {}
-                    var existingR  = existing214.R  || [];
-                    var existingMX = existing214.MX || {};
-                    var incomingR  = data.aci214.results    || [];
-                    var incomingMX = data.aci214.mixDesigns || {};
-                    // Merge results — avoid duplicates by date+mix+fc1+fc2
-                    var existingKeys = new Set(existingR.map(function(r){ return r.date+'|'+r.mix+'|'+r.fc1+'|'+r.fc2; }));
-                    var newR = incomingR.filter(function(r){ return !existingKeys.has(r.date+'|'+r.mix+'|'+r.fc1+'|'+r.fc2); });
-                    var mergedR = existingR.concat(newR);
-                    // Merge mix designs — incoming overwrites only if key doesn't exist
-                    var mergedMX = Object.assign({}, incomingMX, existingMX);
-                    localStorage.setItem('aci214_data', JSON.stringify({ R: mergedR, MX: mergedMX }));
-                    imported += newR.length;
-                    skipped  += (incomingR.length - newR.length);
-                    // Refresh ACI 214 module if loaded
-                    if (typeof a214Init === 'function') {
-                        try { a214R = mergedR; a214MX = mergedMX; a214RefreshSelects(); a214RenderResTbl(); a214RenderMixTbl(); a214UpdAll(); } catch(e) {}
-                    }
-                } catch(eAci) { console.warn('ACI 214 import error:', eAci); }
             }
 
             // Restore logo
@@ -3120,9 +3160,7 @@
             }
             if (tabName === 'dashboard') updateDashboard();
             if (tabName === 'aci214') {
-                if (typeof a214CargarTrialMixes === 'function') {
-                    a214CargarTrialMixes().then(()=>{ if (typeof a214UpdAll === 'function') a214UpdAll(); });
-                } else if (typeof a214UpdAll === 'function') a214UpdAll();
+                if (typeof a214UpdAll === 'function') a214UpdAll();
             }
         }
 
@@ -3133,8 +3171,12 @@
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     const logoData = event.target.result;
+                    logoEmpresa = logoData; // sync global variable used by all reports
                     guardarLogo(logoData);
                     mostrarLogo(logoData);
+                    // Also update Mix Design logo preview
+                    const preview = document.getElementById('logo-preview');
+                    if (preview) { preview.src = logoData; preview.style.display = 'block'; }
                 };
                 reader.readAsDataURL(file);
             }
@@ -3156,7 +3198,15 @@
                 
                 request.onsuccess = () => {
                     if (request.result && request.result.value) {
-                        mostrarLogo(request.result.value);
+                        const logoData = request.result.value;
+                        logoEmpresa = logoData; // sync global variable
+                        mostrarLogo(logoData);
+                        // Also update the Mix Design logo preview if visible
+                        const preview = document.getElementById('logo-preview');
+                        if (preview) {
+                            preview.src = logoData;
+                            preview.style.display = 'block';
+                        }
                     }
                 };
             } catch (error) {
@@ -3275,9 +3325,11 @@
         document.getElementById('form-proyecto').addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            const clienteValor = document.getElementById('proyecto-cliente').value;
             const proyecto = {
                 nombre: document.getElementById('proyecto-nombre').value,
-                cliente: document.getElementById('proyecto-cliente').value,
+                cliente: clienteValor,
+                clienteId: clienteValor,
                 ubicacion: document.getElementById('proyecto-ubicacion').value,
                 descripcion: document.getElementById('proyecto-descripcion').value,
                 estado: document.getElementById('proyecto-estado').value,
@@ -3424,6 +3476,7 @@
             const proyecto = {
                 nombre: nombre,
                 clienteId: parseInt(clienteId),
+                cliente: clienteId,
                 ubicacion: document.getElementById('nuevo-proyecto-ubicacion').value.trim(),
                 estado: 'Activo',
                 fechaCreacion: new Date().toISOString()
@@ -3631,8 +3684,12 @@
             }
             
             // Filtrar proyectos del cliente seleccionado
+            // Projects may be saved with either 'clienteId' or 'cliente' field
             const proyectos = await getAllRecords('proyectos');
-            const proyectosFiltrados = proyectos.filter(p => p.clienteId == clienteId);
+            const proyectosFiltrados = proyectos.filter(p =>
+                String(p.clienteId) === String(clienteId) ||
+                String(p.cliente)   === String(clienteId)
+            );
             
             proyectoSelect.innerHTML = '<option value="">Seleccione proyecto...</option>';
             
@@ -4406,6 +4463,15 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 const geAd3 = parseFloat(document.getElementById('ge-aditivo3').value);
                 const precioAd3 = parseFloat(document.getElementById('precio-aditivo3').value);
 
+                // Aditivos lb/yd³ (dosis directa en lb por yd³)
+                const dosisAd4 = parseFloat(document.getElementById('dosis-aditivo4').value) || 0;
+                const geAd4 = parseFloat(document.getElementById('ge-aditivo4').value);
+                const precioAd4 = parseFloat(document.getElementById('precio-aditivo4').value);
+
+                const dosisAd5 = parseFloat(document.getElementById('dosis-aditivo5').value) || 0;
+                const geAd5 = parseFloat(document.getElementById('ge-aditivo5').value);
+                const precioAd5 = parseFloat(document.getElementById('precio-aditivo5').value);
+
                 // ============ CÁLCULOS PRINCIPALES ============
 
                 // 1. W/C y W/CM
@@ -4432,8 +4498,14 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 const volAd2  = pesoAd2 / (geAd2 * 62.4);
                 const volAd3  = pesoAd3 / (geAd3 * 62.4);
 
+                // Aditivos lb/yd³: la dosis ya es el peso directamente en lb/yd³
+                const pesoAd4 = dosisAd4;  // lb/yd³ directo
+                const pesoAd5 = dosisAd5;  // lb/yd³ directo
+                const volAd4  = pesoAd4 / (geAd4 * 62.4);
+                const volAd5  = pesoAd5 / (geAd5 * 62.4);
+
                 // 4. Arenas por diferencia de volumen (incluye SCMs)
-                const volumenOcupado = volCemento + volSCMs + volAgua + volAire + volGrueso + volIntermedio + volAd1 + volAd2 + volAd3;
+                const volumenOcupado = volCemento + volSCMs + volAgua + volAire + volGrueso + volIntermedio + volAd1 + volAd2 + volAd3 + volAd4 + volAd5;
                 const volArenaTotal  = 27 - volumenOcupado;
 
                 if (volArenaTotal < 0) {
@@ -4476,25 +4548,29 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 const costoAd1        = (pesoAd1 / 8.34 / geAd1) * precioAd1;
                 const costoAd2        = (pesoAd2 / 8.34 / geAd2) * precioAd2;
                 const costoAd3        = (pesoAd3 / 8.34 / geAd3) * precioAd3;
-                const costoTotal      = costoCemento + costoTotalSCMs + costoAgua + costoGrueso + costoIntermedio + costoArena1 + costoArena2 + costoAd1 + costoAd2 + costoAd3;
+                const costoAd4        = pesoAd4 * precioAd4;  // lb × $/lb
+                const costoAd5        = pesoAd5 * precioAd5;  // lb × $/lb
+                const costoTotal      = costoCemento + costoTotalSCMs + costoAgua + costoGrueso + costoIntermedio + costoArena1 + costoArena2 + costoAd1 + costoAd2 + costoAd3 + costoAd4 + costoAd5;
 
-                const pesoTotal = pesoCemento + scms.reduce((s,m)=>s+m.peso,0) + aguaEfectiva + pesoGruesoHumedo + pesoIntermedioHumedo + pesoArena1Humedo + pesoArena2Humedo + pesoAd1 + pesoAd2 + pesoAd3;
+                const pesoTotal = pesoCemento + scms.reduce((s,m)=>s+m.peso,0) + aguaEfectiva + pesoGruesoHumedo + pesoIntermedioHumedo + pesoArena1Humedo + pesoArena2Humedo + pesoAd1 + pesoAd2 + pesoAd3 + pesoAd4 + pesoAd5;
 
                 // ============ GUARDAR RESULTADOS ============
                 currentMixResults = {
-                    cemento:     { peso: pesoCemento,          volumen: volCemento,                  costo: costoCemento },
+                    cemento:     { peso: pesoCemento,          volumen: volCemento,                  costo: costoCemento, proveedor: document.getElementById('proveedor-cemento').value || '' },
                     scm1:        { peso: scms[0].peso, tipo: scms[0].tipo, volumen: scms[0].peso>0?scms[0].peso/(scms[0].ge*62.4):0, costo: costoSCMs[0] },
                     scm2:        { peso: scms[1].peso, tipo: scms[1].tipo, volumen: scms[1].peso>0?scms[1].peso/(scms[1].ge*62.4):0, costo: costoSCMs[1] },
                     scm3:        { peso: scms[2].peso, tipo: scms[2].tipo, volumen: scms[2].peso>0?scms[2].peso/(scms[2].ge*62.4):0, costo: costoSCMs[2] },
                     totalCementicio,
                     agua:        { peso: aguaEfectiva,         volumen: volAgua,                     costo: costoAgua },
-                    grueso:      { peso: pesoGruesoHumedo,     volumen: volGrueso,                   costo: costoGrueso },
-                    intermedio:  { peso: pesoIntermedioHumedo, volumen: volIntermedio,               costo: costoIntermedio },
-                    arena1:      { peso: pesoArena1Humedo,     volumen: volArenaTotal * pctArena1,   costo: costoArena1 },
-                    arena2:      { peso: pesoArena2Humedo,     volumen: volArenaTotal * pctArena2,   costo: costoArena2 },
+                    grueso:      { peso: pesoGruesoHumedo,     volumen: volGrueso,                   costo: costoGrueso, proveedor: document.getElementById('proveedor-grueso').value || '' },
+                    intermedio:  { peso: pesoIntermedioHumedo, volumen: volIntermedio,               costo: costoIntermedio, proveedor: document.getElementById('proveedor-intermedio').value || '' },
+                    arena1:      { peso: pesoArena1Humedo,     volumen: volArenaTotal * pctArena1,   costo: costoArena1, proveedor: document.getElementById('proveedor-arena1').value || '' },
+                    arena2:      { peso: pesoArena2Humedo,     volumen: volArenaTotal * pctArena2,   costo: costoArena2, proveedor: document.getElementById('proveedor-arena2').value || '' },
                     aditivo1:    { peso: pesoAd1, volumen: volAd1, costo: costoAd1, nombre: document.getElementById('nombre-aditivo1').value },
                     aditivo2:    { peso: pesoAd2, volumen: volAd2, costo: costoAd2, nombre: document.getElementById('nombre-aditivo2').value },
                     aditivo3:    { peso: pesoAd3, volumen: volAd3, costo: costoAd3, nombre: document.getElementById('nombre-aditivo3').value },
+                    aditivo4:    { peso: pesoAd4, volumen: volAd4, costo: costoAd4, nombre: document.getElementById('nombre-aditivo4').value, tipo: 'lb/yd³' },
+                    aditivo5:    { peso: pesoAd5, volumen: volAd5, costo: costoAd5, nombre: document.getElementById('nombre-aditivo5').value, tipo: 'lb/yd³' },
                     wc:          wcRatio,
                     wcm:         wcmRatio,
                     aire:        contenidoAire,
@@ -4602,7 +4678,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 <td>$${currentMixResults.arena2.costo.toFixed(2)}</td>
             </tr>`;
 
-            // Aditivos
+            // Aditivos oz/cwt
             [1,2,3].forEach(i => {
                 const ad = currentMixResults[`aditivo${i}`];
                 if (ad?.peso > 0 && ad?.nombre) {
@@ -4610,6 +4686,19 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     htmlCantidades += `<tr style="background:#fffbeb">
                         <td><strong>${ad.nombre}</strong></td>
                         <td colspan="2" style="color:#92400e;font-style:italic">Rango: 0 to ${dosis.toFixed(2)} oz/cwt</td>
+                        <td>$${ad.costo.toFixed(2)}</td>
+                    </tr>`;
+                }
+            });
+
+            // Aditivos lb/yd³
+            [4,5].forEach(i => {
+                const ad = currentMixResults[`aditivo${i}`];
+                if (ad?.peso > 0 && ad?.nombre) {
+                    htmlCantidades += `<tr style="background:#fff1f2">
+                        <td><strong>${ad.nombre} <span style="font-size:0.72em;background:#dc2626;color:#fff;border-radius:3px;padding:1px 5px;font-style:normal">lb/yd³</span></strong></td>
+                        <td>${ad.peso.toFixed(3)} lb</td>
+                        <td>${ad.volumen.toFixed(3)} ft³</td>
                         <td>$${ad.costo.toFixed(2)}</td>
                     </tr>`;
                 }
@@ -4673,6 +4762,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 pesoCemento: parseFloat(document.getElementById('peso-cemento').value),
                 geCemento: parseFloat(document.getElementById('ge-cemento').value),
                 precioCemento: parseFloat(document.getElementById('precio-cemento').value),
+                proveedorCemento: document.getElementById('proveedor-cemento').value || '',
 
                 // SCMs
                 tipoSCM1: document.getElementById('tipo-scm1').value,
@@ -4699,6 +4789,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 humGrueso: parseFloat(document.getElementById('hum-grueso').value),
                 precioGrueso: parseFloat(document.getElementById('precio-grueso').value),
                 pucGrueso: parseFloat(document.getElementById('puc-grueso').value),
+                proveedorGrueso: document.getElementById('proveedor-grueso').value || '',
                 
                 // Agregado intermedio - con peso directo
                 pesoIntermedio: parseFloat(document.getElementById('peso-intermedio').value),
@@ -4707,6 +4798,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 humIntermedio: parseFloat(document.getElementById('hum-intermedio').value),
                 precioIntermedio: parseFloat(document.getElementById('precio-intermedio').value),
                 pucIntermedio: parseFloat(document.getElementById('puc-intermedio').value),
+                proveedorIntermedio: document.getElementById('proveedor-intermedio').value || '',
                 
                 // Arenas - calculadas por diferencia
                 geArena1: parseFloat(document.getElementById('ge-arena1').value),
@@ -4715,6 +4807,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 mfArena1: parseFloat(document.getElementById('mf-arena1').value),
                 precioArena1: parseFloat(document.getElementById('precio-arena1').value),
                 pctArena1: parseFloat(document.getElementById('pct-arena1').value),
+                proveedorArena1: document.getElementById('proveedor-arena1').value || '',
                 
                 geArena2: parseFloat(document.getElementById('ge-arena2').value),
                 absArena2: parseFloat(document.getElementById('abs-arena2').value),
@@ -4722,6 +4815,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 mfArena2: parseFloat(document.getElementById('mf-arena2').value),
                 precioArena2: parseFloat(document.getElementById('precio-arena2').value),
                 pctArena2: parseFloat(document.getElementById('pct-arena2').value),
+                proveedorArena2: document.getElementById('proveedor-arena2').value || '',
                 
                 mfCombinado: parseFloat(document.getElementById('mf-combinado').textContent),
                 
@@ -4743,6 +4837,16 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 dosisAditivo3: parseFloat(document.getElementById('dosis-aditivo3').value) || 0,
                 geAditivo3: parseFloat(document.getElementById('ge-aditivo3').value),
                 precioAditivo3: parseFloat(document.getElementById('precio-aditivo3').value),
+
+                nombreAditivo4: document.getElementById('nombre-aditivo4').value,
+                dosisAditivo4: parseFloat(document.getElementById('dosis-aditivo4').value) || 0,
+                geAditivo4: parseFloat(document.getElementById('ge-aditivo4').value),
+                precioAditivo4: parseFloat(document.getElementById('precio-aditivo4').value),
+
+                nombreAditivo5: document.getElementById('nombre-aditivo5').value,
+                dosisAditivo5: parseFloat(document.getElementById('dosis-aditivo5').value) || 0,
+                geAditivo5: parseFloat(document.getElementById('ge-aditivo5').value),
+                precioAditivo5: parseFloat(document.getElementById('precio-aditivo5').value),
                 
                 resultados: currentMixResults,
                 fechaCreacion: new Date().toISOString()
@@ -5060,6 +5164,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             html += '<h2>Cantidades por Yarda Cúbica (yd³)</h2>';
             html += '<table><thead><tr>';
             html += '<th>Material</th>';
+            html += '<th>Proveedor</th>';
             html += '<th style="text-align:right">Peso (lb/yd³)</th>';
             html += '<th style="text-align:right">Volumen (ft³)</th>';
             html += '<th style="text-align:right">Costo ($/yd³)</th>';
@@ -5070,6 +5175,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 const tipoCem = mix.tipoCemento || '';
                 html += '<tr style="background:#eff6ff">';
                 html += '<td><strong>Cemento' + (tipoCem ? ' (' + tipoCem + ')' : '') + '</strong></td>';
+                html += '<td style="color:#6b7280;font-size:.88em">' + (mix.proveedorCemento||r.cemento.proveedor||'') + '</td>';
                 html += '<td style="text-align:right">' + r.cemento.peso.toFixed(1) + '</td>';
                 html += '<td style="text-align:right">' + r.cemento.volumen.toFixed(3) + '</td>';
                 html += '<td style="text-align:right">$' + (r.cemento.costo||0).toFixed(2) + '</td>';
@@ -5087,6 +5193,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     const pct = r.totalCementicio > 0 ? ((s.peso/r.totalCementicio)*100).toFixed(1) : '0';
                     html += '<tr style="background:' + scmColors1[ix] + '">';
                     html += '<td><strong>' + scmIcons1[ix] + ' ' + s.tipo + '</strong> <span style="font-size:11px;color:#7c3aed">(SCM '+i+' — '+pct+'% reemplazo)</span></td>';
+                    html += '<td></td>';
                     html += '<td style="text-align:right">' + s.peso.toFixed(1) + '</td>';
                     html += '<td style="text-align:right">' + s.volumen.toFixed(3) + '</td>';
                     html += '<td style="text-align:right">$' + (s.costo||0).toFixed(2) + '</td>';
@@ -5100,6 +5207,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 const costoSCMs1 = [1,2,3].reduce((s,i)=>s+(r['scm'+i]?.costo||0),0);
                 html += '<tr style="background:#ddd6fe;font-weight:700">';
                 html += '<td style="color:#5b21b6">📊 Total Cementicio (Cemento + SCMs)</td>';
+                html += '<td></td>';
                 html += '<td style="text-align:right;color:#5b21b6">' + r.totalCementicio.toFixed(1) + '</td>';
                 html += '<td style="text-align:right;color:#5b21b6">' + ((r.cemento?.volumen||0)+volSCMs1).toFixed(3) + '</td>';
                 html += '<td style="text-align:right;color:#5b21b6">$' + ((r.cemento?.costo||0)+costoSCMs1).toFixed(2) + '</td>';
@@ -5110,6 +5218,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             if (r.agua && r.agua.peso) {
                 html += '<tr>';
                 html += '<td><strong>Agua Efectiva</strong></td>';
+                html += '<td></td>';
                 html += '<td style="text-align:right">' + r.agua.peso.toFixed(1) + '</td>';
                 html += '<td style="text-align:right">' + r.agua.volumen.toFixed(3) + '</td>';
                 html += '<td style="text-align:right">$' + (r.agua.costo||0).toFixed(2) + '</td>';
@@ -5120,6 +5229,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             if (r.grueso && r.grueso.peso >= 0) {
                 html += '<tr>';
                 html += '<td><strong>Agregado Grueso</strong></td>';
+                html += '<td style="color:#6b7280;font-size:.88em">' + (mix.proveedorGrueso||r.grueso.proveedor||'') + '</td>';
                 html += '<td style="text-align:right">' + r.grueso.peso.toFixed(1) + '</td>';
                 html += '<td style="text-align:right">' + r.grueso.volumen.toFixed(3) + '</td>';
                 html += '<td style="text-align:right">$' + (r.grueso.costo||0).toFixed(2) + '</td>';
@@ -5130,6 +5240,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             if (r.intermedio && r.intermedio.peso > 0) {
                 html += '<tr>';
                 html += '<td><strong>Agregado Intermedio</strong></td>';
+                html += '<td style="color:#6b7280;font-size:.88em">' + (mix.proveedorIntermedio||r.intermedio.proveedor||'') + '</td>';
                 html += '<td style="text-align:right">' + r.intermedio.peso.toFixed(1) + '</td>';
                 html += '<td style="text-align:right">' + r.intermedio.volumen.toFixed(3) + '</td>';
                 html += '<td style="text-align:right">$' + (r.intermedio.costo||0).toFixed(2) + '</td>';
@@ -5140,6 +5251,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             if (r.arena1 && r.arena1.peso > 0) {
                 html += '<tr>';
                 html += '<td><strong>Arena 1</strong></td>';
+                html += '<td style="color:#6b7280;font-size:.88em">' + (mix.proveedorArena1||r.arena1.proveedor||'') + '</td>';
                 html += '<td style="text-align:right">' + r.arena1.peso.toFixed(1) + '</td>';
                 html += '<td style="text-align:right">' + r.arena1.volumen.toFixed(3) + '</td>';
                 html += '<td style="text-align:right">$' + (r.arena1.costo||0).toFixed(2) + '</td>';
@@ -5150,16 +5262,18 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             if (r.arena2 && r.arena2.peso > 0) {
                 html += '<tr>';
                 html += '<td><strong>Arena 2</strong></td>';
+                html += '<td style="color:#6b7280;font-size:.88em">' + (mix.proveedorArena2||r.arena2.proveedor||'') + '</td>';
                 html += '<td style="text-align:right">' + r.arena2.peso.toFixed(1) + '</td>';
                 html += '<td style="text-align:right">' + r.arena2.volumen.toFixed(3) + '</td>';
                 html += '<td style="text-align:right">$' + (r.arena2.costo||0).toFixed(2) + '</td>';
                 html += '</tr>';
             }
 
-            // Aditivos
+            // Aditivos oz/cwt
             if (r.aditivo1 && r.aditivo1.peso > 0 && r.aditivo1.nombre && mix.dosisAditivo1 > 0) {
                 html += '<tr style="background:#fffbeb">';
                 html += '<td><strong>' + r.aditivo1.nombre + '</strong></td>';
+                html += '<td></td>';
                 html += '<td colspan="2" style="color:#92400e;font-style:italic">Rango: 0 to ' + mix.dosisAditivo1.toFixed(2) + ' oz/cwt</td>';
                 html += '<td style="text-align:right">$' + (r.aditivo1.costo||0).toFixed(2) + '</td>';
                 html += '</tr>';
@@ -5167,6 +5281,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             if (r.aditivo2 && r.aditivo2.peso > 0 && r.aditivo2.nombre && mix.dosisAditivo2 > 0) {
                 html += '<tr style="background:#fffbeb">';
                 html += '<td><strong>' + r.aditivo2.nombre + '</strong></td>';
+                html += '<td></td>';
                 html += '<td colspan="2" style="color:#92400e;font-style:italic">Rango: 0 to ' + mix.dosisAditivo2.toFixed(2) + ' oz/cwt</td>';
                 html += '<td style="text-align:right">$' + (r.aditivo2.costo||0).toFixed(2) + '</td>';
                 html += '</tr>';
@@ -5176,6 +5291,24 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 html += '<td><strong>' + r.aditivo3.nombre + '</strong></td>';
                 html += '<td colspan="2" style="color:#92400e;font-style:italic">Rango: 0 to ' + mix.dosisAditivo3.toFixed(2) + ' oz/cwt</td>';
                 html += '<td style="text-align:right">$' + (r.aditivo3.costo||0).toFixed(2) + '</td>';
+                html += '</tr>';
+            }
+
+            // Aditivos lb/yd³
+            if (r.aditivo4 && r.aditivo4.peso > 0 && r.aditivo4.nombre) {
+                html += '<tr style="background:#fff1f2">';
+                html += '<td><strong>' + r.aditivo4.nombre + ' <span style="font-size:0.7em;background:#dc2626;color:#fff;border-radius:2px;padding:1px 4px">lb/yd³</span></strong></td>';
+                html += '<td style="text-align:right">' + r.aditivo4.peso.toFixed(3) + '</td>';
+                html += '<td style="text-align:right">' + r.aditivo4.volumen.toFixed(3) + '</td>';
+                html += '<td style="text-align:right">$' + (r.aditivo4.costo||0).toFixed(2) + '</td>';
+                html += '</tr>';
+            }
+            if (r.aditivo5 && r.aditivo5.peso > 0 && r.aditivo5.nombre) {
+                html += '<tr style="background:#fff1f2">';
+                html += '<td><strong>' + r.aditivo5.nombre + ' <span style="font-size:0.7em;background:#dc2626;color:#fff;border-radius:2px;padding:1px 4px">lb/yd³</span></strong></td>';
+                html += '<td style="text-align:right">' + r.aditivo5.peso.toFixed(3) + '</td>';
+                html += '<td style="text-align:right">' + r.aditivo5.volumen.toFixed(3) + '</td>';
+                html += '<td style="text-align:right">$' + (r.aditivo5.costo||0).toFixed(2) + '</td>';
                 html += '</tr>';
             }
 
@@ -5235,8 +5368,12 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     const transaction = db.transaction(['settings'], 'readonly');
                     const store = transaction.objectStore('settings');
                     const request = store.get('logo');
-                    request.onsuccess = () => resolve(request.result ? request.result.value : null);
-                    request.onerror = () => resolve(null);
+                    request.onsuccess = () => {
+                        const val = request.result ? request.result.value : null;
+                        if (val) logoEmpresa = val; // keep in sync with variable used by reports
+                        resolve(val || logoEmpresa || null);
+                    };
+                    request.onerror = () => resolve(logoEmpresa || null);
                 } catch (e) {
                     resolve(logoEmpresa || null);
                 }
@@ -5317,6 +5454,8 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 if (r.aditivo1 && r.aditivo1.nombre && mix.dosisAditivo1 > 0) matsRows += `<tr class="aditivo-row"><td><strong>${r.aditivo1.nombre}</strong></td><td colspan="2">Rango: 0 to ${parseFloat(mix.dosisAditivo1).toFixed(2)} oz/cwt</td></tr>`;
                 if (r.aditivo2 && r.aditivo2.nombre && mix.dosisAditivo2 > 0) matsRows += `<tr class="aditivo-row"><td><strong>${r.aditivo2.nombre}</strong></td><td colspan="2">Rango: 0 to ${parseFloat(mix.dosisAditivo2).toFixed(2)} oz/cwt</td></tr>`;
                 if (r.aditivo3 && r.aditivo3.nombre && mix.dosisAditivo3 > 0) matsRows += `<tr class="aditivo-row"><td><strong>${r.aditivo3.nombre}</strong></td><td colspan="2">Rango: 0 to ${parseFloat(mix.dosisAditivo3).toFixed(2)} oz/cwt</td></tr>`;
+                if (r.aditivo4 && r.aditivo4.nombre && r.aditivo4.peso > 0) matsRows += `<tr style="background:#fff1f2"><td><strong>${r.aditivo4.nombre} <span style="font-size:0.7em;background:#dc2626;color:#fff;border-radius:2px;padding:1px 4px">lb/yd³</span></strong></td><td>${r.aditivo4.peso.toFixed(3)} lb</td><td>${r.aditivo4.volumen.toFixed(3)} ft³</td></tr>`;
+                if (r.aditivo5 && r.aditivo5.nombre && r.aditivo5.peso > 0) matsRows += `<tr style="background:#fff1f2"><td><strong>${r.aditivo5.nombre} <span style="font-size:0.7em;background:#dc2626;color:#fff;border-radius:2px;padding:1px 4px">lb/yd³</span></strong></td><td>${r.aditivo5.peso.toFixed(3)} lb</td><td>${r.aditivo5.volumen.toFixed(3)} ft³</td></tr>`;
 
                 pagesHtml += `
                 <div class="page">
@@ -5597,6 +5736,16 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 }
             });
 
+            // Aditivos lb/yd³
+            [4, 5].forEach(n => {
+                const ad = r['aditivo' + n];
+                const nombre = ad ? ad.nombre : (mix['nombreAditivo' + n] || '');
+                const dosis  = parseFloat(mix['dosisAditivo' + n]) || 0;
+                if (nombre && dosis > 0) {
+                    h += '<tr style="background:#fff1f2"><td><strong>' + nombre + ' <span style="font-size:0.75em;background:#dc2626;color:#fff;border-radius:3px;padding:1px 5px">lb/yd³</span></strong></td><td>' + dosis.toFixed(3) + ' lb</td><td>' + (ad ? ad.volumen.toFixed(3) : '0.000') + '</td></tr>';
+                }
+            });
+
             h += '</tbody></table>';
 
             // Resumen
@@ -5660,6 +5809,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             document.getElementById('peso-cemento').value = mix.pesoCemento || 564;
             document.getElementById('ge-cemento').value = mix.geCemento;
             document.getElementById('precio-cemento').value = mix.precioCemento;
+            document.getElementById('proveedor-cemento').value = mix.proveedorCemento || '';
 
             // SCMs
             [1,2,3].forEach(i => {
@@ -5685,6 +5835,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             document.getElementById('hum-grueso').value = mix.humGrueso;
             document.getElementById('precio-grueso').value = mix.precioGrueso;
             document.getElementById('puc-grueso').value = mix.pucGrueso;
+            document.getElementById('proveedor-grueso').value = mix.proveedorGrueso || '';
             
             // Agregado intermedio - con peso directo
             document.getElementById('peso-intermedio').value = mix.pesoIntermedio || 0;
@@ -5693,6 +5844,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             document.getElementById('hum-intermedio').value = mix.humIntermedio || 1.0;
             document.getElementById('precio-intermedio').value = mix.precioIntermedio || 12.00;
             document.getElementById('puc-intermedio').value = mix.pucIntermedio || 100;
+            document.getElementById('proveedor-intermedio').value = mix.proveedorIntermedio || '';
             
             // Arenas
             document.getElementById('ge-arena1').value = mix.geArena1;
@@ -5701,6 +5853,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             document.getElementById('mf-arena1').value = mix.mfArena1;
             document.getElementById('precio-arena1').value = mix.precioArena1;
             document.getElementById('pct-arena1').value = mix.pctArena1;
+            document.getElementById('proveedor-arena1').value = mix.proveedorArena1 || '';
             
             document.getElementById('ge-arena2').value = mix.geArena2;
             document.getElementById('abs-arena2').value = mix.absArena2;
@@ -5708,6 +5861,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             document.getElementById('mf-arena2').value = mix.mfArena2;
             document.getElementById('precio-arena2').value = mix.precioArena2;
             document.getElementById('pct-arena2').value = mix.pctArena2;
+            document.getElementById('proveedor-arena2').value = mix.proveedorArena2 || '';
             
             calcularModuloFinuraCombinado();
             
@@ -5729,6 +5883,16 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             document.getElementById('dosis-aditivo3').value = mix.dosisAditivo3 || 0;
             document.getElementById('ge-aditivo3').value = mix.geAditivo3;
             document.getElementById('precio-aditivo3').value = mix.precioAditivo3;
+
+            document.getElementById('nombre-aditivo4').value = mix.nombreAditivo4 || '';
+            document.getElementById('dosis-aditivo4').value = mix.dosisAditivo4 || 0;
+            document.getElementById('ge-aditivo4').value = mix.geAditivo4 || 1.0;
+            document.getElementById('precio-aditivo4').value = mix.precioAditivo4 || 0;
+
+            document.getElementById('nombre-aditivo5').value = mix.nombreAditivo5 || '';
+            document.getElementById('dosis-aditivo5').value = mix.dosisAditivo5 || 0;
+            document.getElementById('ge-aditivo5').value = mix.geAditivo5 || 1.0;
+            document.getElementById('precio-aditivo5').value = mix.precioAditivo5 || 0;
             
             // Recalcular el mix design con los valores cargados
             try { calcularMixDesign(); } catch(e) { console.warn('calcularMixDesign error:', e); }
@@ -6208,6 +6372,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 html += '<table><thead><tr>';
                 html += '<th>Material</th>';
                 html += '<th style="text-align:right">Peso (lb/yd³)</th>';
+                html += '<th>Proveedor</th>';
                 html += '<th style="text-align:right">Volumen (ft³)</th>';
                 html += '</tr></thead><tbody>';
 
@@ -6292,7 +6457,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     html += '</tr>';
                 }
 
-                // Aditivos
+                // Aditivos oz/cwt
                 [1,2,3].forEach(n => {
                     const ad = currentMixResults['aditivo'+n];
                     const dosisEl = document.getElementById('dosis-aditivo'+n);
@@ -6301,6 +6466,18 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                         html += '<tr style="background:#fffbeb">';
                         html += '<td><strong>' + ad.nombre + '</strong></td>';
                         html += '<td colspan="2" style="color:#92400e;font-style:italic">Rango: 0 to ' + dosis.toFixed(2) + ' oz/cwt</td>';
+                        html += '</tr>';
+                    }
+                });
+
+                // Aditivos lb/yd³
+                [4,5].forEach(n => {
+                    const ad = currentMixResults['aditivo'+n];
+                    if (ad && ad.nombre && ad.peso > 0) {
+                        html += '<tr style="background:#fff1f2">';
+                        html += '<td><strong>' + ad.nombre + ' <span style="font-size:0.7em;background:#dc2626;color:#fff;border-radius:2px;padding:1px 4px">lb/yd³</span></strong></td>';
+                        html += '<td style="text-align:right">' + ad.peso.toFixed(3) + ' lb</td>';
+                        html += '<td style="text-align:right">' + ad.volumen.toFixed(3) + '</td>';
                         html += '</tr>';
                     }
                 });
@@ -6380,6 +6557,9 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 return;
             }
 
+            // Ensure logo is loaded from storage before building report
+            await obtenerLogo();
+
             try {
                 const nombre = document.getElementById('mix-nombre') ? document.getElementById('mix-nombre').value : 'Sin nombre';
                 const resistencia = document.getElementById('mix-resistencia') ? document.getElementById('mix-resistencia').value : '0';
@@ -6449,6 +6629,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 html += '<table><thead><tr>';
                 html += '<th>Material</th>';
                 html += '<th style="text-align:right">Peso (lb/yd³)</th>';
+                html += '<th>Proveedor</th>';
                 html += '<th style="text-align:right">Volumen (ft³)</th>';
                 html += '<th style="text-align:right">Costo ($/yd³)</th>';
                 html += '</tr></thead><tbody>';
@@ -6458,6 +6639,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     const tipoCemR = document.getElementById('tipo-cemento')?.value || '';
                     html += '<tr style="background:#eff6ff">';
                     html += '<td><strong>Cemento' + (tipoCemR ? ' (' + tipoCemR + ')' : '') + '</strong></td>';
+                    html += '<td style="color:#6b7280;font-size:.88em">' + (currentMixResults.cemento.proveedor||document.getElementById('proveedor-cemento')?.value||'') + '</td>';
                     html += '<td style="text-align:right">' + currentMixResults.cemento.peso.toFixed(1) + '</td>';
                     html += '<td style="text-align:right">' + currentMixResults.cemento.volumen.toFixed(3) + '</td>';
                     html += '<td style="text-align:right">$' + (currentMixResults.cemento.costo||0).toFixed(2) + '</td>';
@@ -6475,6 +6657,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                         const pct = currentMixResults.totalCementicio > 0 ? ((s.peso/currentMixResults.totalCementicio)*100).toFixed(1) : '0';
                         html += '<tr style="background:' + scmColorsR[ix] + '">';
                         html += '<td><strong>' + s.tipo + '</strong> <span style="font-size:11px;color:#7c3aed">(SCM '+i+' — '+pct+'% reemplazo)</span></td>';
+                        html += '<td></td>';
                         html += '<td style="text-align:right">' + s.peso.toFixed(1) + '</td>';
                         html += '<td style="text-align:right">' + s.volumen.toFixed(3) + '</td>';
                         html += '<td style="text-align:right">$' + (s.costo||0).toFixed(2) + '</td>';
@@ -6488,6 +6671,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     const costoSCMsR = [1,2,3].reduce((s,i)=>s+(currentMixResults['scm'+i]?.costo||0),0);
                     html += '<tr style="background:#ddd6fe;font-weight:700">';
                     html += '<td style="color:#5b21b6">Total Cementicio (Cemento + SCMs)</td>';
+                    html += '<td></td>';
                     html += '<td style="text-align:right;color:#5b21b6">' + currentMixResults.totalCementicio.toFixed(1) + '</td>';
                     html += '<td style="text-align:right;color:#5b21b6">' + ((currentMixResults.cemento?.volumen||0)+volSCMsR).toFixed(3) + '</td>';
                     html += '<td style="text-align:right;color:#5b21b6">$' + ((currentMixResults.cemento?.costo||0)+costoSCMsR).toFixed(2) + '</td>';
@@ -6498,6 +6682,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 if (currentMixResults.agua && currentMixResults.agua.peso) {
                     html += '<tr>';
                     html += '<td><strong>Agua Efectiva</strong></td>';
+                    html += '<td></td>';
                     html += '<td style="text-align:right">' + currentMixResults.agua.peso.toFixed(1) + '</td>';
                     html += '<td style="text-align:right">' + currentMixResults.agua.volumen.toFixed(3) + '</td>';
                     html += '<td style="text-align:right">$' + (currentMixResults.agua.costo||0).toFixed(2) + '</td>';
@@ -6508,6 +6693,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 if (currentMixResults.grueso && currentMixResults.grueso.peso >= 0) {
                     html += '<tr>';
                     html += '<td><strong>Agregado Grueso</strong></td>';
+                    html += '<td style="color:#6b7280;font-size:.88em">' + (currentMixResults.grueso.proveedor||document.getElementById('proveedor-grueso')?.value||'') + '</td>';
                     html += '<td style="text-align:right">' + currentMixResults.grueso.peso.toFixed(1) + '</td>';
                     html += '<td style="text-align:right">' + currentMixResults.grueso.volumen.toFixed(3) + '</td>';
                     html += '<td style="text-align:right">$' + (currentMixResults.grueso.costo||0).toFixed(2) + '</td>';
@@ -6518,6 +6704,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 if (currentMixResults.intermedio && currentMixResults.intermedio.peso > 0) {
                     html += '<tr>';
                     html += '<td><strong>Agregado Intermedio</strong></td>';
+                    html += '<td style="color:#6b7280;font-size:.88em">' + (currentMixResults.intermedio.proveedor||document.getElementById('proveedor-intermedio')?.value||'') + '</td>';
                     html += '<td style="text-align:right">' + currentMixResults.intermedio.peso.toFixed(1) + '</td>';
                     html += '<td style="text-align:right">' + currentMixResults.intermedio.volumen.toFixed(3) + '</td>';
                     html += '<td style="text-align:right">$' + (currentMixResults.intermedio.costo||0).toFixed(2) + '</td>';
@@ -6528,6 +6715,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 if (currentMixResults.arena1 && currentMixResults.arena1.peso > 0) {
                     html += '<tr>';
                     html += '<td><strong>Arena 1</strong></td>';
+                    html += '<td style="color:#6b7280;font-size:.88em">' + (currentMixResults.arena1.proveedor||document.getElementById('proveedor-arena1')?.value||'') + '</td>';
                     html += '<td style="text-align:right">' + currentMixResults.arena1.peso.toFixed(1) + '</td>';
                     html += '<td style="text-align:right">' + currentMixResults.arena1.volumen.toFixed(3) + '</td>';
                     html += '<td style="text-align:right">$' + (currentMixResults.arena1.costo||0).toFixed(2) + '</td>';
@@ -6538,13 +6726,14 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 if (currentMixResults.arena2 && currentMixResults.arena2.peso > 0) {
                     html += '<tr>';
                     html += '<td><strong>Arena 2</strong></td>';
+                    html += '<td style="color:#6b7280;font-size:.88em">' + (currentMixResults.arena2.proveedor||document.getElementById('proveedor-arena2')?.value||'') + '</td>';
                     html += '<td style="text-align:right">' + currentMixResults.arena2.peso.toFixed(1) + '</td>';
                     html += '<td style="text-align:right">' + currentMixResults.arena2.volumen.toFixed(3) + '</td>';
                     html += '<td style="text-align:right">$' + (currentMixResults.arena2.costo||0).toFixed(2) + '</td>';
                     html += '</tr>';
                 }
 
-                // Aditivos
+                // Aditivos oz/cwt
                 [1,2,3].forEach(n => {
                     const ad = currentMixResults['aditivo'+n];
                     const dosisEl = document.getElementById('dosis-aditivo'+n);
@@ -6553,6 +6742,19 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                         html += '<tr style="background:#fffbeb">';
                         html += '<td><strong>' + ad.nombre + '</strong></td>';
                         html += '<td colspan="2" style="color:#92400e;font-style:italic">Rango: 0 to ' + dosis.toFixed(2) + ' oz/cwt</td>';
+                        html += '<td style="text-align:right">$' + (ad.costo||0).toFixed(2) + '</td>';
+                        html += '</tr>';
+                    }
+                });
+
+                // Aditivos lb/yd³
+                [4,5].forEach(n => {
+                    const ad = currentMixResults['aditivo'+n];
+                    if (ad && ad.nombre && ad.peso > 0) {
+                        html += '<tr style="background:#fff1f2">';
+                        html += '<td><strong>' + ad.nombre + ' <span style="font-size:0.7em;background:#dc2626;color:#fff;border-radius:2px;padding:1px 4px">lb/yd³</span></strong></td>';
+                        html += '<td style="text-align:right">' + ad.peso.toFixed(3) + '</td>';
+                        html += '<td style="text-align:right">' + ad.volumen.toFixed(3) + '</td>';
                         html += '<td style="text-align:right">$' + (ad.costo||0).toFixed(2) + '</td>';
                         html += '</tr>';
                     }
@@ -6694,6 +6896,9 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 alert('⚠️ Debes calcular los volúmenes primero'); 
                 return; 
             }
+
+            // Ensure logo is loaded from storage before building report
+            await obtenerLogo();
 
             try {
                 const mix = {
@@ -7437,7 +7642,9 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
 
                 ${(r.aditivo1.peso > 0 && r.aditivo1.nombre) || 
                   (r.aditivo2.peso > 0 && r.aditivo2.nombre) || 
-                  (r.aditivo3.peso > 0 && r.aditivo3.nombre) ? `
+                  (r.aditivo3.peso > 0 && r.aditivo3.nombre) ||
+                  (r.aditivo4 && r.aditivo4.peso > 0 && r.aditivo4.nombre) ||
+                  (r.aditivo5 && r.aditivo5.peso > 0 && r.aditivo5.nombre) ? `
                 <!-- ADITIVOS -->
                 <tr class="category-header">
                     <td colspan="5"><strong>🧪 ADITIVOS</strong></td>
@@ -7465,6 +7672,22 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     <td>$${(mix.precioAditivo3 || 0).toFixed(2)}/gal</td>
                     <td class="cost-value">$${r.aditivo3.costo.toFixed(2)}</td>
                     <td class="pct-value">${((r.aditivo3.costo / r.costoTotal) * 100).toFixed(1)}%</td>
+                </tr>` : ''}
+                ${r.aditivo4 && r.aditivo4.peso > 0 && r.aditivo4.nombre ? `
+                <tr style="background:#fff1f2">
+                    <td class="material-name">${r.aditivo4.nombre} <span style="font-size:0.7em;background:#dc2626;color:#fff;border-radius:2px;padding:1px 4px">lb/yd³</span></td>
+                    <td>${(mix.dosisAditivo4 || 0).toFixed(3)} lb/yd³</td>
+                    <td>$${(mix.precioAditivo4 || 0).toFixed(2)}/lb</td>
+                    <td class="cost-value">$${r.aditivo4.costo.toFixed(2)}</td>
+                    <td class="pct-value">${((r.aditivo4.costo / r.costoTotal) * 100).toFixed(1)}%</td>
+                </tr>` : ''}
+                ${r.aditivo5 && r.aditivo5.peso > 0 && r.aditivo5.nombre ? `
+                <tr style="background:#fff1f2">
+                    <td class="material-name">${r.aditivo5.nombre} <span style="font-size:0.7em;background:#dc2626;color:#fff;border-radius:2px;padding:1px 4px">lb/yd³</span></td>
+                    <td>${(mix.dosisAditivo5 || 0).toFixed(3)} lb/yd³</td>
+                    <td>$${(mix.precioAditivo5 || 0).toFixed(2)}/lb</td>
+                    <td class="cost-value">$${r.aditivo5.costo.toFixed(2)}</td>
+                    <td class="pct-value">${((r.aditivo5.costo / r.costoTotal) * 100).toFixed(1)}%</td>
                 </tr>` : ''}
                 ` : ''}
 
@@ -7715,7 +7938,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             sel.innerHTML = '<option value="">Sin proyecto</option>';
             if (!clienteId) return;
             var proyectos = await getAllRecords('proyectos');
-            proyectos.filter(function(p){ return p.clienteId == clienteId; }).forEach(function(p){
+            proyectos.filter(function(p){ return String(p.clienteId) === String(clienteId) || String(p.cliente) === String(clienteId); }).forEach(function(p){
                 var o=document.createElement('option'); o.value=p.id; o.textContent=p.nombre; sel.appendChild(o);
             });
         }
@@ -9670,7 +9893,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             const materiales = await getAllRecords('materiales');
             const aditivos = materiales.filter(m => m.categoria === 'aditivos');
             
-            const selects = ['nombre-aditivo1', 'nombre-aditivo2', 'nombre-aditivo3'];
+            const selects = ['nombre-aditivo1', 'nombre-aditivo2', 'nombre-aditivo3', 'nombre-aditivo4', 'nombre-aditivo5'];
             selects.forEach(selectId => {
                 const select = document.getElementById(selectId);
                 const valorActual = select.value;
@@ -9700,6 +9923,18 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 const selectedOption = this.options[this.selectedIndex];
                 const precio = selectedOption.getAttribute('data-precio') || 0;
                 document.getElementById('precio-aditivo3').value = precio;
+            });
+
+            document.getElementById('nombre-aditivo4').addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const precio = selectedOption.getAttribute('data-precio') || 0;
+                document.getElementById('precio-aditivo4').value = precio;
+            });
+
+            document.getElementById('nombre-aditivo5').addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const precio = selectedOption.getAttribute('data-precio') || 0;
+                document.getElementById('precio-aditivo5').value = precio;
             });
         }
 
@@ -13883,21 +14118,28 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                     <div class="a214-ig"><label>Cylinder 1 (psi)</label><input type="number" id="a214-in-fc1" placeholder="4200" step="10"></div>
                     <div class="a214-ig"><label>Cylinder 2 (psi)</label><input type="number" id="a214-in-fc2" placeholder="4350" step="10"></div>
                     <div class="a214-ig"><label>f'c Design (psi)</label><input type="number" id="a214-in-fcd" value="4000" step="100"></div>
-                    <div class="a214-ig"><label>Mix Design Code <span style="font-size:.55rem;color:#0284c7;letter-spacing:.5px">(Trial Mixes)</span></label>
+                    <div class="a214-ig"><label>Mix Design Code</label>
                         <div style="display:flex;gap:.35rem">
-                            <select id="a214-in-mix" style="flex:1" onchange="a214AutoFcd()"><option value="">&#8212; Seleccionar Trial Mix &#8212;</option></select>
-                            <button class="a214-btn a214-btn-c" onclick="a214CargarTrialMixes()" title="Recargar Trial Mixes desde IndexedDB" style="padding:.38rem .6rem;font-size:.68rem">&#8635;</button>
+                            <select id="a214-in-mix" style="flex:1" onchange="a214AutoFcd()"><option value="">&#8212; None &#8212;</option></select>
+                            <button class="a214-btn a214-btn-a" onclick="a214ToggleNM()" style="padding:.38rem .6rem;font-size:.68rem">+ NEW</button>
                         </div>
-                        <div id="a214-mix-badge" style="display:none;margin-top:.3rem;padding:.3rem .6rem;background:#eff6ff;border:1px solid #bfdbfe;border-radius:4px;font-family:monospace;font-size:.65rem;color:#1e40af;line-height:1.5"></div>
                     </div>
                 </div>
-                <!-- Panel de info del Trial Mix seleccionado -->
-                <div id="a214-trial-info" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:.8rem 1rem;margin-bottom:.8rem">
-                    <div style="font-family:monospace;font-size:.62rem;color:#1e40af;letter-spacing:1px;text-transform:uppercase;margin-bottom:.5rem;display:flex;align-items:center;gap:.5rem">
-                        <span style="width:3px;height:.7rem;background:#2563eb;border-radius:2px;display:inline-block"></span>
-                        Trial Mix Seleccionado
+                <div class="a214-nmf" id="a214-nmf">
+                    <div style="font-family:monospace;font-size:.65rem;color:var(--cyan214);letter-spacing:1px;margin-bottom:.6rem;text-transform:uppercase;border-bottom:1px solid var(--border214);padding-bottom:.4rem">New Mix Design</div>
+                    <div class="a214-ir" style="margin-bottom:.4rem">
+                        <div class="a214-ig"><label>Mix Code *</label><input type="text" id="a214-nm-code" placeholder="MIX-4000-A"></div>
+                        <div class="a214-ig"><label>f'c Design (psi) *</label><input type="number" id="a214-nm-fcd" value="4000" step="100"></div>
+                        <div class="a214-ig"><label>w/c Ratio</label><input type="number" id="a214-nm-wc" step="0.01" placeholder="0.44"></div>
+                        <div class="a214-ig"><label>Cement (lb/yd³)</label><input type="number" id="a214-nm-cement" placeholder="564"></div>
+                        <div class="a214-ig"><label>Water (lb/yd³)</label><input type="number" id="a214-nm-water" placeholder="248"></div>
+                        <div class="a214-ig"><label>Coarse Agg.</label><input type="number" id="a214-nm-ca" placeholder="1825"></div>
+                        <div class="a214-ig"><label>Fine Agg.</label><input type="number" id="a214-nm-fa" placeholder="1340"></div>
+                        <div class="a214-ig"><label>Admixtures</label><input type="text" id="a214-nm-adm" placeholder="WR, HRWR..."></div>
+                        <div class="a214-ig"><label>Supplier</label><input type="text" id="a214-nm-sup" placeholder="Ready-Mix Co."></div>
+                        <div class="a214-ig"><label>Notes</label><input type="text" id="a214-nm-notes" placeholder="Optional"></div>
                     </div>
-                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.4rem" id="a214-trial-info-grid"></div>
+                    <div class="a214-br"><button class="a214-btn a214-btn-p" onclick="a214SaveMix()">SAVE MIX</button><button class="a214-btn a214-btn-d" onclick="a214ToggleNM()">CANCEL</button></div>
                 </div>
                 <div class="a214-br">
                     <button class="a214-btn a214-btn-p" onclick="a214AddResult()">+ ADD RESULT</button>
@@ -15498,12 +15740,7 @@ function a214Init(){
     const rpDate=ag('a214-rp-date'); if(rpDate) rpDate.value=new Date().toISOString().slice(0,10);
     // Load persisted data
     try{const saved=localStorage.getItem('aci214_data');if(saved){const d=JSON.parse(saved);a214R=d.R||[];a214MX=d.MX||{};}}catch(e){}
-    // Cargar Trial Mixes desde IndexedDB y luego inicializar UI
-    a214CargarTrialMixes().then(()=>{
-        a214RefreshSelects(); a214RenderResTbl(); a214RenderMixTbl(); a214UpdAll();
-    }).catch(()=>{
-        a214RefreshSelects(); a214RenderResTbl(); a214RenderMixTbl(); a214UpdAll();
-    });
+    a214RefreshSelects(); a214RenderResTbl(); a214RenderMixTbl(); a214UpdAll();
 }
 
 function a214Save(){
@@ -15548,196 +15785,29 @@ function a214CalcStats(rs){
 }
 
 // ── MIX DESIGNS ──
-// ── TRIAL MIXES → ACI 214 INTEGRATION ──
-// Cache de trial mixes cargados desde IndexedDB
-let a214TrialCache = [];  // array de trials con datos del mix design base
-let a214MixCache  = {};   // key: mixDesignId(string) → datos únicos del mix design con sus trials
+window.a214ToggleNM=function(){const f=ag('a214-nmf');f.style.display=f.style.display==='none'||!f.style.display?'block':'none';};
+window.a214AutoFcd=function(){const c=av('a214-in-mix');if(c&&a214MX[c]){const el=ag('a214-in-fcd');if(el)el.value=a214MX[c].fcd;}};
 
-window.a214CargarTrialMixes = async function(){
-    try {
-        const trials = await getAllRecords('trials');
-        const mixes  = await getAllRecords('mixdesigns');
-        a214TrialCache = [];
-        a214MixCache   = {};
-
-        trials.forEach(t => {
-            const mix = mixes.find(m => m.id === t.mixDesignId);
-            if (!mix) return;
-
-            const pesoC = parseFloat(mix.pesoCemento) || 0;
-            const pesoW = parseFloat(mix.pesoAgua)    || 0;
-            const wc    = (pesoC > 0 && pesoW > 0) ? (pesoW / pesoC).toFixed(3) : '—';
-            const scm1  = parseFloat(mix.pesoSCM1) || 0;
-            const scm2  = parseFloat(mix.pesoSCM2) || 0;
-            const scm3  = parseFloat(mix.pesoSCM3) || 0;
-            const totalC = pesoC + scm1 + scm2 + scm3;
-            const ca    = (parseFloat(mix.pesoGrueso) || 0) + (parseFloat(mix.pesoIntermedio) || 0);
-            const r     = mix.resultados || {};
-            const faVal = r.arena1 ? (parseFloat(r.arena1.peso)||0) + (r.arena2 ? parseFloat(r.arena2.peso)||0 : 0) : 0;
-            const adm   = [mix.nombreAditivo1, mix.nombreAditivo2, mix.nombreAditivo3].filter(a=>a&&a.trim()).join(', ') || '—';
-            const fcd   = parseFloat(mix.resistencia) || 0;
-            const mixIdStr = mix.mixId || ('MIX-' + String(mix.id).padStart(4,'0'));
-            const displayName = mix.nombre || mixIdStr;
-
-            const trialData = {
-                trialId: t.trialId, trialDbId: t.id,
-                mixDesignId: mix.id, mixDesignNombre: displayName, mixIdStr, fcd, wc,
-                cement: totalC > 0 ? totalC.toFixed(1) : '—',
-                water:  pesoW > 0 ? pesoW.toFixed(1) : '—',
-                ca:     ca > 0 ? ca.toFixed(1) : '—',
-                fa:     faVal > 0 ? faVal.toFixed(1) : '—',
-                adm, tipoCemento: mix.tipoCemento||'—', aplicacion: mix.aplicacion||'—',
-                fecha: t.fecha||'', slump: t.slump||'—',
-                cilindros: t.cilindros||[], tecnico: t.tecnico||'—',
-            };
-            a214TrialCache.push(trialData);
-
-            // Agrupar por mixDesignId — UNA entrada por Mix Design
-            const key = String(mix.id);
-            if (!a214MixCache[key]) {
-                a214MixCache[key] = {
-                    mixDesignId: mix.id, mixDesignNombre: displayName, mixIdStr, fcd, wc,
-                    cement: trialData.cement, water: trialData.water,
-                    ca: trialData.ca, fa: trialData.fa, adm,
-                    tipoCemento: mix.tipoCemento||'—', aplicacion: mix.aplicacion||'—',
-                    trials: [],
-                };
-            }
-            a214MixCache[key].trials.push(trialData);
-        });
-
-        a214RefreshSelects();
-        const cnt = Object.keys(a214MixCache).length;
-        const msg = document.createElement('div');
-        msg.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#2563eb;color:#fff;padding:8px 16px;border-radius:6px;font-family:monospace;font-size:.75rem;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.2)';
-        msg.textContent = cnt > 0 ? `\u2713 ${cnt} Mix Design${cnt>1?'s':''} cargado${cnt>1?'s':''}` : '\u26a0\ufe0f No hay Trial Mixes registrados';
-        document.body.appendChild(msg);
-        setTimeout(()=>msg.remove(), 2500);
-    } catch(e) {
-        console.warn('a214CargarTrialMixes:', e);
-    }
+window.a214SaveMix=function(){
+    const code=ag('a214-nm-code').value.trim();
+    if(!code){alert('Mix Code required.');return;}
+    a214MX[code]={fcd:parseFloat(ag('a214-nm-fcd').value)||4000,wc:ag('a214-nm-wc').value||'—',cement:ag('a214-nm-cement').value||'—',water:ag('a214-nm-water').value||'—',ca:ag('a214-nm-ca').value||'—',fa:ag('a214-nm-fa').value||'—',adm:ag('a214-nm-adm').value||'—',supplier:ag('a214-nm-sup').value||'—',notes:ag('a214-nm-notes').value||'—'};
+    a214RefreshSelects(); a214RenderMixTbl(); a214Save();
+    ['a214-nm-code','a214-nm-wc','a214-nm-cement','a214-nm-water','a214-nm-ca','a214-nm-fa','a214-nm-adm','a214-nm-sup','a214-nm-notes'].forEach(id=>{const el=ag(id);if(el)el.value='';});
+    a214ToggleNM();
 };
-
-// Al seleccionar un Mix Design en el selector
-window.a214AutoFcd = function(){
-    const key       = av('a214-in-mix');  // mixDesignId como string (o nombre de mix manual)
-    const infoPanel = ag('a214-trial-info');
-    const infoGrid  = ag('a214-trial-info-grid');
-    const badge     = ag('a214-mix-badge');
-
-    if(!key){
-        if(infoPanel) infoPanel.style.display = 'none';
-        if(badge)     badge.style.display = 'none';
-        return;
-    }
-
-    const mx = a214MixCache[key];
-    if(mx){
-        // Registrar en a214MX con el nombre del Mix Design como clave (para estadísticas y filtros)
-        a214MX[mx.mixDesignNombre] = {
-            fcd: mx.fcd, wc: mx.wc, cement: mx.cement, water: mx.water,
-            ca: mx.ca, fa: mx.fa, adm: mx.adm,
-            supplier: mx.tipoCemento,
-            notes: mx.mixDesignNombre + (mx.aplicacion !== '—' ? ' \u00b7 ' + mx.aplicacion : ''),
-            fromTrial: true, mixDesignId: mx.mixDesignId,
-        };
-        // f'c Design
-        const el = ag('a214-in-fcd');
-        if(el && mx.fcd > 0) el.value = mx.fcd;
-        // Badge resumen
-        if(badge){
-            badge.style.display = 'block';
-            badge.innerHTML = `<b>${mx.mixDesignNombre}</b> &nbsp;&middot;&nbsp; f'c = <b>${mx.fcd} psi</b> &nbsp;&middot;&nbsp; ${mx.trials.length} trial${mx.trials.length>1?'s':''}`;
-        }
-        // Panel detallado
-        if(infoPanel && infoGrid){
-            const trialList = mx.trials.map(t=>`<span style="background:#dbeafe;color:#1e40af;padding:.1rem .4rem;border-radius:3px;margin-right:.3rem;font-family:monospace;font-size:.68rem">${t.trialId}</span>`).join('');
-            const campos = [
-                ["Mix Design",   mx.mixDesignNombre],
-                ["Mix ID",       mx.mixIdStr],
-                ["f'c Design",   mx.fcd > 0 ? mx.fcd + ' psi' : '—'],
-                ["w/c",          mx.wc],
-                ["Cemento",      mx.cement + ' lb/yd\u00b3'],
-                ["Agua",         mx.water  + ' lb/yd\u00b3'],
-                ["Ag. Grueso",   mx.ca     + ' lb/yd\u00b3'],
-                ["Ag. Fino",     mx.fa     + ' lb/yd\u00b3'],
-                ["Aditivos",     mx.adm],
-                ["Tipo Cemento", mx.tipoCemento],
-                ["Aplicaci\u00f3n",   mx.aplicacion],
-                ["Trials",       mx.trials.length + ' registrado' + (mx.trials.length>1?'s':'')],
-            ];
-            infoGrid.innerHTML = campos.map(([l,v])=>
-                `<div style="background:#fff;border:1px solid #bfdbfe;border-radius:4px;padding:.3rem .5rem">
-                    <div style="font-size:.58rem;color:#64748b;text-transform:uppercase;letter-spacing:.5px">${l}</div>
-                    <div style="font-size:.72rem;font-weight:600;color:#1e293b;font-family:monospace">${v}</div>
-                </div>`
-            ).join('') + `<div style="grid-column:1/-1;background:#fff;border:1px solid #bfdbfe;border-radius:4px;padding:.3rem .5rem">
-                <div style="font-size:.58rem;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.25rem">Trial IDs asociados</div>
-                <div>${trialList}</div>
-            </div>`;
-            infoPanel.style.display = 'block';
-        }
-    } else if(a214MX[key]){
-        // Mix manual
-        const el = ag('a214-in-fcd');
-        if(el) el.value = a214MX[key].fcd;
-        if(infoPanel) infoPanel.style.display = 'none';
-        if(badge){ badge.style.display='block'; badge.innerHTML=`<b>${key}</b> &nbsp;&middot;&nbsp; f'c = <b>${a214MX[key].fcd} psi</b>`; }
-    }
-};
-
-window.a214ToggleNM=function(){};
-window.a214SaveMix=function(){};
 window.a214DeleteMix=function(k){if(!confirm('Delete mix "'+k+'"?'))return;delete a214MX[k];a214RefreshSelects();a214RenderMixTbl();a214Save();};
 
 function a214RefreshSelects(){
-    // ── Selects de FILTRO (Stats, Criteria, Charts) — muestran nombre del Mix Design ──
-    ['a214-sf','a214-cf','a214-chf'].forEach(id=>{
-        const el=ag(id); if(!el)return;
+    ['a214-in-mix','a214-sf','a214-cf','a214-chf'].forEach(id=>{
+        const el=ag(id);if(!el)return;
         const cv=el.value;
-        el.innerHTML='<option value="ALL">ALL MIXES</option>';
-        Object.values(a214MixCache).forEach(mx=>{
-            const o=document.createElement('option');
-            o.value=mx.mixDesignNombre;
-            o.textContent=mx.mixDesignNombre + (mx.fcd>0?' — '+mx.fcd+' psi':'');
-            el.appendChild(o);
-        });
-        Object.keys(a214MX).filter(k=>!a214MX[k].fromTrial).forEach(k=>{
-            const o=document.createElement('option');o.value=k;o.textContent=k;el.appendChild(o);
-        });
-        if(cv) el.value=cv;
+        const isFilter=id!=='a214-in-mix';
+        el.innerHTML=isFilter?'<option value="ALL">ALL MIXES</option>':'<option value="">&#8212; None &#8212;</option>';
+        Object.keys(a214MX).forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=k;el.appendChild(o);});
+        if(cv)el.value=cv;
     });
-
-    // ── Selector DATA ENTRY — muestra Mix Design, una opción por mix único ──
-    const sel = ag('a214-in-mix');
-    if(!sel) return;
-    const cv = sel.value;
-    sel.innerHTML = '<option value="">— Seleccionar Mix Design —</option>';
-
-    Object.values(a214MixCache).forEach(mx=>{
-        const o = document.createElement('option');
-        o.value = String(mx.mixDesignId);   // value = ID del mix design
-        o.textContent = mx.mixDesignNombre
-            + (mx.fcd > 0 ? '  —  f\'c ' + mx.fcd + ' psi' : '')
-            + '  (' + mx.trials.length + ' trial' + (mx.trials.length>1?'s':'') + ')';
-        sel.appendChild(o);
-    });
-
-    // Mixes manuales
-    const manuales = Object.keys(a214MX).filter(k=>!a214MX[k].fromTrial);
-    if(manuales.length > 0){
-        const og = document.createElement('optgroup');
-        og.label = '\u270f\ufe0f Mixes Manuales';
-        manuales.forEach(k=>{
-            const o=document.createElement('option');
-            o.value=k; o.textContent=k; og.appendChild(o);
-        });
-        sel.appendChild(og);
-    }
-
-    if(cv) sel.value=cv;
 }
-
 
 function a214RenderMixTbl(){
     const tb=ag('a214-mix-body');const ks=Object.keys(a214MX);
@@ -15777,15 +15847,9 @@ function a214RenderResTbl(){
 window.a214AddResult=function(){
     const fc1=parseFloat(ag('a214-in-fc1').value),fc2=parseFloat(ag('a214-in-fc2').value);
     if(isNaN(fc1)||isNaN(fc2)){alert('Enter both cylinder values.');return;}
-    const key=av('a214-in-mix');  // mixDesignId (string) o nombre de mix manual
-    // Resolver nombre del Mix Design y fcd
-    const mxObj  = a214MixCache[key];
-    const mixName = mxObj ? mxObj.mixDesignNombre : (a214MX[key] ? key : key||'—');
-    const fcd     = mxObj && mxObj.fcd > 0 ? mxObj.fcd
-                  : (a214MX[key] ? a214MX[key].fcd
-                  : parseFloat(ag('a214-in-fcd').value)||4000);
-    // Guardar el resultado con mixName como clave (consistente con los filtros)
-    a214R.push({date:av('a214-in-date'),lot:ag('a214-in-lot').value||'—',loc:ag('a214-in-loc').value||'—',age:parseInt(ag('a214-in-age').value)||28,fc1,fc2,fcd,mix:mixName});
+    const mx=av('a214-in-mix');
+    const fcd=mx&&a214MX[mx]?a214MX[mx].fcd:parseFloat(ag('a214-in-fcd').value)||4000;
+    a214R.push({date:av('a214-in-date'),lot:ag('a214-in-lot').value||'&#8212;',loc:ag('a214-in-loc').value||'&#8212;',age:parseInt(ag('a214-in-age').value)||28,fc1,fc2,fcd,mix:mx||'&#8212;'});
     ag('a214-in-fc1').value='';ag('a214-in-fc2').value='';
     a214RenderResTbl();a214RenderMixTbl();a214UpdAll();a214Save();
 };
