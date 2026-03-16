@@ -1985,12 +1985,12 @@
                             <input type="text" id="campo-id-display" readonly class="calculated" placeholder="Auto">
                         </div>
                         <div class="form-group">
-                            <label>Semana (Week)</label>
-                            <input type="number" id="campo-week" min="1" max="53" placeholder="ej: 17">
+                            <label>Semana (Week) <small>Auto</small></label>
+                            <input type="number" id="campo-week" min="1" max="53" readonly class="calculated" placeholder="Auto">
                         </div>
                         <div class="form-group">
                             <label>Fecha *</label>
-                            <input type="date" id="campo-fecha" required>
+                            <input type="date" id="campo-fecha" required onchange="calcCampoWeekFromFecha();calcAllCylDates()">
                         </div>
                         <div class="form-group">
                             <label>Hora del Test</label>
@@ -2071,7 +2071,7 @@
                         </div>
                         <div class="form-group">
                             <label>Quantity Yards (yd³)</label>
-                            <input type="number" id="campo-qty-yards" step="0.5" min="0" placeholder="ej: 10" oninput="calcCampoYield()">
+                            <input type="number" id="campo-qty-yards" step="0.5" min="0" placeholder="ej: 10" oninput="calcCampoYield();calcCampoDesign()">
                         </div>
                         <div class="form-group">
                             <label>Truck Number</label>
@@ -2108,7 +2108,7 @@
                                     <th style="text-align:right">Target</th>
                                     <th style="text-align:right">Actual</th>
                                     <th style="text-align:right">% Diff.</th>
-                                    <th style="text-align:right">Design</th>
+                                    <th style="text-align:right">Design (lb/yd³) <small style="opacity:.75;font-weight:400">Auto</small></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -2116,127 +2116,127 @@
                                     <td><strong>Cement 1</strong></td>
                                     <td><input type="text" id="campo-cem1-desc" placeholder="Portland Type I..."></td>
                                     <td></td>
-                                    <td><input type="number" id="campo-cem1-target" step="0.1" style="text-align:right" oninput="calcCampoDiff('cem1')"></td>
-                                    <td><input type="number" id="campo-cem1-actual" step="0.1" style="text-align:right" oninput="calcCampoDiff('cem1');calcCampoWCRatio();calcCampoYield()"></td>
+                                    <td><input type="number" id="campo-cem1-target" step="0.1" style="text-align:right" oninput="calcCampoDiff('cem1');calcCampoDesign()"></td>
+                                    <td><input type="number" id="campo-cem1-actual" step="0.1" style="text-align:right" oninput="calcCampoDiff('cem1');calcCampoWCRatio();calcCampoYield();calcCampoDesign()"></td>
                                     <td><input type="text" id="campo-cem1-diff" readonly class="calculated" style="text-align:right"></td>
-                                    <td><input type="number" id="campo-cem1-design" step="0.1" style="text-align:right"></td>
+                                    <td><input type="text" id="campo-cem1-design" readonly class="calculated" style="text-align:right"></td>
                                 </tr>
                                 <tr style="background:#eff6ff">
                                     <td><strong>Cement 2</strong></td>
                                     <td><input type="text" id="campo-cem2-desc" placeholder="(Opcional)"></td>
                                     <td></td>
-                                    <td><input type="number" id="campo-cem2-target" step="0.1" style="text-align:right" oninput="calcCampoDiff('cem2')"></td>
-                                    <td><input type="number" id="campo-cem2-actual" step="0.1" style="text-align:right" oninput="calcCampoDiff('cem2');calcCampoWCRatio();calcCampoYield()"></td>
+                                    <td><input type="number" id="campo-cem2-target" step="0.1" style="text-align:right" oninput="calcCampoDiff('cem2');calcCampoDesign()"></td>
+                                    <td><input type="number" id="campo-cem2-actual" step="0.1" style="text-align:right" oninput="calcCampoDiff('cem2');calcCampoWCRatio();calcCampoYield();calcCampoDesign()"></td>
                                     <td><input type="text" id="campo-cem2-diff" readonly class="calculated" style="text-align:right"></td>
-                                    <td><input type="number" id="campo-cem2-design" step="0.1" style="text-align:right"></td>
+                                    <td><input type="text" id="campo-cem2-design" readonly class="calculated" style="text-align:right"></td>
                                 </tr>
                                 <tr style="background:#f5f3ff">
                                     <td><strong>SCM 1</strong></td>
                                     <td><input type="text" id="campo-scm1-desc" placeholder="Fly Ash, Slag..."></td>
                                     <td></td>
-                                    <td><input type="number" id="campo-scm1-target" step="0.1" style="text-align:right" oninput="calcCampoDiff('scm1')"></td>
-                                    <td><input type="number" id="campo-scm1-actual" step="0.1" style="text-align:right" oninput="calcCampoDiff('scm1');calcCampoWCRatio();calcCampoYield()"></td>
+                                    <td><input type="number" id="campo-scm1-target" step="0.1" style="text-align:right" oninput="calcCampoDiff('scm1');calcCampoDesign()"></td>
+                                    <td><input type="number" id="campo-scm1-actual" step="0.1" style="text-align:right" oninput="calcCampoDiff('scm1');calcCampoWCRatio();calcCampoYield();calcCampoDesign()"></td>
                                     <td><input type="text" id="campo-scm1-diff" readonly class="calculated" style="text-align:right"></td>
-                                    <td><input type="number" id="campo-scm1-design" step="0.1" style="text-align:right"></td>
+                                    <td><input type="text" id="campo-scm1-design" readonly class="calculated" style="text-align:right"></td>
                                 </tr>
                                 <tr style="background:#f5f3ff">
                                     <td><strong>SCM 2</strong></td>
                                     <td><input type="text" id="campo-scm2-desc" placeholder="(Opcional)"></td>
                                     <td></td>
-                                    <td><input type="number" id="campo-scm2-target" step="0.1" style="text-align:right" oninput="calcCampoDiff('scm2')"></td>
-                                    <td><input type="number" id="campo-scm2-actual" step="0.1" style="text-align:right" oninput="calcCampoDiff('scm2');calcCampoWCRatio();calcCampoYield()"></td>
+                                    <td><input type="number" id="campo-scm2-target" step="0.1" style="text-align:right" oninput="calcCampoDiff('scm2');calcCampoDesign()"></td>
+                                    <td><input type="number" id="campo-scm2-actual" step="0.1" style="text-align:right" oninput="calcCampoDiff('scm2');calcCampoWCRatio();calcCampoYield();calcCampoDesign()"></td>
                                     <td><input type="text" id="campo-scm2-diff" readonly class="calculated" style="text-align:right"></td>
-                                    <td><input type="number" id="campo-scm2-design" step="0.1" style="text-align:right"></td>
+                                    <td><input type="text" id="campo-scm2-design" readonly class="calculated" style="text-align:right"></td>
                                 </tr>
                                 <tr>
                                     <td><strong>Aggregate 1</strong></td>
                                     <td><input type="text" id="campo-agg1-desc" placeholder="Grueso, TMA..."></td>
-                                    <td><input type="number" id="campo-agg1-moist" step="0.01" style="text-align:right" placeholder="0.00" oninput="calcCampoDiff('agg1')"></td>
-                                    <td><input type="number" id="campo-agg1-target" step="0.1" style="text-align:right" oninput="calcCampoDiff('agg1')"></td>
-                                    <td><input type="number" id="campo-agg1-actual" step="0.1" style="text-align:right" oninput="calcCampoDiff('agg1');calcCampoYield()"></td>
+                                    <td><input type="number" id="campo-agg1-moist" step="0.01" style="text-align:right" placeholder="0.00" oninput="calcCampoDiff('agg1');calcCampoDesign()"></td>
+                                    <td><input type="number" id="campo-agg1-target" step="0.1" style="text-align:right" oninput="calcCampoDiff('agg1');calcCampoDesign()"></td>
+                                    <td><input type="number" id="campo-agg1-actual" step="0.1" style="text-align:right" oninput="calcCampoDiff('agg1');calcCampoYield();calcCampoDesign()"></td>
                                     <td><input type="text" id="campo-agg1-diff" readonly class="calculated" style="text-align:right"></td>
-                                    <td><input type="number" id="campo-agg1-design" step="0.1" style="text-align:right"></td>
+                                    <td><input type="text" id="campo-agg1-design" readonly class="calculated" style="text-align:right"></td>
                                 </tr>
                                 <tr>
                                     <td><strong>Aggregate 2</strong></td>
                                     <td><input type="text" id="campo-agg2-desc" placeholder="(Opcional)"></td>
-                                    <td><input type="number" id="campo-agg2-moist" step="0.01" style="text-align:right" placeholder="0.00" oninput="calcCampoDiff('agg2')"></td>
-                                    <td><input type="number" id="campo-agg2-target" step="0.1" style="text-align:right" oninput="calcCampoDiff('agg2')"></td>
-                                    <td><input type="number" id="campo-agg2-actual" step="0.1" style="text-align:right" oninput="calcCampoDiff('agg2');calcCampoYield()"></td>
+                                    <td><input type="number" id="campo-agg2-moist" step="0.01" style="text-align:right" placeholder="0.00" oninput="calcCampoDiff('agg2');calcCampoDesign()"></td>
+                                    <td><input type="number" id="campo-agg2-target" step="0.1" style="text-align:right" oninput="calcCampoDiff('agg2');calcCampoDesign()"></td>
+                                    <td><input type="number" id="campo-agg2-actual" step="0.1" style="text-align:right" oninput="calcCampoDiff('agg2');calcCampoYield();calcCampoDesign()"></td>
                                     <td><input type="text" id="campo-agg2-diff" readonly class="calculated" style="text-align:right"></td>
-                                    <td><input type="number" id="campo-agg2-design" step="0.1" style="text-align:right"></td>
+                                    <td><input type="text" id="campo-agg2-design" readonly class="calculated" style="text-align:right"></td>
                                 </tr>
                                 <tr>
                                     <td><strong>Aggregate 3</strong></td>
                                     <td><input type="text" id="campo-agg3-desc" placeholder="(Opcional)"></td>
-                                    <td><input type="number" id="campo-agg3-moist" step="0.01" style="text-align:right" placeholder="0.00" oninput="calcCampoDiff('agg3')"></td>
-                                    <td><input type="number" id="campo-agg3-target" step="0.1" style="text-align:right" oninput="calcCampoDiff('agg3')"></td>
-                                    <td><input type="number" id="campo-agg3-actual" step="0.1" style="text-align:right" oninput="calcCampoDiff('agg3');calcCampoYield()"></td>
+                                    <td><input type="number" id="campo-agg3-moist" step="0.01" style="text-align:right" placeholder="0.00" oninput="calcCampoDiff('agg3');calcCampoDesign()"></td>
+                                    <td><input type="number" id="campo-agg3-target" step="0.1" style="text-align:right" oninput="calcCampoDiff('agg3');calcCampoDesign()"></td>
+                                    <td><input type="number" id="campo-agg3-actual" step="0.1" style="text-align:right" oninput="calcCampoDiff('agg3');calcCampoYield();calcCampoDesign()"></td>
                                     <td><input type="text" id="campo-agg3-diff" readonly class="calculated" style="text-align:right"></td>
-                                    <td><input type="number" id="campo-agg3-design" step="0.1" style="text-align:right"></td>
+                                    <td><input type="text" id="campo-agg3-design" readonly class="calculated" style="text-align:right"></td>
                                 </tr>
                                 <tr>
                                     <td><strong>Aggregate 4</strong></td>
                                     <td><input type="text" id="campo-agg4-desc" placeholder="(Opcional)"></td>
-                                    <td><input type="number" id="campo-agg4-moist" step="0.01" style="text-align:right" placeholder="0.00" oninput="calcCampoDiff('agg4')"></td>
-                                    <td><input type="number" id="campo-agg4-target" step="0.1" style="text-align:right" oninput="calcCampoDiff('agg4')"></td>
-                                    <td><input type="number" id="campo-agg4-actual" step="0.1" style="text-align:right" oninput="calcCampoDiff('agg4');calcCampoYield()"></td>
+                                    <td><input type="number" id="campo-agg4-moist" step="0.01" style="text-align:right" placeholder="0.00" oninput="calcCampoDiff('agg4');calcCampoDesign()"></td>
+                                    <td><input type="number" id="campo-agg4-target" step="0.1" style="text-align:right" oninput="calcCampoDiff('agg4');calcCampoDesign()"></td>
+                                    <td><input type="number" id="campo-agg4-actual" step="0.1" style="text-align:right" oninput="calcCampoDiff('agg4');calcCampoYield();calcCampoDesign()"></td>
                                     <td><input type="text" id="campo-agg4-diff" readonly class="calculated" style="text-align:right"></td>
-                                    <td><input type="number" id="campo-agg4-design" step="0.1" style="text-align:right"></td>
+                                    <td><input type="text" id="campo-agg4-design" readonly class="calculated" style="text-align:right"></td>
                                 </tr>
                                 <tr style="background:#fffbeb">
                                     <td><strong>Admixture 1</strong></td>
                                     <td><input type="text" id="campo-adm1-desc" placeholder="Nombre / marca..."></td>
                                     <td></td>
-                                    <td><input type="number" id="campo-adm1-target" step="0.01" style="text-align:right" oninput="calcCampoDiff('adm1')"></td>
-                                    <td><input type="number" id="campo-adm1-actual" step="0.01" style="text-align:right" oninput="calcCampoDiff('adm1');calcCampoYield()"></td>
+                                    <td><input type="number" id="campo-adm1-target" step="0.01" style="text-align:right" oninput="calcCampoDiff('adm1');calcCampoDesign()"></td>
+                                    <td><input type="number" id="campo-adm1-actual" step="0.01" style="text-align:right" oninput="calcCampoDiff('adm1');calcCampoYield();calcCampoDesign()"></td>
                                     <td><input type="text" id="campo-adm1-diff" readonly class="calculated" style="text-align:right"></td>
-                                    <td><input type="number" id="campo-adm1-design" step="0.01" style="text-align:right"></td>
+                                    <td><input type="text" id="campo-adm1-design" readonly class="calculated" style="text-align:right"></td>
                                 </tr>
                                 <tr style="background:#fffbeb">
                                     <td><strong>Admixture 2</strong></td>
                                     <td><input type="text" id="campo-adm2-desc" placeholder="(Opcional)"></td>
                                     <td></td>
-                                    <td><input type="number" id="campo-adm2-target" step="0.01" style="text-align:right" oninput="calcCampoDiff('adm2')"></td>
-                                    <td><input type="number" id="campo-adm2-actual" step="0.01" style="text-align:right" oninput="calcCampoDiff('adm2');calcCampoYield()"></td>
+                                    <td><input type="number" id="campo-adm2-target" step="0.01" style="text-align:right" oninput="calcCampoDiff('adm2');calcCampoDesign()"></td>
+                                    <td><input type="number" id="campo-adm2-actual" step="0.01" style="text-align:right" oninput="calcCampoDiff('adm2');calcCampoYield();calcCampoDesign()"></td>
                                     <td><input type="text" id="campo-adm2-diff" readonly class="calculated" style="text-align:right"></td>
-                                    <td><input type="number" id="campo-adm2-design" step="0.01" style="text-align:right"></td>
+                                    <td><input type="text" id="campo-adm2-design" readonly class="calculated" style="text-align:right"></td>
                                 </tr>
                                 <tr style="background:#fffbeb">
                                     <td><strong>Admixture 3</strong></td>
                                     <td><input type="text" id="campo-adm3-desc" placeholder="(Opcional)"></td>
                                     <td></td>
-                                    <td><input type="number" id="campo-adm3-target" step="0.01" style="text-align:right" oninput="calcCampoDiff('adm3')"></td>
-                                    <td><input type="number" id="campo-adm3-actual" step="0.01" style="text-align:right" oninput="calcCampoDiff('adm3');calcCampoYield()"></td>
+                                    <td><input type="number" id="campo-adm3-target" step="0.01" style="text-align:right" oninput="calcCampoDiff('adm3');calcCampoDesign()"></td>
+                                    <td><input type="number" id="campo-adm3-actual" step="0.01" style="text-align:right" oninput="calcCampoDiff('adm3');calcCampoYield();calcCampoDesign()"></td>
                                     <td><input type="text" id="campo-adm3-diff" readonly class="calculated" style="text-align:right"></td>
-                                    <td><input type="number" id="campo-adm3-design" step="0.01" style="text-align:right"></td>
+                                    <td><input type="text" id="campo-adm3-design" readonly class="calculated" style="text-align:right"></td>
                                 </tr>
                                 <tr style="background:#fffbeb">
                                     <td><strong>Admixture 4</strong></td>
                                     <td><input type="text" id="campo-adm4-desc" placeholder="(Opcional)"></td>
                                     <td></td>
-                                    <td><input type="number" id="campo-adm4-target" step="0.01" style="text-align:right" oninput="calcCampoDiff('adm4')"></td>
-                                    <td><input type="number" id="campo-adm4-actual" step="0.01" style="text-align:right" oninput="calcCampoDiff('adm4');calcCampoYield()"></td>
+                                    <td><input type="number" id="campo-adm4-target" step="0.01" style="text-align:right" oninput="calcCampoDiff('adm4');calcCampoDesign()"></td>
+                                    <td><input type="number" id="campo-adm4-actual" step="0.01" style="text-align:right" oninput="calcCampoDiff('adm4');calcCampoYield();calcCampoDesign()"></td>
                                     <td><input type="text" id="campo-adm4-diff" readonly class="calculated" style="text-align:right"></td>
-                                    <td><input type="number" id="campo-adm4-design" step="0.01" style="text-align:right"></td>
+                                    <td><input type="text" id="campo-adm4-design" readonly class="calculated" style="text-align:right"></td>
                                 </tr>
                                 <tr style="background:#fffbeb">
                                     <td><strong>Admixture 5</strong></td>
                                     <td><input type="text" id="campo-adm5-desc" placeholder="(Opcional)"></td>
                                     <td></td>
-                                    <td><input type="number" id="campo-adm5-target" step="0.01" style="text-align:right" oninput="calcCampoDiff('adm5')"></td>
-                                    <td><input type="number" id="campo-adm5-actual" step="0.01" style="text-align:right" oninput="calcCampoDiff('adm5');calcCampoYield()"></td>
+                                    <td><input type="number" id="campo-adm5-target" step="0.01" style="text-align:right" oninput="calcCampoDiff('adm5');calcCampoDesign()"></td>
+                                    <td><input type="number" id="campo-adm5-actual" step="0.01" style="text-align:right" oninput="calcCampoDiff('adm5');calcCampoYield();calcCampoDesign()"></td>
                                     <td><input type="text" id="campo-adm5-diff" readonly class="calculated" style="text-align:right"></td>
-                                    <td><input type="number" id="campo-adm5-design" step="0.01" style="text-align:right"></td>
+                                    <td><input type="text" id="campo-adm5-design" readonly class="calculated" style="text-align:right"></td>
                                 </tr>
                                 <tr>
                                     <td><strong>Water</strong></td>
                                     <td></td>
                                     <td></td>
-                                    <td><input type="number" id="campo-water-target" step="0.1" style="text-align:right" oninput="calcCampoDiff('water');calcCampoWCRatio()"></td>
-                                    <td><input type="number" id="campo-water-actual" step="0.1" style="text-align:right" oninput="calcCampoDiff('water');calcCampoWCRatio();calcCampoYield()"></td>
+                                    <td><input type="number" id="campo-water-target" step="0.1" style="text-align:right" oninput="calcCampoDiff('water');calcCampoWCRatio();calcCampoDesign()"></td>
+                                    <td><input type="number" id="campo-water-actual" step="0.1" style="text-align:right" oninput="calcCampoDiff('water');calcCampoWCRatio();calcCampoYield();calcCampoDesign()"></td>
                                     <td><input type="text" id="campo-water-diff" readonly class="calculated" style="text-align:right"></td>
-                                    <td><input type="number" id="campo-water-design" step="0.1" style="text-align:right" oninput="calcCampoWCRatio()"></td>
+                                    <td><input type="text" id="campo-water-design" readonly class="calculated" style="text-align:right"></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -7911,12 +7911,73 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             currentCampoId = null;
         }
 
+        // ── Helpers: Week / Design / Cylinder dates ───────────────────
+
+        function getISOWeek(dateStr) {
+            if (!dateStr) { return 0; }
+            var d = new Date(dateStr + 'T00:00:00');
+            if (isNaN(d.getTime())) { return 0; }
+            // Thursday of the current week determines the year
+            var tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            tmp.setUTCDate(tmp.getUTCDate() + 4 - (tmp.getUTCDay() || 7));
+            var yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
+            return Math.ceil((((tmp - yearStart) / 86400000) + 1) / 7);
+        }
+
+        function calcCampoWeekFromFecha() {
+            var fecha = document.getElementById('campo-fecha') ? document.getElementById('campo-fecha').value : '';
+            var w = getISOWeek(fecha);
+            document.getElementById('campo-week').value = w > 0 ? w : '';
+        }
+
+        function calcCampoDesign() {
+            var qtyYards = parseFloat(document.getElementById('campo-qty-yards') ? document.getElementById('campo-qty-yards').value : '') || 0;
+            var mats = ['cem1','cem2','scm1','scm2','agg1','agg2','agg3','agg4','adm1','adm2','adm3','adm4','adm5','water'];
+            mats.forEach(function(m) {
+                var aEl = document.getElementById('campo-'+m+'-actual');
+                var dEl = document.getElementById('campo-'+m+'-design');
+                if (!aEl || !dEl) { return; }
+                var actual = parseFloat(aEl.value) || 0;
+                dEl.value = (qtyYards > 0 && actual > 0) ? (actual / qtyYards).toFixed(2) : '';
+            });
+        }
+
+        function calcOneCylDate(n) {
+            var fechaBase = document.getElementById('campo-fecha') ? document.getElementById('campo-fecha').value : '';
+            var ageEl = document.getElementById('cyl-c-age-' + n);
+            var fechaEl = document.getElementById('cyl-c-fecha-' + n);
+            if (!ageEl || !fechaEl) { return; }
+            var age = ageEl.value === 'custom'
+                ? (parseInt((document.getElementById('cyl-c-age-custom-' + n) || {}).value) || 0)
+                : parseInt(ageEl.value || '0');
+            if (fechaBase && age > 0) {
+                var d = new Date(fechaBase + 'T00:00:00');
+                d.setDate(d.getDate() + age);
+                var yr = d.getFullYear();
+                var mo = String(d.getMonth() + 1).padStart(2, '0');
+                var dy = String(d.getDate()).padStart(2, '0');
+                fechaEl.value = yr + '-' + mo + '-' + dy;
+            } else {
+                fechaEl.value = '';
+            }
+        }
+
+        function calcAllCylDates() {
+            for (var i = 1; i <= campoCylinderCount; i++) {
+                calcOneCylDate(i);
+            }
+        }
+
         function clearFormCampo() {
             document.getElementById('form-campo').reset();
             document.getElementById('campo-id-display').value = '';
             document.getElementById('edit-campo-id').value    = '';
-            // clear all diff fields
-            CAMPO_MATS.forEach(function(m){ var el=document.getElementById('campo-'+m+'-diff'); if(el) el.value=''; });
+            document.getElementById('campo-week').value       = '';
+            var mats = ['cem1','cem2','scm1','scm2','agg1','agg2','agg3','agg4','adm1','adm2','adm3','adm4','adm5','water'];
+            mats.forEach(function(m) {
+                var df = document.getElementById('campo-'+m+'-diff');   if (df) df.value = '';
+                var dd = document.getElementById('campo-'+m+'-design'); if (dd) dd.value = '';
+            });
         }
 
         async function cargarSelectsCampo() {
@@ -8071,14 +8132,15 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             row.id = 'campo-cyl-row-'+n;
             row.innerHTML = '<td>' +
                 '<select id="cyl-c-age-'+n+'" onchange="campoCylAgeChange('+n+')" style="width:70px">'+ optStr +'</select>' +
-                '<input type="number" id="cyl-c-age-custom-'+n+'" style="display:none;width:60px;margin-top:4px" placeholder="días">' +
+                '<input type="number" id="cyl-c-age-custom-'+n+'" style="display:none;width:60px;margin-top:4px" placeholder="días" oninput="calcOneCylDate('+n+')">' +
                 '</td>' +
-                '<td><input type="date" id="cyl-c-fecha-'+n+'"></td>' +
+                '<td><input type="date" id="cyl-c-fecha-'+n+'" readonly class="calculated" style="background:#fef3c7;font-weight:600;color:#92400e"></td>' +
                 '<td style="text-align:right"><input type="number" id="cyl-c-result-'+n+'" step="1" style="text-align:right" oninput="calcCylPct('+n+')"></td>' +
                 '<td style="text-align:right"><input type="text" id="cyl-c-ce-'+n+'" readonly class="calculated" style="text-align:right"></td>' +
                 '<td style="text-align:right"><input type="text" id="cyl-c-pct-'+n+'" readonly class="calculated" style="text-align:right"></td>' +
                 '<td><input type="text" id="cyl-c-obs-'+n+'" placeholder="Normal, Break type..."></td>';
             document.getElementById('campo-cilindros-body').appendChild(row);
+            calcOneCylDate(n);
         }
 
         function removeCampoCylinder() {
@@ -8092,6 +8154,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             var sel = document.getElementById('cyl-c-age-'+n);
             var custom = document.getElementById('cyl-c-age-custom-'+n);
             custom.style.display = sel.value === 'custom' ? 'block' : 'none';
+            calcOneCylDate(n);
         }
 
         function calcCylPct(n) {
@@ -8281,8 +8344,8 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             await cargarSelectsCampo();
             document.getElementById('edit-campo-id').value    = ev.id;
             document.getElementById('campo-id-display').value = ev.evalId;
-            document.getElementById('campo-week').value       = ev.week || '';
             document.getElementById('campo-fecha').value      = ev.fecha;
+            document.getElementById('campo-week').value       = (function(){ var w=getISOWeek(ev.fecha); return w>0?w:''; })();
             document.getElementById('campo-hora').value       = ev.hora || '';
             document.getElementById('campo-ticket').value     = ev.ticketNumber || '';
             document.getElementById('campo-mix-code').value   = ev.mixCode || '';
@@ -8314,9 +8377,10 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     var aEl = document.getElementById('campo-'+m+'-actual');
                     if (aEl) aEl.value = mat.actual || '';
                     var dEl = document.getElementById('campo-'+m+'-design');
-                    if (dEl) dEl.value = mat.design || '';
+                    if (dEl) dEl.value = ''; // recalculated below
                     calcCampoDiff(m);
                 });
+                calcCampoDesign();
             }
             document.getElementById('campo-water-added').value    = ev.waterAdded || '';
             document.getElementById('campo-total-moisture').value = ev.totalMoisture || '';
@@ -8351,7 +8415,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     var stdAges = [1,3,7,14,28,56,90];
                     if (stdAges.includes(cyl.age)) { ageEl.value = cyl.age; }
                     else { ageEl.value='custom'; document.getElementById('cyl-c-age-custom-'+n).style.display='block'; document.getElementById('cyl-c-age-custom-'+n).value=cyl.age; }
-                    document.getElementById('cyl-c-fecha-'+n).value  = cyl.fechaEnsayo || '';
+                    calcOneCylDate(n); // recalculate from campo-fecha + age
                     document.getElementById('cyl-c-result-'+n).value = cyl.result || '';
                     document.getElementById('cyl-c-ce-'+n).value     = cyl.ce || '';
                     document.getElementById('cyl-c-obs-'+n).value    = cyl.obs || '';
@@ -8768,110 +8832,149 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
 
         // ============ CALENDARIO DE ROTURAS ============
         async function cargarCalendario() {
-            const trials = await getAllRecords('trials');
-            const container = document.getElementById('calendario-container');
-            const filtroMes = document.getElementById('filtro-mes-calendario').value;
+            const trials     = await getAllRecords('trials');
+            const campoEvals = await getAllRecords('campo_evaluaciones');
+            const container  = document.getElementById('calendario-container');
+            const filtroMes    = document.getElementById('filtro-mes-calendario').value;
             const filtroEstado = document.getElementById('filtro-estado-calendario').value;
-            
-            // Crear lista de todos los ensayos programados
+
             let ensayos = [];
             const hoy = new Date();
             hoy.setHours(0, 0, 0, 0);
-            
+
+            // ── Trial Mixes ──────────────────────────────────────────────
             trials.forEach(trial => {
                 trial.cilindros.forEach(cilindro => {
-                    const fechaTrial = new Date(trial.fecha);
+                    const fechaTrial  = new Date(trial.fecha);
                     const fechaEnsayo = new Date(fechaTrial);
                     fechaEnsayo.setDate(fechaEnsayo.getDate() + parseInt(cilindro.diasCurado));
                     fechaEnsayo.setHours(0, 0, 0, 0);
-                    
+
                     const tieneResultado = cilindro.resistencia && cilindro.resistencia > 0;
                     const esVencido = fechaEnsayo < hoy && !tieneResultado;
-                    const esHoy = fechaEnsayo.getTime() === hoy.getTime();
-                    
-                    let estado = 'pendiente';
-                    if (tieneResultado) estado = 'completado';
-                    else if (esVencido) estado = 'vencido';
-                    
+                    const esHoy     = fechaEnsayo.getTime() === hoy.getTime();
+                    let estado = tieneResultado ? 'completado' : (esVencido ? 'vencido' : 'pendiente');
+
                     ensayos.push({
-                        trialId: trial.trialId,
-                        mixDesign: trial.mixDesignNombre,
+                        fuente:      'trial',
+                        sourceId:    trial.trialId,
+                        mixLabel:    trial.mixDesignNombre,
                         cilindroNum: cilindro.numero,
-                        diasCurado: cilindro.diasCurado,
-                        fechaTrial: fechaTrial,
+                        age:         cilindro.diasCurado,
+                        fechaColado: fechaTrial,
                         fechaEnsayo: fechaEnsayo,
                         fechaEnsayoReal: cilindro.fechaEnsayo ? new Date(cilindro.fechaEnsayo) : null,
                         resistencia: cilindro.resistencia,
-                        estado: estado,
-                        esHoy: esHoy,
-                        tecnico: trial.tecnico || 'N/A'
+                        estado:      estado,
+                        esHoy:       esHoy,
+                        tecnico:     trial.tecnico || 'N/A',
+                        extra:       ''
                     });
                 });
             });
-            
-            // Filtrar por mes si está seleccionado
+
+            // ── Evaluación de Campo ──────────────────────────────────────
+            campoEvals.forEach(ev => {
+                if (!ev.cylinders || !ev.cylinders.length) { return; }
+                const fechaColado = new Date((ev.fecha || '') + 'T00:00:00');
+                if (isNaN(fechaColado.getTime())) { return; }
+                ev.cylinders.forEach(cyl => {
+                    const age = parseInt(cyl.age) || 0;
+                    if (!age) { return; }
+                    const fechaEnsayo = new Date(fechaColado);
+                    fechaEnsayo.setDate(fechaEnsayo.getDate() + age);
+                    fechaEnsayo.setHours(0, 0, 0, 0);
+
+                    const tieneResultado = cyl.result && parseFloat(cyl.result) > 0;
+                    const esVencido = fechaEnsayo < hoy && !tieneResultado;
+                    const esHoy     = fechaEnsayo.getTime() === hoy.getTime();
+                    let estado = tieneResultado ? 'completado' : (esVencido ? 'vencido' : 'pendiente');
+
+                    var extra = '';
+                    if (ev.ticketNumber) { extra += 'Ticket: ' + ev.ticketNumber; }
+                    if (ev.batchPlant)   { extra += (extra ? ' · ' : '') + ev.batchPlant; }
+
+                    ensayos.push({
+                        fuente:      'campo',
+                        sourceId:    ev.evalId,
+                        mixLabel:    ev.mixCode || ev.mixDesc || '—',
+                        cilindroNum: cyl.num,
+                        age:         age,
+                        fechaColado: fechaColado,
+                        fechaEnsayo: fechaEnsayo,
+                        fechaEnsayoReal: cyl.fechaEnsayo ? new Date(cyl.fechaEnsayo + 'T00:00:00') : null,
+                        resistencia: tieneResultado ? parseFloat(cyl.result) : null,
+                        estado:      estado,
+                        esHoy:       esHoy,
+                        tecnico:     ev.madeBy || 'N/A',
+                        extra:       extra
+                    });
+                });
+            });
+
+            // Filtrar por mes
             if (filtroMes) {
                 const [year, month] = filtroMes.split('-');
                 ensayos = ensayos.filter(e => {
-                    const fecha = e.fechaEnsayo;
-                    return fecha.getFullYear() == year && (fecha.getMonth() + 1) == month;
+                    return e.fechaEnsayo.getFullYear() == year && (e.fechaEnsayo.getMonth() + 1) == month;
                 });
             }
-            
+
             // Filtrar por estado
             if (filtroEstado !== 'todos') {
-                if (filtroEstado === 'pendientes') {
-                    ensayos = ensayos.filter(e => e.estado === 'pendiente');
-                } else if (filtroEstado === 'completados') {
-                    ensayos = ensayos.filter(e => e.estado === 'completado');
-                } else if (filtroEstado === 'vencidos') {
-                    ensayos = ensayos.filter(e => e.estado === 'vencido');
-                }
+                const map = { pendientes:'pendiente', completados:'completado', vencidos:'vencido' };
+                if (map[filtroEstado]) ensayos = ensayos.filter(e => e.estado === map[filtroEstado]);
             }
-            
-            // Ordenar por fecha de ensayo
+
             ensayos.sort((a, b) => a.fechaEnsayo - b.fechaEnsayo);
-            
+
             if (ensayos.length === 0) {
                 container.innerHTML = '<div class="empty-state">No hay ensayos programados para los filtros seleccionados</div>';
                 return;
             }
-            
+
             let html = '';
             ensayos.forEach(ensayo => {
                 const claseEstado = ensayo.esHoy ? 'hoy' : ensayo.estado;
                 const labelEstado = ensayo.esHoy ? 'HOY' : ensayo.estado.toUpperCase();
-                const diasDesdeColado = Math.floor((ensayo.fechaEnsayo - ensayo.fechaTrial) / (1000 * 60 * 60 * 24));
-                
+
+                const fuenteBadge = ensayo.fuente === 'campo'
+                    ? '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;margin-left:8px">🏗️ CAMPO</span>'
+                    : '<span style="background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;margin-left:8px">🧪 TRIAL</span>';
+
+                const sourceLabel = ensayo.fuente === 'campo' ? 'Eval ID' : 'Trial ID';
+
+                const extraRow = ensayo.extra
+                    ? `<div class="calendario-detail"><strong>Info:</strong><br>${ensayo.extra}</div>`
+                    : '';
+
                 html += `
                     <div class="calendario-item ${claseEstado}">
                         <div class="calendario-header">
                             <div class="calendario-fecha">
-                                📅 ${ensayo.fechaEnsayo.toLocaleDateString('es-ES', { 
-                                    weekday: 'long', 
-                                    year: 'numeric', 
-                                    month: 'long', 
-                                    day: 'numeric' 
+                                📅 ${ensayo.fechaEnsayo.toLocaleDateString('es-ES', {
+                                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
                                 })}
+                                ${fuenteBadge}
                             </div>
                             <span class="calendario-status ${ensayo.estado}">${labelEstado}</span>
                         </div>
                         <div class="calendario-content">
                             <div class="calendario-detail">
-                                <strong>Trial ID:</strong><br>
-                                <span class="trial-badge" style="font-size: 14px; padding: 4px 8px;">${ensayo.trialId}</span>
+                                <strong>${sourceLabel}:</strong><br>
+                                <span class="trial-badge" style="font-size:14px;padding:4px 8px">${ensayo.sourceId}</span>
                             </div>
                             <div class="calendario-detail">
-                                <strong>Mix Design:</strong><br>
-                                ${ensayo.mixDesign}
+                                <strong>Mix:</strong><br>
+                                ${ensayo.mixLabel}
                             </div>
                             <div class="calendario-detail">
                                 <strong>Cilindro:</strong><br>
-                                #${ensayo.cilindroNum} - ${ensayo.diasCurado} días
+                                #${ensayo.cilindroNum} — ${ensayo.age} días
                             </div>
                             <div class="calendario-detail">
                                 <strong>Fecha Colado:</strong><br>
-                                ${ensayo.fechaTrial.toLocaleDateString()}
+                                ${ensayo.fechaColado.toLocaleDateString()}
                             </div>
                             <div class="calendario-detail">
                                 <strong>Técnico:</strong><br>
@@ -8881,16 +8984,16 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                                 <strong>Resistencia:</strong><br>
                                 ${ensayo.resistencia ? ensayo.resistencia + ' PSI' : '⏳ Pendiente'}
                             </div>
+                            ${extraRow}
                         </div>
                         ${ensayo.fechaEnsayoReal ? `
-                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-light);">
+                        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:var(--text-light);">
                             ✅ Ensayado el: ${ensayo.fechaEnsayoReal.toLocaleDateString()}
-                        </div>
-                        ` : ''}
+                        </div>` : ''}
                     </div>
                 `;
             });
-            
+
             container.innerHTML = html;
         }
 
