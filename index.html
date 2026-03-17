@@ -2530,7 +2530,7 @@
             refreshTipoPruebaSelect();
             const trialId = await generarTrialId();
             document.getElementById('trial-id-display').value = trialId;
-            document.getElementById('trial-fecha').valueAsDate = new Date();
+            document.getElementById('trial-fecha').value = new Date().toLocaleDateString('en-CA');
             generarCamposCilindros();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -6204,12 +6204,15 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             }
             
             if (diasCurado > 0) {
-                const fechaBase = new Date(fechaTrial);
+                // Use T00:00:00 to parse as LOCAL time, avoiding UTC timezone shift
+                const fechaBase = new Date(fechaTrial + 'T00:00:00');
                 fechaBase.setDate(fechaBase.getDate() + diasCurado);
                 
-                // Formatear fecha para input type="date" (YYYY-MM-DD)
-                const fechaFormateada = fechaBase.toISOString().split('T')[0];
-                document.getElementById(`cilindro-${cilindroNum}-fecha`).value = fechaFormateada;
+                // Format using local date parts, not toISOString (which converts to UTC)
+                const yr = fechaBase.getFullYear();
+                const mo = String(fechaBase.getMonth() + 1).padStart(2, '0');
+                const dy = String(fechaBase.getDate()).padStart(2, '0');
+                document.getElementById(`cilindro-${cilindroNum}-fecha`).value = yr + '-' + mo + '-' + dy;
             }
         }
 
@@ -8793,7 +8796,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     <td>${t.tamano} ft³</td>
                     <td>${t.slump || '-'} in</td>
                     <td>${t.cilindros.length}</td>
-                    <td>${new Date(t.fecha).toLocaleDateString()}</td>
+                    <td>${new Date(t.fecha + 'T00:00:00').toLocaleDateString()}</td>
                     <td class="actions">
                         <button class="success" onclick="generarPDFTrialPorId(${t.id})" title="Generar PDF">📄 PDF</button>
                         <button class="secondary" onclick="editTrial(${t.id})">Editar</button>
@@ -8819,7 +8822,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             alert(`TRIAL MIX: ${trial.trialId}\n\n` +
                   `Mix Design: ${trial.mixDesignNombre}\n` +
                   `Tamaño: ${trial.tamano} ft³\n` +
-                  `Fecha: ${new Date(trial.fecha).toLocaleDateString()}\n\n` +
+                  `Fecha: ${new Date(trial.fecha + 'T00:00:00').toLocaleDateString()}\n\n` +
                   `PROPIEDADES:\n` +
                   `Slump: ${trial.slump} in\n` +
                   `Temperatura: ${trial.temperatura} °F\n` +
@@ -8845,7 +8848,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             // ── Trial Mixes ──────────────────────────────────────────────
             trials.forEach(trial => {
                 trial.cilindros.forEach(cilindro => {
-                    const fechaTrial  = new Date(trial.fecha);
+                    const fechaTrial  = new Date(trial.fecha + 'T00:00:00');
                     const fechaEnsayo = new Date(fechaTrial);
                     fechaEnsayo.setDate(fechaEnsayo.getDate() + parseInt(cilindro.diasCurado));
                     fechaEnsayo.setHours(0, 0, 0, 0);
@@ -8863,7 +8866,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                         age:         cilindro.diasCurado,
                         fechaColado: fechaTrial,
                         fechaEnsayo: fechaEnsayo,
-                        fechaEnsayoReal: cilindro.fechaEnsayo ? new Date(cilindro.fechaEnsayo) : null,
+                        fechaEnsayoReal: cilindro.fechaEnsayo ? new Date(cilindro.fechaEnsayo + 'T00:00:00') : null,
                         resistencia: cilindro.resistencia,
                         estado:      estado,
                         esHoy:       esHoy,
@@ -9093,6 +9096,14 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             await generarReporteTrialData(trial, mix);
         }
 
+        // ── Format YYYY-MM-DD → DD/MM/YYYY without timezone shift ───
+        function formatTrialFecha(dateStr) {
+            if (!dateStr) return '—';
+            var d = new Date(String(dateStr) + 'T00:00:00');
+            if (isNaN(d.getTime())) return dateStr;
+            return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
+
         async function generarReporteTrialData(trial, mix) {
             var trialId = trial.trialId;
             var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Trial Mix Report - ' + trialId + '</title>';
@@ -9134,7 +9145,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             html += '<h2>Información General</h2>';
             html += '<div class="info-grid">';
             html += '<div class="info-item"><strong>Mix Design Base:</strong> ' + (mix ? mix.nombre : 'N/A') + '</div>';
-            html += '<div class="info-item"><strong>Fecha del Trial:</strong> ' + new Date(trial.fecha).toLocaleDateString('es-ES') + '</div>';
+            html += '<div class="info-item"><strong>Fecha del Trial:</strong> ' + formatTrialFecha(trial.fecha) + '</div>';
             if (trial.ticketNumber) html += '<div class="info-item"><strong>Ticket Number:</strong> ' + trial.ticketNumber + '</div>';
             if (trial.tipoPrueba) html += '<div class="info-item"><strong>Tipo de Prueba:</strong> <span style="background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:600">' + trial.tipoPrueba + '</span></div>';
             html += '<div class="info-item"><strong>Cliente:</strong> ' + (trial.clienteNombre || '—') + '</div>';
@@ -9311,7 +9322,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 html += '<tr>';
                 html += '<td>' + c.numero + '</td>';
                 html += '<td>' + c.diasCurado + '</td>';
-                html += '<td>' + (c.fechaEnsayo ? new Date(c.fechaEnsayo).toLocaleDateString('es-ES') : '-') + '</td>';
+                html += '<td>' + (c.fechaEnsayo ? new Date(c.fechaEnsayo + 'T00:00:00').toLocaleDateString('es-ES') : '-') + '</td>';
                 html += '<td><strong>' + (c.resistencia || '-') + '</strong></td>';
                 html += '<td>' + (porcentaje !== '-' ? porcentaje + '%' : '-') + '</td>';
                 html += '</tr>';
@@ -9598,7 +9609,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 let qrText = '=== TRIAL MIX ===\n';
                 qrText += 'ID: ' + trialId + '\n';
                 qrText += 'Mix: ' + (mix ? mix.nombre : 'N/A') + '\n';
-                qrText += 'Fecha: ' + new Date(trial.fecha).toLocaleDateString('es-ES') + '\n';
+                qrText += 'Fecha: ' + new Date(trial.fecha + 'T00:00:00').toLocaleDateString('es-ES') + '\n';
                 if (trial.hora) qrText += 'Hora: ' + trial.hora + '\n';
                 if (trial.tecnico) qrText += 'Tec: ' + trial.tecnico + '\n';
                 
@@ -9932,7 +9943,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             } else {
                 let htmlTrials = '<table><thead><tr><th>Trial ID</th><th>Mix Design</th><th>Tamaño</th><th>Slump</th><th>Fecha</th></tr></thead><tbody>';
                 recentTrials.forEach(t => {
-                    htmlTrials += `<tr><td><span class="trial-badge">${t.trialId}</span></td><td>${t.mixDesignNombre}</td><td>${t.tamano} ft³</td><td>${t.slump || '-'} in</td><td>${new Date(t.fecha).toLocaleDateString()}</td></tr>`;
+                    htmlTrials += `<tr><td><span class="trial-badge">${t.trialId}</span></td><td>${t.mixDesignNombre}</td><td>${t.tamano} ft³</td><td>${t.slump || '-'} in</td><td>${new Date(t.fecha + 'T00:00:00').toLocaleDateString()}</td></tr>`;
                 });
                 htmlTrials += '</tbody></table>';
                 containerTrials.innerHTML = htmlTrials;
@@ -9948,7 +9959,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 document.getElementById('edit-trial-id').value = '';
                 const trialId = await generarTrialId();
                 document.getElementById('trial-id-display').value = trialId;
-                document.getElementById('trial-fecha').valueAsDate = new Date();
+                document.getElementById('trial-fecha').value = new Date().toLocaleDateString('en-CA');
                 generarCamposCilindros();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             } catch(err) {
@@ -9979,7 +9990,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 document.getElementById('mix-design-preview').style.display = 'none';
                 document.getElementById('trial-cantidades').style.display = 'none';
                 document.getElementById('trial-tamano-custom-group').style.display = 'none';
-                document.getElementById('trial-fecha').valueAsDate = new Date();
+                document.getElementById('trial-fecha').value = new Date().toLocaleDateString('en-CA');
                 currentTrialData = null;
                 document.getElementById('btn-reporte-trial').disabled = true;
                 document.getElementById('btn-qr-trial').disabled = true;
@@ -11906,7 +11917,7 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
 
         // ============ INICIALIZACIÓN ============
         document.getElementById('mix-fecha').valueAsDate = new Date();
-        document.getElementById('trial-fecha').valueAsDate = new Date();
+        document.getElementById('trial-fecha').value = new Date().toLocaleDateString('en-CA');
         
         // Listener para recalcular fechas de rotura cuando cambia la fecha del trial
         document.getElementById('trial-fecha').addEventListener('change', function() {
