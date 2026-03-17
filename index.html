@@ -2464,21 +2464,14 @@
         <div id="tab-calendario" class="tab-content">
             <div class="card">
                 <h2>📅 Calendario de Roturas de Cilindros</h2>
-                
-                <div class="alert info">
-                    <span>ℹ️</span>
-                    <div>
-                        <strong>Calendario de Ensayos Programados</strong><br>
-                        Vista de todos los cilindros pendientes y programados para ensayo. Los ensayos vencidos aparecen en rojo.
-                    </div>
-                </div>
 
-                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
-                    <div class="form-group" style="flex: 1;">
+                <!-- Filters + action toolbar -->
+                <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px;">
+                    <div class="form-group" style="flex:1;min-width:150px;">
                         <label>Filtrar por mes</label>
                         <input type="month" id="filtro-mes-calendario" onchange="cargarCalendario()">
                     </div>
-                    <div class="form-group" style="flex: 1;">
+                    <div class="form-group" style="flex:1;min-width:150px;">
                         <label>Filtrar por estado</label>
                         <select id="filtro-estado-calendario" onchange="cargarCalendario()">
                             <option value="todos">Todos</option>
@@ -2486,6 +2479,11 @@
                             <option value="completados">Solo Completados</option>
                             <option value="vencidos">Solo Vencidos</option>
                         </select>
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;padding-bottom:2px;">
+                        <button type="button" onclick="calSelAll(true)"  style="padding:9px 16px;font-size:13px;">☑ Seleccionar todos</button>
+                        <button type="button" onclick="calSelAll(false)" style="padding:9px 16px;font-size:13px;background:#64748b;">☐ Deseleccionar</button>
+                        <button type="button" class="secondary" onclick="calImprimir()" style="padding:9px 20px;font-size:14px;font-weight:600;">🖨️ Imprimir selección</button>
                     </div>
                 </div>
 
@@ -8796,7 +8794,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     <td>${t.tamano} ft³</td>
                     <td>${t.slump || '-'} in</td>
                     <td>${t.cilindros.length}</td>
-                    <td>${new Date(t.fecha + 'T00:00:00').toLocaleDateString()}</td>
+                    <td>${new Date(t.fecha + 'T00:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
                     <td class="actions">
                         <button class="success" onclick="generarPDFTrialPorId(${t.id})" title="Generar PDF">📄 PDF</button>
                         <button class="secondary" onclick="editTrial(${t.id})">Editar</button>
@@ -8834,6 +8832,97 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
         }
 
         // ============ CALENDARIO DE ROTURAS ============
+
+        // Format YYYY-MM-DD string → dd/mm/yyyy with zero risk of timezone shift
+        function calFmtStr(s) {
+            if (!s) return '—';
+            var p = String(s).substring(0,10).split('-');
+            return p.length === 3 ? p[2]+'/'+p[1]+'/'+p[0] : s;
+        }
+
+        // Format a local Date object → dd/mm/yyyy
+        function calFmtDate(d) {
+            if (!d || isNaN(d.getTime())) return '—';
+            return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
+        }
+
+        function calSelAll(v) {
+            document.querySelectorAll('.cal-cb').forEach(function(c){ c.checked = v; });
+            var hdr = document.getElementById('cal-cb-all');
+            if (hdr) hdr.checked = v;
+        }
+
+        function calImprimir() {
+            var trs = [];
+            document.querySelectorAll('#cal-tbody tr').forEach(function(tr) {
+                var cb = tr.querySelector('.cal-cb');
+                if (cb && cb.checked) trs.push(tr.outerHTML);
+            });
+            // If nothing selected, print everything
+            if (!trs.length) {
+                document.querySelectorAll('#cal-tbody tr').forEach(function(tr){ trs.push(tr.outerHTML); });
+            }
+            if (!trs.length) { alert('No hay registros para imprimir.'); return; }
+
+            var win = window.open('','_blank','width=1100,height=740,scrollbars=yes,resizable=yes');
+            if (!win) { alert('Activa las ventanas emergentes para este sitio e intenta de nuevo.'); return; }
+
+            var css = [
+                'body{font-family:Arial,sans-serif;padding:20px;color:#1e293b}',
+                'h2{color:#1e40af;margin:0 0 4px}',
+                '.sub{font-size:11px;color:#64748b;margin:0 0 14px}',
+                'table{width:100%;border-collapse:collapse;font-size:12px}',
+                'th{background:#1e40af;color:#fff;padding:9px 10px;text-align:left;white-space:nowrap}',
+                'th.r,td.r{text-align:right}',
+                'td{padding:8px 10px;border-bottom:1px solid #e2e8f0;vertical-align:middle}',
+                'tr:nth-child(even) td{background:#f8fafc}',
+                'tr.vencido td{background:#fef2f2}',
+                'tr.completado td{background:#f0fdf4}',
+                'tr.hoy td{background:#fffbeb}',
+                '.bt{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}',
+                '.bt-trial{background:#dbeafe;color:#1d4ed8}',
+                '.bt-campo{background:#fef3c7;color:#92400e}',
+                '.st-p{color:#d97706;font-weight:600}',
+                '.st-c{color:#16a34a;font-weight:600}',
+                '.st-v{color:#dc2626;font-weight:600}',
+                '.st-h{color:#f59e0b;font-weight:700}',
+                '.res{color:#16a34a;font-weight:700}',
+                '.toolbar{display:flex;gap:10px;margin-bottom:14px}',
+                '.btn{padding:7px 16px;border:none;border-radius:5px;cursor:pointer;font-size:13px;font-weight:600}',
+                '.btn-p{background:#1e40af;color:#fff}',
+                '.btn-x{background:#ef4444;color:#fff}',
+                'input[type=checkbox]{display:none}',
+                '@page{size:landscape;margin:10mm}',
+                '@media print{.toolbar{display:none}body{padding:0}}'
+            ].join('');
+
+            win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">'
+                +'<title>Calendario de Roturas</title>'
+                +'<style>'+css+'</style></head><body>'
+                +'<div class="toolbar">'
+                +'<button class="btn btn-p" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>'
+                +'<button class="btn btn-x" onclick="window.close()">✕ Cerrar</button>'
+                +'</div>'
+                +'<h2>📅 Calendario de Roturas de Cilindros</h2>'
+                +'<p class="sub">Generado: '+new Date().toLocaleString('es-ES')+'</p>'
+                +'<table><thead><tr>'
+                +'<th>Fuente</th>'
+                +'<th>ID</th>'
+                +'<th>Mix</th>'
+                +'<th>Fecha Colado</th>'
+                +'<th>Cil.#</th>'
+                +'<th>Edad</th>'
+                +'<th>Fecha Rotura</th>'
+                +'<th class="r">Resistencia</th>'
+                +'<th>Estado</th>'
+                +'</tr></thead>'
+                +'<tbody>'+trs.join('')+'</tbody>'
+                +'</table>'
+                +'<script>setTimeout(function(){window.print();},500);<\/script>'
+                +'</body></html>');
+            win.document.close();
+        }
+
         async function cargarCalendario() {
             const trials     = await getAllRecords('trials');
             const campoEvals = await getAllRecords('campo_evaluaciones');
@@ -8841,165 +8930,155 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             const filtroMes    = document.getElementById('filtro-mes-calendario').value;
             const filtroEstado = document.getElementById('filtro-estado-calendario').value;
 
-            let ensayos = [];
-            const hoy = new Date();
-            hoy.setHours(0, 0, 0, 0);
+            var ensayos = [];
+            var hoy = new Date(); hoy.setHours(0,0,0,0);
 
-            // ── Trial Mixes ──────────────────────────────────────────────
-            trials.forEach(trial => {
-                trial.cilindros.forEach(cilindro => {
-                    const fechaTrial  = new Date(trial.fecha + 'T00:00:00');
-                    const fechaEnsayo = new Date(fechaTrial);
+            // ── Trial Mixes ────────────────────────────────────────────
+            trials.forEach(function(trial) {
+                trial.cilindros.forEach(function(cilindro) {
+                    var fechaStr   = String(trial.fecha||'').substring(0,10);
+                    var fechaBase  = new Date(fechaStr+'T00:00:00');
+                    var fechaEnsayo = new Date(fechaBase);
                     fechaEnsayo.setDate(fechaEnsayo.getDate() + parseInt(cilindro.diasCurado));
-                    fechaEnsayo.setHours(0, 0, 0, 0);
-
-                    const tieneResultado = cilindro.resistencia && cilindro.resistencia > 0;
-                    const esVencido = fechaEnsayo < hoy && !tieneResultado;
-                    const esHoy     = fechaEnsayo.getTime() === hoy.getTime();
-                    let estado = tieneResultado ? 'completado' : (esVencido ? 'vencido' : 'pendiente');
-
+                    fechaEnsayo.setHours(0,0,0,0);
+                    var tieneRes  = cilindro.resistencia && cilindro.resistencia > 0;
+                    var esVencido = fechaEnsayo < hoy && !tieneRes;
+                    var esHoy     = fechaEnsayo.getTime() === hoy.getTime();
+                    var estado    = tieneRes ? 'completado' : (esVencido ? 'vencido' : 'pendiente');
                     ensayos.push({
-                        fuente:      'trial',
-                        sourceId:    trial.trialId,
-                        mixLabel:    trial.mixDesignNombre,
-                        cilindroNum: cilindro.numero,
-                        age:         cilindro.diasCurado,
-                        fechaColado: fechaTrial,
-                        fechaEnsayo: fechaEnsayo,
-                        fechaEnsayoReal: cilindro.fechaEnsayo ? new Date(cilindro.fechaEnsayo + 'T00:00:00') : null,
-                        resistencia: cilindro.resistencia,
-                        estado:      estado,
-                        esHoy:       esHoy,
-                        tecnico:     trial.tecnico || 'N/A',
-                        extra:       ''
+                        fuente:'trial', sourceId:trial.trialId,
+                        mixLabel:trial.mixDesignNombre||'—',
+                        cilindroNum:cilindro.numero, age:cilindro.diasCurado,
+                        fechaStr:fechaStr, fechaEnsayo:fechaEnsayo,
+                        resistencia:tieneRes?cilindro.resistencia:null,
+                        estado:estado, esHoy:esHoy
                     });
                 });
             });
 
-            // ── Evaluación de Campo ──────────────────────────────────────
-            campoEvals.forEach(ev => {
-                if (!ev.cylinders || !ev.cylinders.length) { return; }
-                const fechaColado = new Date((ev.fecha || '') + 'T00:00:00');
-                if (isNaN(fechaColado.getTime())) { return; }
-                ev.cylinders.forEach(cyl => {
-                    const age = parseInt(cyl.age) || 0;
-                    if (!age) { return; }
-                    const fechaEnsayo = new Date(fechaColado);
-                    fechaEnsayo.setDate(fechaEnsayo.getDate() + age);
-                    fechaEnsayo.setHours(0, 0, 0, 0);
-
-                    const tieneResultado = cyl.result && parseFloat(cyl.result) > 0;
-                    const esVencido = fechaEnsayo < hoy && !tieneResultado;
-                    const esHoy     = fechaEnsayo.getTime() === hoy.getTime();
-                    let estado = tieneResultado ? 'completado' : (esVencido ? 'vencido' : 'pendiente');
-
-                    var extra = '';
-                    if (ev.ticketNumber) { extra += 'Ticket: ' + ev.ticketNumber; }
-                    if (ev.batchPlant)   { extra += (extra ? ' · ' : '') + ev.batchPlant; }
-
+            // ── Evaluación de Campo ────────────────────────────────────
+            campoEvals.forEach(function(ev) {
+                if (!ev.cylinders||!ev.cylinders.length) return;
+                var fechaStr  = String(ev.fecha||'').substring(0,10);
+                var fechaBase = new Date(fechaStr+'T00:00:00');
+                if (isNaN(fechaBase.getTime())) return;
+                ev.cylinders.forEach(function(cyl) {
+                    var age = parseInt(cyl.age)||0; if (!age) return;
+                    var fechaEnsayo = new Date(fechaBase);
+                    fechaEnsayo.setDate(fechaEnsayo.getDate()+age);
+                    fechaEnsayo.setHours(0,0,0,0);
+                    var tieneRes  = cyl.result && parseFloat(cyl.result)>0;
+                    var esVencido = fechaEnsayo < hoy && !tieneRes;
+                    var esHoy     = fechaEnsayo.getTime()===hoy.getTime();
+                    var estado    = tieneRes ? 'completado':(esVencido?'vencido':'pendiente');
                     ensayos.push({
-                        fuente:      'campo',
-                        sourceId:    ev.evalId,
-                        mixLabel:    ev.mixCode || ev.mixDesc || '—',
-                        cilindroNum: cyl.num,
-                        age:         age,
-                        fechaColado: fechaColado,
-                        fechaEnsayo: fechaEnsayo,
-                        fechaEnsayoReal: cyl.fechaEnsayo ? new Date(cyl.fechaEnsayo + 'T00:00:00') : null,
-                        resistencia: tieneResultado ? parseFloat(cyl.result) : null,
-                        estado:      estado,
-                        esHoy:       esHoy,
-                        tecnico:     ev.madeBy || 'N/A',
-                        extra:       extra
+                        fuente:'campo', sourceId:ev.evalId,
+                        mixLabel:ev.mixCode||ev.mixDesc||'—',
+                        cilindroNum:cyl.num, age:age,
+                        fechaStr:fechaStr, fechaEnsayo:fechaEnsayo,
+                        resistencia:tieneRes?parseFloat(cyl.result):null,
+                        estado:estado, esHoy:esHoy
                     });
                 });
             });
 
-            // Filtrar por mes
+            // ── Filters ───────────────────────────────────────────────
             if (filtroMes) {
-                const [year, month] = filtroMes.split('-');
-                ensayos = ensayos.filter(e => {
-                    return e.fechaEnsayo.getFullYear() == year && (e.fechaEnsayo.getMonth() + 1) == month;
+                var ym = filtroMes.split('-');
+                ensayos = ensayos.filter(function(e){
+                    return e.fechaEnsayo.getFullYear()==ym[0] && (e.fechaEnsayo.getMonth()+1)==parseInt(ym[1]);
                 });
             }
-
-            // Filtrar por estado
-            if (filtroEstado !== 'todos') {
-                const map = { pendientes:'pendiente', completados:'completado', vencidos:'vencido' };
-                if (map[filtroEstado]) ensayos = ensayos.filter(e => e.estado === map[filtroEstado]);
+            var stMap = {pendientes:'pendiente',completados:'completado',vencidos:'vencido'};
+            if (filtroEstado!=='todos'&&stMap[filtroEstado]) {
+                ensayos = ensayos.filter(function(e){ return e.estado===stMap[filtroEstado]; });
             }
+            ensayos.sort(function(a,b){ return a.fechaEnsayo-b.fechaEnsayo; });
 
-            ensayos.sort((a, b) => a.fechaEnsayo - b.fechaEnsayo);
-
-            if (ensayos.length === 0) {
-                container.innerHTML = '<div class="empty-state">No hay ensayos programados para los filtros seleccionados</div>';
+            if (!ensayos.length) {
+                container.innerHTML='<div class="empty-state">No hay ensayos programados para los filtros seleccionados</div>';
                 return;
             }
 
-            let html = '';
-            ensayos.forEach(ensayo => {
-                const claseEstado = ensayo.esHoy ? 'hoy' : ensayo.estado;
-                const labelEstado = ensayo.esHoy ? 'HOY' : ensayo.estado.toUpperCase();
+            // ── Render table ──────────────────────────────────────────
+            var stLabel = {pendiente:'⏳ Pendiente',completado:'✅ Completado',vencido:'🔴 Vencido'};
+            var stCls   = {pendiente:'st-p',completado:'st-c',vencido:'st-v'};
+            var rowCls  = {pendiente:'',completado:'completado',vencido:'vencido'};
 
-                const fuenteBadge = ensayo.fuente === 'campo'
-                    ? '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;margin-left:8px">🏗️ CAMPO</span>'
-                    : '<span style="background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;margin-left:8px">🧪 TRIAL</span>';
+            var rows = '';
+            ensayos.forEach(function(e){
+                var rc  = e.esHoy ? 'hoy' : (rowCls[e.estado]||'');
+                var bt  = e.fuente==='campo'
+                    ? '<span class="bt bt-campo">🏗️ CAMPO</span>'
+                    : '<span class="bt bt-trial">🧪 TRIAL</span>';
+                var est = e.esHoy
+                    ? '<span class="st-h">⭐ HOY</span>'
+                    : '<span class="'+(stCls[e.estado]||'')+'">'+(stLabel[e.estado]||e.estado)+'</span>';
+                var res = e.resistencia
+                    ? '<span class="res">'+e.resistencia+' PSI</span>'
+                    : '<span style="color:#94a3b8">—</span>';
 
-                const sourceLabel = ensayo.fuente === 'campo' ? 'Eval ID' : 'Trial ID';
-
-                const extraRow = ensayo.extra
-                    ? `<div class="calendario-detail"><strong>Info:</strong><br>${ensayo.extra}</div>`
-                    : '';
-
-                html += `
-                    <div class="calendario-item ${claseEstado}">
-                        <div class="calendario-header">
-                            <div class="calendario-fecha">
-                                📅 ${ensayo.fechaEnsayo.toLocaleDateString('es-ES', {
-                                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-                                })}
-                                ${fuenteBadge}
-                            </div>
-                            <span class="calendario-status ${ensayo.estado}">${labelEstado}</span>
-                        </div>
-                        <div class="calendario-content">
-                            <div class="calendario-detail">
-                                <strong>${sourceLabel}:</strong><br>
-                                <span class="trial-badge" style="font-size:14px;padding:4px 8px">${ensayo.sourceId}</span>
-                            </div>
-                            <div class="calendario-detail">
-                                <strong>Mix:</strong><br>
-                                ${ensayo.mixLabel}
-                            </div>
-                            <div class="calendario-detail">
-                                <strong>Cilindro:</strong><br>
-                                #${ensayo.cilindroNum} — ${ensayo.age} días
-                            </div>
-                            <div class="calendario-detail">
-                                <strong>Fecha Colado:</strong><br>
-                                ${ensayo.fechaColado.toLocaleDateString()}
-                            </div>
-                            <div class="calendario-detail">
-                                <strong>Técnico:</strong><br>
-                                ${ensayo.tecnico}
-                            </div>
-                            <div class="calendario-detail">
-                                <strong>Resistencia:</strong><br>
-                                ${ensayo.resistencia ? ensayo.resistencia + ' PSI' : '⏳ Pendiente'}
-                            </div>
-                            ${extraRow}
-                        </div>
-                        ${ensayo.fechaEnsayoReal ? `
-                        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:var(--text-light);">
-                            ✅ Ensayado el: ${ensayo.fechaEnsayoReal.toLocaleDateString()}
-                        </div>` : ''}
-                    </div>
-                `;
+                rows += '<tr class="'+rc+'">'
+                    +'<td style="text-align:center;padding:6px 4px">'
+                    +'<input type="checkbox" class="cal-cb" checked style="width:16px;height:16px;cursor:pointer;accent-color:#2563eb">'
+                    +'</td>'
+                    +'<td>'+bt+'</td>'
+                    +'<td style="font-family:monospace;font-weight:700;font-size:13px">'+e.sourceId+'</td>'
+                    +'<td>'+e.mixLabel+'</td>'
+                    +'<td style="font-family:monospace">'+calFmtStr(e.fechaStr)+'</td>'
+                    +'<td style="text-align:center">#'+e.cilindroNum+'</td>'
+                    +'<td style="text-align:center">'+e.age+' d</td>'
+                    +'<td style="font-family:monospace;font-weight:700">'+calFmtDate(e.fechaEnsayo)+'</td>'
+                    +'<td style="text-align:right">'+res+'</td>'
+                    +'<td>'+est+'</td>'
+                    +'</tr>';
             });
 
-            container.innerHTML = html;
-        }
+            var comp = ensayos.filter(function(e){return e.estado==='completado';}).length;
+            var pend = ensayos.filter(function(e){return e.estado==='pendiente';}).length;
+            var venc = ensayos.filter(function(e){return e.estado==='vencido';}).length;
 
+            container.innerHTML =
+                '<style>'
+                +'.bt{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}'
+                +'.bt-trial{background:#dbeafe;color:#1d4ed8}'
+                +'.bt-campo{background:#fef3c7;color:#92400e}'
+                +'.st-p{color:#d97706;font-weight:600}.st-c{color:#16a34a;font-weight:600}'
+                +'.st-v{color:#dc2626;font-weight:600}.st-h{color:#f59e0b;font-weight:700}'
+                +'.res{color:#16a34a;font-weight:700}'
+                +'tr.vencido td{background:#fef2f2}'
+                +'tr.completado td{background:#f0fdf4}'
+                +'tr.hoy td{background:#fffbeb}'
+                +'#cal-tbody tr:hover td{background:#f1f5f9}'
+                +'</style>'
+                +'<div style="overflow-x:auto">'
+                +'<table style="width:100%;border-collapse:collapse">'
+                +'<thead><tr>'
+                +'<th style="width:38px;text-align:center">'
+                +'<input id="cal-cb-all" type="checkbox" checked title="Sel/Desel todos" '
+                +'style="width:16px;height:16px;cursor:pointer;accent-color:#fff" '
+                +'onchange="calSelAll(this.checked)">'
+                +'</th>'
+                +'<th>Fuente</th>'
+                +'<th>ID</th>'
+                +'<th>Mix</th>'
+                +'<th>Fecha Colado</th>'
+                +'<th style="text-align:center">Cil.#</th>'
+                +'<th style="text-align:center">Edad</th>'
+                +'<th>Fecha Rotura</th>'
+                +'<th style="text-align:right">Resistencia</th>'
+                +'<th>Estado</th>'
+                +'</tr></thead>'
+                +'<tbody id="cal-tbody">'+rows+'</tbody>'
+                +'</table>'
+                +'</div>'
+                +'<p style="margin-top:10px;font-size:12px;color:#64748b">'
+                +ensayos.length+' ensayo(s) &nbsp;&middot;&nbsp;'
+                +'<span style="color:#16a34a">&#10003; '+comp+' completados</span> &nbsp;&middot;&nbsp;'
+                +'<span style="color:#d97706">&#8987; '+pend+' pendientes</span> &nbsp;&middot;&nbsp;'
+                +'<span style="color:#dc2626">&#9679; '+venc+' vencidos</span>'
+                +'</p>';
+        }
 
         async function editTrial(id) {
             const trial = await getRecord('trials', id);
@@ -9055,7 +9134,8 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     document.getElementById(`cilindro-${i}-dias-custom`).value = cil.diasCurado;
                     document.getElementById(`cilindro-${i}-dias-custom-group`).style.display = 'block';
                 }
-                document.getElementById(`cilindro-${i}-fecha`).value = cil.fechaEnsayo || '';
+                // Recalculate fecha from trial-fecha + diasCurado (never use stored fechaEnsayo — may be stale)
+                calcularFechaRotura(i);
                 document.getElementById(`cilindro-${i}-resistencia`).value = cil.resistencia;
             });
             
