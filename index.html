@@ -3155,7 +3155,6 @@
             if (tabName === 'ai-optimizer') {
                 cargarMixDesignsEnAIOptimizer();
                 setTimeout(aiAttachSieveLiveListeners, 100);
-                setTimeout(aiPopulateGradSelects, 150);
             }
             if (tabName === 'dashboard') updateDashboard();
             if (tabName === 'aci214') {
@@ -10153,156 +10152,6 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             if (prev) sel.value = prev;
         }
 
-        // ---- Populate "Load from Gradaciones" selects ----
-        function aiPopulateGradSelects() {
-            var grads = [];
-            try { grads = JSON.parse(localStorage.getItem('gradaciones_db') || '[]'); } catch(e) {}
-
-            // Map between optimizer slot and tipo values used in gradaciones section
-            var slotConfig = {
-                grueso:    { selId: 'grad-sel-grueso',    tipos: ['grueso'] },
-                intermedio:{ selId: 'grad-sel-intermedio', tipos: ['intermedio','grueso'] },
-                arena1:    { selId: 'grad-sel-arena1',    tipos: ['fino','arena','base'] },
-                arena2:    { selId: 'grad-sel-arena2',    tipos: ['fino','arena','base'] },
-            };
-
-            Object.keys(slotConfig).forEach(function(slot) {
-                var cfg = slotConfig[slot];
-                var sel = document.getElementById(cfg.selId);
-                if (!sel) return;
-                var prev = sel.value;
-                sel.innerHTML = '<option value="">— Manual / sin cargar —</option>';
-                // Show all gradaciones but prioritize matching tipo
-                var matching = grads.filter(function(g) {
-                    return cfg.tipos.some(function(t){ return (g.tipo||'').toLowerCase().includes(t); });
-                });
-                var others = grads.filter(function(g) {
-                    return !cfg.tipos.some(function(t){ return (g.tipo||'').toLowerCase().includes(t); });
-                });
-                if (matching.length) {
-                    var og = document.createElement('optgroup');
-                    og.label = '✅ Tipo compatible';
-                    matching.forEach(function(g) {
-                        var o = document.createElement('option');
-                        o.value = g.id;
-                        o.textContent = g.nombre + (g.proveedor ? ' — ' + g.proveedor : '') + (g.tma ? ' | TMA ' + g.tma : '');
-                        og.appendChild(o);
-                    });
-                    sel.appendChild(og);
-                }
-                if (others.length) {
-                    var og2 = document.createElement('optgroup');
-                    og2.label = 'Otros';
-                    others.forEach(function(g) {
-                        var o = document.createElement('option');
-                        o.value = g.id;
-                        o.textContent = '[' + (g.tipo||'?') + '] ' + g.nombre + (g.proveedor ? ' — ' + g.proveedor : '');
-                        og2.appendChild(o);
-                    });
-                    sel.appendChild(og2);
-                }
-                if (prev) sel.value = prev;
-            });
-        }
-
-        // Sieve map: gradaciones sieveData { sieve, pct } → AI optimizer input IDs
-        // gradaciones uses sieve labels like "2"", "3/4"", "No.4", etc.
-        // AI optimizer uses IDs like sg-2in, sg-0.75in, sg-4, sa1-8, etc.
-        var AI_SIEVE_MAP = {
-            grueso: {
-                '2"':    'sg-2in',  '2in':'sg-2in',
-                '1½"':  'sg-1.5in', '1.5in':'sg-1.5in', '1 1/2"':'sg-1.5in',
-                '1"':    'sg-1in',
-                '3/4"':  'sg-0.75in', '¾"':'sg-0.75in', '0.75in':'sg-0.75in',
-                '1/2"':  'sg-0.5in',  '½"':'sg-0.5in',  '0.5in':'sg-0.5in',
-                '3/8"':  'sg-0.375in','⅜"':'sg-0.375in','0.375in':'sg-0.375in',
-                'No.4':  'sg-4', '#4':'sg-4', 'Nº4':'sg-4',
-                'No.8':  'sg-8', '#8':'sg-8', 'Nº8':'sg-8',
-            },
-            intermedio: {
-                '2"':    'si-2in',
-                '1½"':  'si-1.5in', '1 1/2"':'si-1.5in',
-                '1"':    'si-1in',
-                '3/4"':  'si-0.75in','¾"':'si-0.75in',
-                '1/2"':  'si-0.5in', '½"':'si-0.5in',
-                '3/8"':  'si-0.375in','⅜"':'si-0.375in',
-                'No.4':  'si-4', '#4':'si-4',
-                'No.8':  'si-8', '#8':'si-8',
-            },
-            arena1: {
-                '3/8"':  'sa1-0.375in','⅜"':'sa1-0.375in',
-                'No.4':  'sa1-4',  '#4':'sa1-4',
-                'No.8':  'sa1-8',  '#8':'sa1-8',
-                'No.16': 'sa1-16', '#16':'sa1-16',
-                'No.30': 'sa1-30', '#30':'sa1-30',
-                'No.50': 'sa1-50', '#50':'sa1-50',
-                'No.100':'sa1-100','#100':'sa1-100',
-                'No.200':'sa1-200','#200':'sa1-200',
-            },
-            arena2: {
-                '3/8"':  'sa2-0.375in','⅜"':'sa2-0.375in',
-                'No.4':  'sa2-4',  '#4':'sa2-4',
-                'No.8':  'sa2-8',  '#8':'sa2-8',
-                'No.16': 'sa2-16', '#16':'sa2-16',
-                'No.30': 'sa2-30', '#30':'sa2-30',
-                'No.50': 'sa2-50', '#50':'sa2-50',
-                'No.100':'sa2-100','#100':'sa2-100',
-                'No.200':'sa2-200','#200':'sa2-200',
-            },
-        };
-
-        function aiLoadGradFromDB(slot) {
-            var selId = 'grad-sel-' + slot;
-            var sel   = document.getElementById(selId);
-            if (!sel || !sel.value) return; // manual mode — do nothing
-
-            var grads = [];
-            try { grads = JSON.parse(localStorage.getItem('gradaciones_db') || '[]'); } catch(e) {}
-            var grad = grads.find(function(g){ return g.id === sel.value; });
-            if (!grad || !grad.sieveData || !grad.sieveData.length) {
-                alert('Esta gradación no tiene datos de tamices guardados.');
-                return;
-            }
-
-            var sieveMap = AI_SIEVE_MAP[slot] || {};
-            var loaded = 0;
-
-            grad.sieveData.forEach(function(sv) {
-                // Normalize sieve label for lookup
-                var label = (sv.sieve || '').trim();
-                var targetId = sieveMap[label];
-                // Try normalized variants
-                if (!targetId) {
-                    // Remove spaces, try common aliases
-                    var norm = label.replace(/\s/g,'').replace(/No\./i,'No.').replace(/#/,'No.');
-                    targetId = sieveMap[norm];
-                }
-                if (targetId) {
-                    var el = document.getElementById(targetId);
-                    if (el) { el.value = sv.pct; loaded++; }
-                }
-            });
-
-            // Also fill in MF if available and slot is arena
-            if ((slot === 'arena1' || slot === 'arena2') && grad.mf) {
-                var mfId = slot === 'arena1' ? 'ai-mf-arena1' : 'ai-mf-arena2';
-                var mfEl = document.getElementById(mfId);
-                if (mfEl) mfEl.value = grad.mf;
-            }
-
-            // Trigger live chart update
-            if (typeof aiUpdateLiveChart === 'function') aiUpdateLiveChart();
-
-            // Show feedback
-            var indicator = document.getElementById('blend-total-indicator');
-            if (indicator) {
-                var origText = indicator.textContent;
-                indicator.textContent = '✅ Gradación "' + grad.nombre + '" cargada (' + loaded + ' tamices) en ' + slot;
-                indicator.style.color = '#16a34a';
-                setTimeout(function(){ aiUpdateBlendPcts(slot); }, 1500);
-            }
-        }
-
         // ---- Gather gradation data from inputs ----
         function aiGetGradacion() {
             const g = id => parseFloat(document.getElementById(id)?.value) || 0;
@@ -11778,16 +11627,6 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                 slumpOpt = slump;
                 strategy = `Sostenibilidad: W/C optimizada a ${wcTarget.toFixed(3)} usando margen de sobrediseño. Reducción de cemento de ${Math.round((r.cemento.peso||500)-(waterOpt/wcTarget))} lb/yd³. Recomienda reemplazo 20-25% cemento con puzolana/GGBS. f'c estimada: ${abramsFC(wcTarget).toLocaleString()} PSI.`;
 
-            } else if (objetivo === 'pump') {
-                // Pump mix: ACI 304.2R — CF 60-70, WF ≥ 35, slump 4-7", min 6 bags/yd³
-                // W/C kept at or slightly below original for pumpability + durability
-                wcTarget = Math.min(wc_orig, wcMax, 0.50); // max 0.50 for pump mixes
-                wcTarget = Math.max(wcTarget, 0.38);        // min practical for pumpability
-                // Slightly higher water demand to ensure slump 4-7"
-                waterOpt = Math.max(waterDemandBase * 1.02, 280); // min 280 lb/yd³
-                slumpOpt = Math.max(slump, 4);
-                strategy = `Mezcla Tipo Bomba (ACI 304.2R): W/C=${wcTarget.toFixed(3)}, slump objetivo ${slumpOpt}–7". Target Shilstone: CF=60–70 (mezcla cohesiva, no segregable), WF≥35 (suficiente mortero para lubricar la línea). Cemento mínimo ${Math.round(waterOpt/wcTarget).toLocaleString()} lb/yd³ (≥6 sacos). Se ajusta blend para maximizar cohesión y reducir riesgo de bloqueo en bomba.`;
-
             } else if (objetivo === 'shilstone_zone2') {
                 // Zone II iterative solver — handled in aggregate section below
                 wcTarget = Math.min(wc_orig, wcMax);
@@ -11817,7 +11656,6 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                 sustainability: {cfMin:60, cfMax:74, wfMin:33, wfMax:41},
                 balanced:       {cfMin:55, cfMax:75, wfMin:32, wfMax:44},
                 shilstone_zone2:{cfMin:60, cfMax:70, wfMin:35, wfMax:42},
-                pump:           {cfMin:60, cfMax:70, wfMin:35, wfMax:42}, // ACI 304.2R: CF 60-70, WF≥35
             };
             const st = shilstoneTarget[objetivo] || shilstoneTarget.balanced;
             const cfCenter = (st.cfMin + st.cfMax) / 2;  // e.g. 65
@@ -11885,34 +11723,6 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                 if (objetivo === 'workability' && colocacion === 'pump') pct1New = Math.min(0.55, pct1New + 0.04);
                 if (objetivo === 'cost') { pGNew = Math.min(0.50, pGNew + 0.03); pINew = Math.min(0.25, pINew + 0.02); }
                 if (objetivo === 'durability') { pGNew = Math.min(0.45, Math.max(0.25, pGNew)); pINew = Math.min(0.20, Math.max(0.10, pINew)); }
-                if (objetivo === 'pump') {
-                    // ACI 304.2R: reduce coarse (CF→60-70), increase fines (WF→35-42)
-                    // Iterative: nudge blend until CF in [60,70] AND WF >= 35
-                    for (let _iter = 0; _iter < 30; _iter++) {
-                        const testGd = {...gd, pctG:pGNew, pctI:pINew, pct1:pct1New, pct2:pct2New};
-                        const tCF = aiCalcCF(testGd), tWF = aiCalcWF(testGd);
-                        const cfOk = tCF >= 60 && tCF <= 70, wfOk = tWF >= 35;
-                        if (cfOk && wfOk) break;
-                        // CF too high → reduce grueso, add sand
-                        if (tCF > 70 && pGNew > 0.20) {
-                            const delta = Math.min(0.03, pGNew - 0.20);
-                            pGNew -= delta; pct1New = Math.min(0.50, pct1New + delta * 0.6); pct2New = Math.min(0.35, pct2New + delta * 0.4);
-                        }
-                        // CF too low → add grueso, reduce sand
-                        if (tCF < 60 && pGNew < 0.45 && pct1New > 0.15) {
-                            const delta = Math.min(0.03, 0.45 - pGNew);
-                            pGNew += delta; pct1New = Math.max(0.15, pct1New - delta * 0.6); pct2New = Math.max(0.05, pct2New - delta * 0.4);
-                        }
-                        // WF too low → reduce grueso/inter, add fine sand
-                        if (tWF < 35 && pct1New < 0.50) {
-                            const delta = Math.min(0.02, 0.50 - pct1New);
-                            pct1New += delta; pGNew = Math.max(0.20, pGNew - delta * 0.7); pINew = Math.max(0.05, pINew - delta * 0.3);
-                        }
-                        // Renormalize
-                        const tot = pGNew + pINew + pct1New + pct2New;
-                        if (tot > 0) { pGNew/=tot; pINew/=tot; pct1New/=tot; pct2New/=tot; }
-                    }
-                }
                 // Re-normalize
                 const rawTotal = pGNew + pINew + pct1New;
                 if (rawTotal >= 1) { pGNew *= 0.9/rawTotal; pINew *= 0.9/rawTotal; pct1New *= 0.9/rawTotal; }
@@ -12008,15 +11818,6 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                 recs.push({categoria:'Sostenibilidad',titulo:'Reemplazo parcial de cemento — SCM',descripcion:`Reducir cemento de ${(r.cemento.peso||500).toFixed(0)} a ${cementOpt.toFixed(0)} lb/yd³. Reemplazar 20-25% con ceniza volante Clase F (ASTM C618) o 30-40% GGBS (ASTM C989). Reduce CO₂ hasta 40%.`,estandar:'ACI 232.2R / ASTM C618',prioridad:'Alta'});
                 recs.push({categoria:'Sostenibilidad',titulo:'Optimizar gradación para mínimo cemento',descripcion:'Gradación bien dosificada (Zone II Shilstone) reduce demanda de pasta y por ende de cemento. Cada 1% de mejora en CF/WF puede reducir 0.3-0.5 sacos/yd³.',estandar:'Shilstone JM (1990)',prioridad:'Media'});
             }
-            if (objetivo==='pump') {
-                const finalGd  = {...gd, pctG:pGNew, pctI:pINew, pct1:pct1New, pct2:pct2New};
-                const finalCF  = aiCalcCF(finalGd), finalWF = aiCalcWF(finalGd);
-                const cfStatus = (finalCF>=60&&finalCF<=70) ? '✅ CUMPLE' : '⚠️ Fuera de rango';
-                const wfStatus = finalWF>=35 ? '✅ CUMPLE' : '⚠️ Bajo — riesgo de bloqueo';
-                recs.push({categoria:'Bomba',titulo:'Shilstone — Parámetros Críticos para Bombeo',descripcion:`CF=${finalCF.toFixed(1)} (objetivo 60–70): ${cfStatus}. WF=${finalWF.toFixed(1)} (objetivo ≥35): ${wfStatus}. CF alto (>70) causa segregación y bloqueo; CF bajo (<60) indica mezcla demasiado fina. WF<35 provoca falta de lubricación en línea.`,estandar:'ACI 304.2R / Shilstone (1990)',prioridad:'Alta'});
-                recs.push({categoria:'Bomba',titulo:'Requisitos mínimos ACI 304.2R',descripcion:`Cemento mínimo: ${Math.round(cementOpt)} lb/yd³ (≥ 6 sacos = 564 lb/yd³ recomendado). Slump 4–7". TMA máx: 1/3 diám. tubería. Evitar gap-grading entre No.4 y 3/8". Agua libre controlada; usar HRWR en vez de agua para ajustar slump.`,estandar:'ACI 304.2R §5.2',prioridad:'Alta'});
-                recs.push({categoria:'Aditivos',titulo:'HRWR (High-Range Water Reducer) para bomba',descripcion:'Usar superplastificante ASTM C494 Tipo F o G para alcanzar slump 5–7" sin aumentar A/C. Dosificación típica 5–15 oz/cwt. Evitar plastificantes Tipo A solos (insuficiente para flujo en bomba larga).',estandar:'ASTM C494 / ACI 304.2R',prioridad:'Media'});
-            }
 
             // Universal recommendations
             if (origCF > 75) recs.push({categoria:'Gradación',titulo:'CF > 75 — Mezcla Rocky/Harsh',descripcion:`CF=${origCF.toFixed(1)}: exceso de material grueso. Aumentar % arena fina hasta CF ${st.cfMin}-${st.cfMax}. Riesgo de segregación, acabado difícil y baja trabajabilidad en bomba.`,estandar:'Shilstone JM (1990)',prioridad:'Alta'});
@@ -12034,16 +11835,6 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
             if (zoneOpt === 'Zone II')  warns.push({nivel:'info',mensaje:`✅ Optimización alcanza ${zoneOpt} (CF=${optCF.toFixed(1)}, WF=${optWF.toFixed(1)}) — Mezcla bien graduada.`,estandar:'Shilstone JM (1990)'});
             if (fc_est_orig > fc_design * 1.35) warns.push({nivel:'info',mensaje:`f'c estimada original (${fc_est_orig.toLocaleString()} PSI) excede diseño en ${Math.round((fc_est_orig/fc_design-1)*100)}%. Existe margen para optimizar.`,estandar:'Ley de Abrams'});
             if (colocacion==='pump' && optWF < 36) warns.push({nivel:'warning',mensaje:`WF=${optWF.toFixed(1)} puede ser bajo para bombeo. Recomendado WF≥37. Considerar plastificante o ajuste de blend.`,estandar:'ACI 304.2R'});
-            if (objetivo==='pump') {
-                const pumpGd = {...gd, pctG:pGNew, pctI:pINew, pct1:pct1New, pct2:pct2New};
-                const pCF = aiCalcCF(pumpGd), pWF = aiCalcWF(pumpGd);
-                if (pCF < 60) warns.push({nivel:'error', mensaje:`CF=${pCF.toFixed(1)} < 60 — mezcla muy fina para bomba. Aumentar grueso. Riesgo: exceso de mortero, alta retracción.`, estandar:'ACI 304.2R / Shilstone'});
-                else if (pCF > 70) warns.push({nivel:'error', mensaje:`CF=${pCF.toFixed(1)} > 70 — mezcla muy gruesa para bomba. Riesgo de segregación y bloqueo en línea.`, estandar:'ACI 304.2R / Shilstone'});
-                else warns.push({nivel:'info', mensaje:`✅ CF=${pCF.toFixed(1)} en rango 60–70 para bombeo (ACI 304.2R).`, estandar:'Shilstone (1990)'});
-                if (pWF < 35) warns.push({nivel:'error', mensaje:`WF=${pWF.toFixed(1)} < 35 — insuficiente mortero para lubricación de bomba. Aumentar % arenas finas.`, estandar:'ACI 304.2R'});
-                else warns.push({nivel:'info', mensaje:`✅ WF=${pWF.toFixed(1)} ≥ 35 — trabajabilidad adecuada para bombeo.`, estandar:'ACI 304.2R'});
-                if (cementOpt < 564) warns.push({nivel:'warning', mensaje:`Cemento estimado ${Math.round(cementOpt)} lb/yd³ < 564 (6 sacos mínimo ACI 304.2R). Ajustar W/C o agua.`, estandar:'ACI 304.2R §5.2.1'});
-            }
 
             // ---- Combined 0.45 power ----
             const combOpt = aiGetCombinedPassing(gdOpt);
@@ -13799,7 +13590,6 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                         <label>🎯 Objetivo de Optimización</label>
                         <select id="ai-objetivo">
                             <option value="balanced">⚖️ Balanceado (Resistencia + Costo + Trabajabilidad)</option>
-                            <option value="pump">🚛 Mezcla Tipo Bomba (CF 60-70, WF ≥ 35)</option>
                             <option value="shilstone_zone2">🎯 Llevar Mezcla a Zone II — Shilstone</option>
                             <option value="cost">💰 Minimizar Costo</option>
                             <option value="strength">💪 Maximizar Resistencia</option>
@@ -13889,44 +13679,6 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                     </div>
                     <div id="blend-total-indicator" style="margin-top:10px;text-align:center;font-weight:700;font-size:13px;color:#16a34a">
                         ✅ Total: 100%
-                    </div>
-                </div>
-
-                <!-- Load from Gradaciones DB -->
-                <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px 20px;margin-bottom:16px">
-                    <div style="font-weight:700;color:#166534;margin-bottom:10px;font-size:14px">📂 Cargar Gradaciones desde Base de Datos</div>
-                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:end">
-                        <div>
-                            <label style="font-size:12px;color:#1e40af;font-weight:700;display:block;margin-bottom:4px">🪨 Ag. Grueso</label>
-                            <select id="grad-sel-grueso" onchange="aiLoadGradFromDB('grueso')"
-                                style="width:100%;padding:7px;border:2px solid #93c5fd;border-radius:6px;font-size:12px">
-                                <option value="">— Manual / sin cargar —</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label style="font-size:12px;color:#7c3aed;font-weight:700;display:block;margin-bottom:4px">🟣 Ag. Intermedio</label>
-                            <select id="grad-sel-intermedio" onchange="aiLoadGradFromDB('intermedio')"
-                                style="width:100%;padding:7px;border:2px solid #c4b5fd;border-radius:6px;font-size:12px">
-                                <option value="">— Manual / sin cargar —</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label style="font-size:12px;color:#92400e;font-weight:700;display:block;margin-bottom:4px">🏖️ Arena 1</label>
-                            <select id="grad-sel-arena1" onchange="aiLoadGradFromDB('arena1')"
-                                style="width:100%;padding:7px;border:2px solid #fcd34d;border-radius:6px;font-size:12px">
-                                <option value="">— Manual / sin cargar —</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label style="font-size:12px;color:#166534;font-weight:700;display:block;margin-bottom:4px">🏖️ Arena 2</label>
-                            <select id="grad-sel-arena2" onchange="aiLoadGradFromDB('arena2')"
-                                style="width:100%;padding:7px;border:2px solid #86efac;border-radius:6px;font-size:12px">
-                                <option value="">— Manual / sin cargar —</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div style="margin-top:8px;font-size:11px;color:#166534">
-                        💡 Selecciona una gradación guardada para cargar automáticamente los % pasando en la tabla de tamices.
                     </div>
                 </div>
 
@@ -14825,6 +14577,23 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                 </div>
             </div>
         </div>
+    <!-- Modal: Gestionar Tipos de Prueba -->
+    <div id="modal-tipos-prueba" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;justify-content:center;align-items:center">
+        <div style="background:white;padding:30px;border-radius:12px;max-width:480px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.3)">
+            <h2 style="color:#2563eb;margin-bottom:6px;font-size:1.2rem">✏️ Gestionar Tipos de Prueba</h2>
+            <p style="color:#64748b;font-size:13px;margin-bottom:16px">Añade, edita o elimina los tipos de prueba disponibles.</p>
+            <div id="lista-tipos-prueba" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;max-height:260px;overflow-y:auto"></div>
+            <div style="display:flex;gap:8px;margin-bottom:18px">
+                <input type="text" id="nuevo-tipo-prueba-input" placeholder="Nuevo tipo de prueba..." style="flex:1;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px">
+                <button onclick="agregarTipoPrueba()" style="background:#2563eb;color:white;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:13px;font-weight:600">+ Añadir</button>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+                <button onclick="cerrarModalTiposPrueba()" style="background:#f1f5f9;border:1px solid #cbd5e1;color:#475569;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:14px">Cancelar</button>
+                <button onclick="guardarTiposPrueba()" style="background:#16a34a;color:white;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:14px;font-weight:600">💾 Guardar</button>
+            </div>
+        </div>
+    </div>
+
     <div id="modal-cliente-rapido" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;justify-content:center;align-items:center">
         <div style="background:white;padding:30px;border-radius:12px;max-width:500px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.3)">
             <h2 style="color:#16a34a;margin-bottom:20px">Nuevo Cliente</h2>
