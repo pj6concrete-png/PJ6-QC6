@@ -2691,7 +2691,8 @@
                     campo_evaluaciones: await getAllRecords('campo_evaluaciones'),
                     incidentes: JSON.parse(localStorage.getItem('incidentes_v1') || '[]'),
                     inc_proyectos: JSON.parse(localStorage.getItem('inc_proyectos_v1') || '[]'),
-                    gradaciones: JSON.parse(localStorage.getItem('gradaciones_db') || '[]')
+                    gradaciones: JSON.parse(localStorage.getItem('gradaciones_db') || '[]'),
+                    aci214: (function(){ try{ var d=JSON.parse(localStorage.getItem('aci214_data')||'{}'); return {R:d.R||[],MX:d.MX||{}}; }catch(e){ return {R:[],MX:{}}; } })()
                 };
                 
                 // Incluir logo si existe
@@ -2741,7 +2742,8 @@
                       'Trial Mixes: '        + (data.trials||[]).length + '\n' +
                       'Eval. de Campo: '     + (data.campo_evaluaciones||[]).length + '\n' +
                       'Incidentes: '         + (data.incidentes||[]).length + '\n' +
-                      'Gradaciones: '        + (data.gradaciones||[]).length);
+                      'Gradaciones: '        + (data.gradaciones||[]).length + '\n' +
+                      'ACI 214R results: '   + ((data.aci214||{}).R||[]).length);
                 
             } catch (error) {
                 console.error('Error exportando:', error);
@@ -2778,8 +2780,10 @@
             try { data = JSON.parse(jsonText); }
             catch(e) { alert('No es JSON valido: ' + e.message); return; }
 
-            // Validate
-            if (!data || (!data.clientes && !data.mixdesigns && !data.trials && !data.proyectos && !data.materiales && !data.incidentes)) {
+            // Validate — accept any object with at least one known key
+            var knownKeys = ['clientes','proyectos','materiales','cotizaciones','mixdesigns',
+                             'trials','campo_evaluaciones','incidentes','gradaciones','aci214'];
+            if (!data || typeof data !== 'object' || !knownKeys.some(function(k){ return data[k] !== undefined; })) {
                 alert('Archivo no reconocido. Exporta primero desde esta aplicacion.');
                 return;
             }
@@ -2799,6 +2803,7 @@
             var ces = (data.campo_evaluaciones || []).length;
             var ins = (data.incidentes || []).length;
             var grs = (data.gradaciones || []).length;
+            var a214count = data.aci214 ? ((data.aci214.R || []).length + Object.keys(data.aci214.MX || {}).length) : 0;
 
             var lines = [
                 'IMPORTAR BACKUP',
@@ -2812,6 +2817,7 @@
                 'Eval Campo:     ' + ces,
                 'Incidentes:     ' + ins,
                 'Gradaciones:    ' + grs,
+                'ACI 214R:       ' + a214count + ' (resultados + mixes)',
                 '',
                 'Los registros existentes no seran eliminados.',
                 'Presiona OK para continuar.'
@@ -2820,25 +2826,48 @@
 
             var imported = 0, skipped = 0, errors = 0;
 
+            // ── insertStore: deduplicates by a keyField OR falls back to inserting all ──
             async function insertStore(storeName, records, keyField) {
                 if (!records || records.length === 0) return;
                 var existing = [];
                 try { existing = await getAllRecords(storeName); } catch(e) {}
+
+                // Build a Set of existing key values for fast lookup
+                var existingKeys = new Set();
+                if (keyField) {
+                    existing.forEach(function(r) {
+                        if (r[keyField] != null && r[keyField] !== '') {
+                            existingKeys.add(String(r[keyField]).toLowerCase().trim());
+                        }
+                    });
+                }
+
                 for (var i = 0; i < records.length; i++) {
                     var rec = records[i];
                     var dup = false;
-                    if (keyField && rec[keyField]) {
-                        for (var j = 0; j < existing.length; j++) {
-                            if (String(existing[j][keyField]) === String(rec[keyField])) {
-                                dup = true; break;
-                            }
+
+                    // Only skip if keyField exists AND the record has a non-empty value for it
+                    if (keyField && rec[keyField] != null && rec[keyField] !== '') {
+                        var recKeyVal = String(rec[keyField]).toLowerCase().trim();
+                        if (existingKeys.has(recKeyVal)) {
+                            dup = true;
                         }
                     }
+
                     if (dup) { skipped++; continue; }
+
+                    // Strip old id so IndexedDB auto-assigns a new one
                     var obj = {};
                     Object.keys(rec).forEach(function(k) { if (k !== 'id') obj[k] = rec[k]; });
-                    try { await addRecord(storeName, obj); imported++; }
-                    catch(e) { console.warn('insert error', storeName, e); errors++; }
+                    try {
+                        var newId = await addRecord(storeName, obj);
+                        // Add the new key to the set so duplicates within the same import batch are also caught
+                        if (keyField && obj[keyField] != null && obj[keyField] !== '') {
+                            existingKeys.add(String(obj[keyField]).toLowerCase().trim());
+                        }
+                        imported++;
+                    }
+                    catch(e) { console.warn('insert error', storeName, rec, e); errors++; }
                 }
             }
 
@@ -2855,7 +2884,7 @@
                 var existingInc = [];
                 try { existingInc = JSON.parse(localStorage.getItem('incidentes_v1') || '[]'); } catch(e) {}
                 var existingIds = new Set(existingInc.map(function(i){ return i.id; }));
-                var newInc = data.incidentes.filter(function(i){ return i.id && !existingIds.has(i.id); });
+                var newInc = data.incidentes.filter(function(i){ return !i.id || !existingIds.has(i.id); });
                 var merged = existingInc.concat(newInc);
                 localStorage.setItem('incidentes_v1', JSON.stringify(merged));
                 imported += newInc.length;
@@ -2878,15 +2907,42 @@
                 var existingGrad = [];
                 try { existingGrad = JSON.parse(localStorage.getItem('gradaciones_db') || '[]'); } catch(e) {}
                 var existingGradIds = new Set(existingGrad.map(function(g){ return g.id; }));
-                var newGrad = data.gradaciones.filter(function(g){ return g.id && !existingGradIds.has(g.id); });
+                var newGrad = data.gradaciones.filter(function(g){
+                    // Accept records even without an id — treat them as new
+                    return !g.id || !existingGradIds.has(g.id);
+                });
                 var mergedGrad = existingGrad.concat(newGrad);
                 localStorage.setItem('gradaciones_db', JSON.stringify(mergedGrad));
                 imported += newGrad.length;
                 skipped  += (data.gradaciones.length - newGrad.length);
             }
 
-            // Restore logo
-            if (data.logo && !logoEmpresa) {
+            // Import ACI 214R data (stored in localStorage under 'aci214_data')
+            if (data.aci214) {
+                try {
+                    var existing214 = {};
+                    try { existing214 = JSON.parse(localStorage.getItem('aci214_data') || '{}'); } catch(e) {}
+                    var existingR   = existing214.R  || [];
+                    var existingMX  = existing214.MX || {};
+
+                    // Merge results — deduplicate by date+lot+mix combo
+                    var incomingR = data.aci214.R || [];
+                    var existingRKeys = new Set(existingR.map(function(r){ return r.date+'|'+r.lot+'|'+r.mix; }));
+                    var newR = incomingR.filter(function(r){ return !existingRKeys.has(r.date+'|'+r.lot+'|'+r.mix); });
+                    var mergedR = existingR.concat(newR);
+
+                    // Merge mix designs — new keys win if not already present
+                    var incomingMX = data.aci214.MX || {};
+                    var mergedMX = Object.assign({}, incomingMX, existingMX); // existing takes priority
+
+                    localStorage.setItem('aci214_data', JSON.stringify({ R: mergedR, MX: mergedMX }));
+                    imported += newR.length + Object.keys(incomingMX).filter(function(k){ return !existingMX[k]; }).length;
+                    skipped  += (incomingR.length - newR.length);
+                } catch(e) { console.warn('ACI214 import error', e); errors++; }
+            }
+
+            // Restore logo (always restore if backup has one and current has none, or ask)
+            if (data.logo) {
                 try {
                     if (!db) await initDB();
                     var tx = db.transaction(['settings'], 'readwrite');
@@ -2894,7 +2950,7 @@
                     logoEmpresa = data.logo;
                     var el = document.getElementById('empresa-logo');
                     if (el) { el.src = data.logo; el.style.display = 'block'; }
-                } catch(e) {}
+                } catch(e) { console.warn('Logo restore error', e); }
             }
 
             var result = [
@@ -2916,6 +2972,8 @@
                 if (typeof renderIncProyectos === 'function') renderIncProyectos();
                 if (typeof populateIncClienteSelect === 'function') populateIncClienteSelect();
                 if (typeof renderTablaGradaciones === 'function') renderTablaGradaciones();
+                // Refresh ACI 214R
+                if (typeof a214Init === 'function') a214Init();
             } catch(e) {}
             try {
                 var t = document.querySelector('.tab.active');
@@ -3129,7 +3187,33 @@
                 loadClientesSelect();
             }
             if (tabName === 'materiales') loadMateriales();
-            if (tabName === 'cotizaciones') loadCotizaciones();
+            if (tabName === 'cotizaciones') {
+                loadCotizaciones();
+                // Inicializar formulario si no tiene número de cotización
+                const numField = document.getElementById('cotizacion-numero');
+                if (numField && !numField.value) {
+                    generarNumeroCotizacion().then(numero => {
+                        numField.value = numero;
+                    });
+                    // Fecha de hoy
+                    const fechaField = document.getElementById('cotizacion-fecha');
+                    if (fechaField && !fechaField.value) {
+                        fechaField.valueAsDate = new Date();
+                    }
+                    // Fecha válida hasta (30 días)
+                    const validaHastaField = document.getElementById('cotizacion-valida-hasta');
+                    if (validaHastaField && !validaHastaField.value) {
+                        const validaHasta = new Date();
+                        validaHasta.setDate(validaHasta.getDate() + 30);
+                        validaHastaField.valueAsDate = validaHasta;
+                    }
+                    // Agregar una línea inicial si no hay ninguna
+                    const tbody = document.getElementById('cotizacion-lineas-body');
+                    if (tbody && tbody.querySelectorAll('tr').length === 0) {
+                        agregarLineaCotizacion();
+                    }
+                }
+            }
             if (tabName === 'mixdesign') {
                 loadMixDesigns();
                 loadClientesSelect();
@@ -3155,6 +3239,7 @@
             if (tabName === 'ai-optimizer') {
                 cargarMixDesignsEnAIOptimizer();
                 setTimeout(aiAttachSieveLiveListeners, 100);
+                setTimeout(poblarSelectoresGradacionAI, 150);
             }
             if (tabName === 'dashboard') updateDashboard();
             if (tabName === 'aci214') {
@@ -3915,9 +4000,24 @@
             
             const totalGeneral = lineas.reduce((sum, linea) => sum + linea.total, 0);
             const totalYd = lineas.reduce((sum, linea) => sum + linea.cantidad, 0);
+
+            // Validar campos requeridos manualmente (por si el browser no los validó)
+            const clienteNombre = document.getElementById('cotizacion-cliente-nombre').value.trim();
+            const proyecto = document.getElementById('cotizacion-proyecto').value.trim();
+            const fecha = document.getElementById('cotizacion-fecha').value;
+            if (!clienteNombre) { alert('⚠️ El nombre del cliente es requerido.'); document.getElementById('cotizacion-cliente-nombre').focus(); return; }
+            if (!proyecto) { alert('⚠️ El nombre del proyecto es requerido.'); document.getElementById('cotizacion-proyecto').focus(); return; }
+            if (!fecha) { alert('⚠️ La fecha es requerida.'); document.getElementById('cotizacion-fecha').focus(); return; }
+
+            // Generar número si está vacío
+            let numCot = document.getElementById('cotizacion-numero').value;
+            if (!numCot) {
+                numCot = await generarNumeroCotizacion();
+                document.getElementById('cotizacion-numero').value = numCot;
+            }
             
             const cotizacion = {
-                numero: document.getElementById('cotizacion-numero').value,
+                numero: numCot,
                 fecha: document.getElementById('cotizacion-fecha').value,
                 validaHasta: document.getElementById('cotizacion-valida-hasta').value,
                 status: document.getElementById('cotizacion-status').value,
@@ -4000,7 +4100,7 @@
                     <td>${c.clienteNombre}</td>
                     <td style="color:#475569;font-size:13px;">${c.clienteCompania || '—'}</td>
                     <td>${c.proyecto}</td>
-                    <td>${new Date(c.fecha).toLocaleDateString('es-ES')}</td>
+                    <td>${new Date(c.fecha + 'T00:00:00').toLocaleDateString('es-ES')}</td>
                     <td style="color: #0369a1; font-weight: bold;">${(c.totalYd || 0).toFixed(2)} yd³</td>
                     <td class="actions">
                         <button class="info" onclick="verCotizacion(${c.id})">Ver</button>
@@ -4023,8 +4123,8 @@
    COTIZACIÓN ${cotizacion.numero}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📅 Fecha: ${new Date(cotizacion.fecha).toLocaleDateString('es-ES')}
-📅 Válida hasta: ${new Date(cotizacion.validaHasta).toLocaleDateString('es-ES')}
+📅 Fecha: ${new Date(cotizacion.fecha + 'T00:00:00').toLocaleDateString('es-ES')}
+📅 Válida hasta: ${cotizacion.validaHasta ? new Date(cotizacion.validaHasta + 'T00:00:00').toLocaleDateString('es-ES') : 'N/A'}
 
 👤 CLIENTE
 Nombre: ${cotizacion.clienteNombre}
@@ -4104,7 +4204,9 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             calcularTotalGeneral();
             document.getElementById('btn-imprimir-cotizacion').disabled = false;
             
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // Scroll al formulario de cotización
+            const formCot = document.getElementById('form-cotizacion');
+            if (formCot) formCot.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         async function deleteCotizacion(id) {
@@ -4215,11 +4317,11 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
         <div class="info-grid">
             <div class="info-item">
                 <div class="info-label">Fecha de Emisión</div>
-                <div class="info-value">${new Date(cotizacion.fecha).toLocaleDateString('es-ES', {year: 'numeric', month: 'long', day: 'numeric'})}</div>
+                <div class="info-value">${new Date(cotizacion.fecha + 'T00:00:00').toLocaleDateString('es-ES', {year: 'numeric', month: 'long', day: 'numeric'})}</div>
             </div>
             <div class="info-item">
                 <div class="info-label">Válida Hasta</div>
-                <div class="info-value">${new Date(cotizacion.validaHasta).toLocaleDateString('es-ES', {year: 'numeric', month: 'long', day: 'numeric'})}</div>
+                <div class="info-value">${cotizacion.validaHasta ? new Date(cotizacion.validaHasta + 'T00:00:00').toLocaleDateString('es-ES', {year: 'numeric', month: 'long', day: 'numeric'}) : '—'}</div>
             </div>
         </div>
     </div>
@@ -5929,9 +6031,15 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
         async function loadMixDesignsSelect() {
             const mixdesigns = await getAllRecords('mixdesigns');
             const select = document.getElementById('trial-mixdesign');
-            select.innerHTML = '<option value="">Seleccionar...</option>';
-            mixdesigns.forEach(m => {
-                select.innerHTML += `<option value="${m.id}">${m.nombre} - ${m.resistencia} PSI</option>`;
+            select.innerHTML = '';
+            const placeholder = document.createElement('option');
+            placeholder.value = ''; placeholder.textContent = 'Seleccionar...';
+            select.appendChild(placeholder);
+            (mixdesigns || []).forEach(function(m) {
+                const opt = document.createElement('option');
+                opt.value = String(m.id);
+                opt.textContent = m.nombre + ' — ' + (m.resistencia || '?') + ' PSI';
+                select.appendChild(opt);
             });
         }
 
@@ -9083,20 +9191,27 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
         async function editTrial(id) {
             const trial = await getRecord('trials', id);
             if (!trial) return;
-            
-            // Cargar el select de mix designs primero
-            await loadMixDesignsSelect();
-            
+
+            // Switch to tab first so elements exist in DOM
+            switchTab('trials');
+
             currentTrialData = trial;
             document.getElementById('btn-reporte-trial').disabled = false;
             document.getElementById('btn-qr-trial').disabled = false;
-            
-            document.getElementById('edit-trial-id').value = trial.id;
+
+            // ── Basic fields ──
+            document.getElementById('edit-trial-id').value   = trial.id;
             document.getElementById('trial-id-display').value = trial.trialId;
-            document.getElementById('trial-mixdesign').value = trial.mixDesignId;
-            document.getElementById('trial-fecha').value = trial.fecha;
-            document.getElementById('trial-hora').value = trial.hora || '';
-            
+            document.getElementById('trial-fecha').value     = trial.fecha;
+            document.getElementById('trial-hora').value      = trial.hora || '';
+            document.getElementById('trial-slump').value     = trial.slump;
+            document.getElementById('trial-temperatura').value = trial.temperatura;
+            document.getElementById('trial-aire').value      = trial.aire;
+            document.getElementById('trial-peso-unitario').value = trial.pesoUnitario;
+            document.getElementById('trial-agua-anadida').value = trial.aguaAnadida || '';
+            document.getElementById('trial-ticket').value    = trial.ticketNumber || '';
+            refreshTipoPruebaSelect(trial.tipoPrueba || '');
+
             if ([1, 2, 3, 4, 5, 6.75, 13.5, 27].includes(trial.tamano)) {
                 document.getElementById('trial-tamano').value = trial.tamano;
             } else {
@@ -9104,26 +9219,63 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 document.getElementById('trial-tamano-custom').value = trial.tamano;
                 document.getElementById('trial-tamano-custom-group').style.display = 'block';
             }
-            
-            document.getElementById('trial-slump').value = trial.slump;
-            document.getElementById('trial-temperatura').value = trial.temperatura;
-            document.getElementById('trial-aire').value = trial.aire;
-            document.getElementById('trial-peso-unitario').value = trial.pesoUnitario;
-            document.getElementById('trial-agua-anadida').value = trial.aguaAnadida || '';
-            document.getElementById('trial-ticket').value = trial.ticketNumber || '';
-            refreshTipoPruebaSelect(trial.tipoPrueba || '');
 
-            // Populate cliente/proyecto selects
+            // ── Mix Design select — rebuild then set value ──
+            await loadMixDesignsSelect();
+            // Force string comparison — IndexedDB IDs are numbers, option values are strings
+            const mixSel = document.getElementById('trial-mixdesign');
+            const mixTarget = String(trial.mixDesignId);
+            for (let i = 0; i < mixSel.options.length; i++) {
+                if (String(mixSel.options[i].value) === mixTarget) {
+                    mixSel.selectedIndex = i;
+                    break;
+                }
+            }
+
+            // ── Cliente select — rebuild then set value ──
             await cargarClientesTrialSelect();
             if (trial.clienteId) {
-                document.getElementById('trial-cliente-id').value = trial.clienteId;
-                await cargarProyectosTrial();
-                if (trial.proyectoId) document.getElementById('trial-proyecto-id').value = trial.proyectoId;
+                const clSel = document.getElementById('trial-cliente-id');
+                const clTarget = String(trial.clienteId);
+                for (let i = 0; i < clSel.options.length; i++) {
+                    if (String(clSel.options[i].value) === clTarget) {
+                        clSel.selectedIndex = i;
+                        break;
+                    }
+                }
+
+                // ── Proyecto select — needs cliente to be set first ──
+                // Pass clienteId directly instead of reading from select (avoids timing issues)
+                const pSel = document.getElementById('trial-proyecto-id');
+                pSel.innerHTML = '<option value="">Sin proyecto</option>';
+                try {
+                    const proyectos = await getAllRecords('proyectos');
+                    const clienteNum = parseInt(trial.clienteId);
+                    (proyectos || [])
+                        .filter(p => parseInt(p.cliente) === clienteNum || String(p.cliente) === String(trial.clienteId))
+                        .forEach(p => {
+                            const opt = document.createElement('option');
+                            opt.value = p.id;
+                            opt.textContent = p.nombre;
+                            pSel.appendChild(opt);
+                        });
+                } catch(e) { console.error('Proyectos trial:', e); }
+
+                if (trial.proyectoId) {
+                    const pTarget = String(trial.proyectoId);
+                    for (let i = 0; i < pSel.options.length; i++) {
+                        if (String(pSel.options[i].value) === pTarget) {
+                            pSel.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
             }
-            
+
+            // ── Cilindros ──
             document.getElementById('trial-num-cilindros').value = trial.cilindros.length;
             generarCamposCilindros();
-            
+
             trial.cilindros.forEach((cil, index) => {
                 const i = index + 1;
                 const diasSelect = document.getElementById(`cilindro-${i}-dias`);
@@ -9134,17 +9286,15 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     document.getElementById(`cilindro-${i}-dias-custom`).value = cil.diasCurado;
                     document.getElementById(`cilindro-${i}-dias-custom-group`).style.display = 'block';
                 }
-                // Recalculate fecha from trial-fecha + diasCurado (never use stored fechaEnsayo — may be stale)
                 calcularFechaRotura(i);
                 document.getElementById(`cilindro-${i}-resistencia`).value = cil.resistencia;
             });
-            
+
             document.getElementById('trial-observaciones').value = trial.observaciones || '';
-            document.getElementById('trial-tecnico').value = trial.tecnico || '';
-            
+            document.getElementById('trial-tecnico').value       = trial.tecnico || '';
+
             await cargarInfoMixDesign();
-            
-            switchTab('trials');
+
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -10156,11 +10306,16 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
         function aiGetGradacion() {
             const g = id => parseFloat(document.getElementById(id)?.value) || 0;
             // Read blend percentages — fall back to legacy pct-arena1/2 if new inputs absent
-            const pG  = g('pct-grueso-ai')     || 35;
-            const pI  = g('pct-intermedio-ai') || 15;
-            const pA1 = g('pct-arena1-ai')     || g('pct-arena1') * (50/100) || 30;
-            const pA2 = g('pct-arena2-ai')     || g('pct-arena2') * (50/100) || 20;
-            const total = pG + pI + pA1 + pA2 || 100;
+            // Read raw values — treat empty/missing as default but respect explicit 0
+            const elG  = document.getElementById('pct-grueso-ai');
+            const elI  = document.getElementById('pct-intermedio-ai');
+            const elA1 = document.getElementById('pct-arena1-ai');
+            const elA2 = document.getElementById('pct-arena2-ai');
+            const pG  = elG  && elG.value  !== '' ? parseFloat(elG.value)  : 35;
+            const pI  = elI  && elI.value  !== '' ? parseFloat(elI.value)  : 15;
+            const pA1 = elA1 && elA1.value !== '' ? parseFloat(elA1.value) : 30;
+            const pA2 = elA2 && elA2.value !== '' ? parseFloat(elA2.value) : 20;
+            const total = (pG + pI + pA1 + pA2) || 100;
             return {
                 grueso: {
                     '2in':    g('sg-2in'),
@@ -10230,8 +10385,10 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
         // Q_coarse = % retained above No.8 that is > 3/8" (i.e. coarse + intermediate above 3/8")
         // Q_fine   = % passing No.8 in combined aggregate
         function aiCalcCF(gd) {
-            const pG = gd.pctG || 0.35, pI = gd.pctI || 0.15;
-            const p1 = gd.pct1 || 0.30, p2 = gd.pct2 || 0.20;
+            const pG = gd.pctG != null ? gd.pctG : 0.35;
+            const pI = gd.pctI != null ? gd.pctI : 0.15;
+            const p1 = gd.pct1 != null ? gd.pct1 : 0.30;
+            const p2 = gd.pct2 != null ? gd.pct2 : 0.20;
             // % passing No.8 in each fraction
             const gNo8  = gd.grueso.no8     || 0;
             const iNo8  = gd.intermedio ? (gd.intermedio.no8 || 0) : 0;
@@ -10254,8 +10411,10 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
         // ---- Workability Factor ----
         // WF = % of combined aggregate passing No.8
         function aiCalcWF(gd) {
-            const pG = gd.pctG || 0.35, pI = gd.pctI || 0.15;
-            const p1 = gd.pct1 || 0.30, p2 = gd.pct2 || 0.20;
+            const pG = gd.pctG != null ? gd.pctG : 0.35;
+            const pI = gd.pctI != null ? gd.pctI : 0.15;
+            const p1 = gd.pct1 != null ? gd.pct1 : 0.30;
+            const p2 = gd.pct2 != null ? gd.pct2 : 0.20;
             const gNo8 = gd.grueso.no8 || 0;
             const iNo8 = gd.intermedio ? (gd.intermedio.no8 || 0) : 0;
             const fNo8 = (gd.arena1.no8||0)*p1 + (gd.arena2.no8||0)*p2;
@@ -10265,8 +10424,10 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
 
         // ---- Get combined passing at each standard sieve ----
         function aiGetCombinedPassing(gd) {
-            const pG = gd.pctG || 0.35, pI = gd.pctI || 0.15;
-            const p1 = gd.pct1 || 0.30, p2 = gd.pct2 || 0.20;
+            const pG = gd.pctG != null ? gd.pctG : 0.35;
+            const pI = gd.pctI != null ? gd.pctI : 0.15;
+            const p1 = gd.pct1 != null ? gd.pct1 : 0.30;
+            const p2 = gd.pct2 != null ? gd.pct2 : 0.20;
             const inter = gd.intermedio || {};
             const finePass = (key) => (gd.arena1[key]||0)*p1 + (gd.arena2[key]||0)*p2;
             const interPass = (key) => (inter[key] !== undefined ? inter[key] : (key==='2in'||key==='1.5in'||key==='1in'?100:key==='0.75in'?95:key==='0.5in'?60:key==='0.375in'?30:key==='no4'?5:0));
@@ -11450,6 +11611,143 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
         }
 
         // Attach live update listeners to all sieve inputs
+        // ── Tamiz name → AI input ID mapping (exact names from C33_SPECS.tamices) ──
+        const SIEVE_MAP_AI = {
+            grueso: {
+                // Exact tamiz strings saved by guardarGradacion() for tipo='grueso'
+                '3½"':'sg-2in',  '3"':'sg-2in',  '2½"':'sg-2in',
+                '2"':'sg-2in',  '1½"':'sg-1.5in',  '1"':'sg-1in',
+                '¾"':'sg-0.75in',  '½"':'sg-0.5in',  '3/8"':'sg-0.375in',
+                'Nº4':'sg-4',  'Nº8':'sg-8',
+                'Nº16':'sg-8', 'Nº50':'sg-8', 'Nº100':'sg-8'
+            },
+            intermedio: {
+                // Exact tamiz strings saved for tipo='intermedio'
+                '2"':'si-2in',  '1½"':'si-1.5in',  '1"':'si-1in',
+                '¾"':'si-0.75in',  '½"':'si-0.5in',  '3/8"':'si-0.375in',
+                'Nº4':'si-4',  'Nº8':'si-8',
+                'Nº16':'si-8', 'Nº30':'si-8'
+            },
+            arena1: {
+                // Exact tamiz strings saved for tipo='fino'
+                '3/8"':'sa1-0.375in',
+                'Nº4':'sa1-4',    'Nº8':'sa1-8',
+                'Nº16':'sa1-16',  'Nº30':'sa1-30',
+                'Nº50':'sa1-50',  'Nº100':'sa1-100',
+                'Nº200':'sa1-200'
+            },
+            arena2: {
+                '3/8"':'sa2-0.375in',
+                'Nº4':'sa2-4',    'Nº8':'sa2-8',
+                'Nº16':'sa2-16',  'Nº30':'sa2-30',
+                'Nº50':'sa2-50',  'Nº100':'sa2-100',
+                'Nº200':'sa2-200'
+            }
+        };
+
+        // Populate all four gradacion selectors from localStorage
+        function poblarSelectoresGradacionAI() {
+            const grads = getGradaciones();
+            const selectIds = {
+                grueso:     'sel-grad-grueso',
+                intermedio: 'sel-grad-intermedio',
+                arena1:     'sel-grad-arena1',
+                arena2:     'sel-grad-arena2'
+            };
+            const tipoFor = { grueso:'grueso', intermedio:'intermedio', arena1:'fino', arena2:'fino' };
+
+            Object.keys(selectIds).forEach(function(slot) {
+                const sel = document.getElementById(selectIds[slot]);
+                if (!sel) return;
+                const currentVal = sel.value;
+                sel.innerHTML = '<option value="">📂 Cargar desde Gradaciones guardadas...</option>';
+                const tipoDeseado = tipoFor[slot];
+                const filtradas = grads.filter(function(g){ return !g.tipo || g.tipo === tipoDeseado || g.tipo === ''; });
+                const lista = filtradas.length > 0 ? filtradas : grads;
+                lista.forEach(function(g) {
+                    const opt = document.createElement('option');
+                    opt.value = g.id;
+                    const tipo = g.tipo ? ' [' + g.tipo + ']' : '';
+                    const mf   = g.mf   ? ' MF=' + g.mf : '';
+                    const prov = g.proveedor ? ' — ' + g.proveedor : '';
+                    opt.textContent = g.nombre + tipo + mf + prov;
+                    sel.appendChild(opt);
+                });
+                if (currentVal) sel.value = currentVal;
+            });
+        }
+
+        // Normalize a sieve string for fuzzy matching
+        function normSieve(s) {
+            s = String(s).toLowerCase().replace(/\s/g,'');
+            // Replace compound fractions BEFORE individual ones
+            s = s.replace(/3½/g,'3.5').replace(/2½/g,'2.5').replace(/1½/g,'1.5');
+            // Replace individual fraction chars
+            s = s.replace(/½/g,'1/2').replace(/¾/g,'3/4').replace(/⅜/g,'3/8');
+            // Normalize sieve number prefixes
+            s = s.replace(/nº|no\.?|#/g,'no');
+            // Normalize inch symbol
+            s = s.replace(/"/g,'in');
+            return s;
+        }
+
+        // Build a normalized lookup from the SIEVE_MAP_AI for a slot
+        function buildNormMap(slot) {
+            const map = SIEVE_MAP_AI[slot] || {};
+            const norm = {};
+            Object.keys(map).forEach(function(k){ norm[normSieve(k)] = map[k]; });
+            return norm;
+        }
+
+        // Load a saved gradacion into the AI sieve inputs for a given slot
+        function cargarGradacionEnAI(slot) {
+            const selIds = { grueso:'sel-grad-grueso', intermedio:'sel-grad-intermedio', arena1:'sel-grad-arena1', arena2:'sel-grad-arena2' };
+            const sel = document.getElementById(selIds[slot]);
+            if (!sel || !sel.value) return;
+            const gradId = sel.value; // IDs are strings like 'GRAD-1748291234567'
+            const g = getGradaciones().find(function(x){ return String(x.id) === String(gradId); });
+            if (!g) { alert('⚠️ Gradación no encontrada.'); return; }
+            if (!g.sieveData || g.sieveData.length === 0) {
+                alert('⚠️ "' + g.nombre + '" no tiene datos de tamices guardados. Abre esa gradación en la sección Gradaciones, ingresa los valores de tamices y guárdala.');
+                return;
+            }
+
+            // Build normalized map for fuzzy matching
+            const normMap = buildNormMap(slot);
+
+            // Clear current values for this slot (all possible input IDs)
+            var allInputIds = new Set(Object.values(SIEVE_MAP_AI[slot] || {}));
+            allInputIds.forEach(function(inputId){
+                var el = document.getElementById(inputId);
+                if (el) el.value = '';
+            });
+
+            var loaded = 0;
+            g.sieveData.forEach(function(sv) {
+                // Try exact match first, then normalized match
+                var map = SIEVE_MAP_AI[slot] || {};
+                var inputId = map[sv.sieve] || normMap[normSieve(sv.sieve)];
+                if (inputId) {
+                    var el = document.getElementById(inputId);
+                    if (el) { el.value = sv.pct; loaded++; }
+                }
+            });
+
+            // Trigger live chart update
+            if (typeof aiUpdateLiveChart === 'function') aiUpdateLiveChart();
+
+            // Toast notification
+            var color = loaded > 0 ? '#1e40af' : '#dc2626';
+            var badge = loaded > 0
+                ? '✅ ' + loaded + ' tamices cargados de "' + g.nombre + '"'
+                : '⚠️ Ningún tamiz compatible en "' + g.nombre + '" — verifica que los tamices estén guardados';
+            var toast = document.createElement('div');
+            toast.textContent = badge;
+            toast.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;background:'+color+';color:white;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.2);opacity:1;transition:opacity 0.5s';
+            document.body.appendChild(toast);
+            setTimeout(function(){ toast.style.opacity='0'; setTimeout(function(){ toast.remove(); }, 500); }, 3200);
+        }
+
         function aiAttachSieveLiveListeners() {
             const ids = [
                 'sg-2in','sg-1.5in','sg-1in','sg-0.75in','sg-0.5in','sg-0.375in','sg-4','sg-8',
@@ -11664,20 +11962,34 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
             // Starting blend fractions
             let pGNew = gd.pctG, pINew = gd.pctI, pct1New = gd.pct1, pct2New = gd.pct2;
 
+            // Detect which fractions are LOCKED at 0 by the user (explicit 0% input)
+            const userPctI  = gd.pctI_raw;   // raw % entered by user (0–100)
+            const userPct2  = gd.pctA2_raw;
+            const lockI  = userPctI  === 0;  // user explicitly set intermedio = 0%
+            const lockA2 = userPct2  === 0;  // user explicitly set arena2 = 0%
+
+            // Append lock notes to strategy
+            if (lockI)  strategy += ' [Ag. Intermedio bloqueado en 0% — no será modificado por la optimización]';
+            if (lockA2) strategy += ' [Arena 2 bloqueada en 0% — no será modificada por la optimización]';
+            // Effective mins: locked fractions stay at 0
+            const iMin  = lockI  ? 0 : 0.05;
+            const a2Min = lockA2 ? 0 : 0.05;
+
             if (objetivo === 'shilstone_zone2') {
-                // ---- Iterative grid search: 4D blend → minimize distance to Zone II center ----
-                // Constraints: all >= 5%, sum = 1, grueso+inter >= 30%, fine >= 20%
+                // ---- Iterative grid search: respect locked fractions ----
                 let bestDist = Infinity, bestG = pGNew, bestI = pINew, best1 = pct1New, best2 = pct2New;
                 const step = 0.05;
-                for (let g = 0.20; g <= 0.55; g += step) {
-                    for (let i = 0.05; i <= 0.30; i += step) {
-                        for (let a1 = 0.10; a1 <= 0.55; a1 += step) {
+                const iVals = lockI ? [0] : [];
+                if (!lockI) for (let i = iMin; i <= 0.30; i += step) iVals.push(parseFloat(i.toFixed(4)));
+                for (let g = 0.20; g <= 0.60; g += step) {
+                    for (const i of iVals) {
+                        for (let a1 = 0.10; a1 <= 0.65; a1 += step) {
                             const a2 = 1 - g - i - a1;
-                            if (a2 < 0.05 || a2 > 0.55) continue;
+                            if (a2 < a2Min || a2 > 0.60) continue;
+                            if (lockA2 && Math.abs(a2) > 0.01) continue;
                             const testGd = {...gd, pctG:g, pctI:i, pct1:a1, pct2:a2};
                             const testCF = aiCalcCF(testGd);
                             const testWF = aiCalcWF(testGd);
-                            // Distance to Zone II center, penalize out-of-zone
                             const cfPenalty = testCF < st.cfMin ? (st.cfMin - testCF)*2 : testCF > st.cfMax ? (testCF - st.cfMax)*2 : 0;
                             const wfPenalty = testWF < st.wfMin ? (st.wfMin - testWF)*3 : testWF > st.wfMax ? (testWF - st.wfMax)*3 : 0;
                             const dist = Math.pow(testCF - cfCenter, 2) + Math.pow((testWF - wfCenter)*2, 2) + cfPenalty*10 + wfPenalty*10;
@@ -11685,14 +11997,17 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                         }
                     }
                 }
-                pGNew = bestG; pINew = bestI; pct1New = best1; pct2New = bestG+bestI+best1 > 0.95 ? 1-bestG-bestI-best1 : best2;
+                pGNew = bestG; pINew = bestI; pct1New = best1; pct2New = 1-bestG-bestI-best1;
                 // Refine with smaller step around best
                 const rStep = 0.01;
-                for (let g = Math.max(0.15, bestG-0.06); g <= Math.min(0.55, bestG+0.06); g += rStep) {
-                    for (let i = Math.max(0.05, bestI-0.06); i <= Math.min(0.30, bestI+0.06); i += rStep) {
-                        for (let a1 = Math.max(0.10, best1-0.06); a1 <= Math.min(0.55, best1+0.06); a1 += rStep) {
+                for (let g = Math.max(0.15, bestG-0.06); g <= Math.min(0.60, bestG+0.06); g += rStep) {
+                    const iValsR = lockI ? [0] : [];
+                    if (!lockI) for (let i = Math.max(iMin, bestI-0.06); i <= Math.min(0.30, bestI+0.06); i += rStep) iValsR.push(parseFloat(i.toFixed(4)));
+                    for (const i of iValsR) {
+                        for (let a1 = Math.max(0.10, best1-0.06); a1 <= Math.min(0.65, best1+0.06); a1 += rStep) {
                             const a2 = 1 - g - i - a1;
-                            if (a2 < 0.05 || a2 > 0.55) continue;
+                            if (a2 < a2Min || a2 > 0.60) continue;
+                            if (lockA2 && Math.abs(a2) > 0.02) continue;
                             const testGd = {...gd, pctG:g, pctI:i, pct1:a1, pct2:a2};
                             const testCF = aiCalcCF(testGd);
                             const testWF = aiCalcWF(testGd);
@@ -11704,39 +12019,48 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                     }
                 }
             } else {
-                // For other objectives: adjust blend based on CF/WF direction
+                // For other objectives: adjust blend based on CF/WF direction — respect locks
                 if (origCF > st.cfMax) {
-                    pGNew = Math.max(0.20, gd.pctG - 0.05);
-                    pINew = Math.max(0.05, gd.pctI - 0.03);
-                    pct1New = Math.min(0.50, gd.pct1 + 0.05);
+                    pGNew   = Math.max(0.20, gd.pctG - 0.05);
+                    pINew   = lockI ? 0 : Math.max(iMin, gd.pctI - 0.03);
+                    pct1New = Math.min(0.55, gd.pct1 + 0.05);
                 } else if (origCF < st.cfMin) {
-                    pGNew = Math.min(0.50, gd.pctG + 0.04);
-                    pINew = Math.min(0.25, gd.pctI + 0.02);
+                    pGNew   = Math.min(0.55, gd.pctG + 0.04);
+                    pINew   = lockI ? 0 : Math.min(0.25, gd.pctI + 0.02);
                     pct1New = Math.max(0.15, gd.pct1 - 0.04);
                 }
                 if (origWF > st.wfMax) {
                     pct1New = Math.max(0.15, pct1New - 0.04);
-                    pGNew   = Math.min(0.50, pGNew + 0.03);
+                    pGNew   = Math.min(0.55, pGNew + 0.03);
                 } else if (origWF < st.wfMin) {
-                    pct1New = Math.min(0.50, pct1New + 0.04);
+                    pct1New = Math.min(0.55, pct1New + 0.04);
                 }
-                if (objetivo === 'workability' && colocacion === 'pump') pct1New = Math.min(0.55, pct1New + 0.04);
-                if (objetivo === 'cost') { pGNew = Math.min(0.50, pGNew + 0.03); pINew = Math.min(0.25, pINew + 0.02); }
-                if (objetivo === 'durability') { pGNew = Math.min(0.45, Math.max(0.25, pGNew)); pINew = Math.min(0.20, Math.max(0.10, pINew)); }
+                if (objetivo === 'workability' && colocacion === 'pump') pct1New = Math.min(0.60, pct1New + 0.04);
+                if (objetivo === 'cost')       { pGNew = Math.min(0.55, pGNew + 0.03); if (!lockI) pINew = Math.min(0.25, pINew + 0.02); }
+                if (objetivo === 'durability') { pGNew = Math.min(0.45, Math.max(0.25, pGNew)); if (!lockI) pINew = Math.min(0.20, Math.max(0.10, pINew)); }
+                // If intermedio is locked at 0, force it back
+                if (lockI) pINew = 0;
                 // Re-normalize
                 const rawTotal = pGNew + pINew + pct1New;
-                if (rawTotal >= 1) { pGNew *= 0.9/rawTotal; pINew *= 0.9/rawTotal; pct1New *= 0.9/rawTotal; }
-                pct2New = Math.max(0.05, 1 - pGNew - pINew - pct1New);
+                if (rawTotal >= 1) {
+                    const scale = 0.90 / rawTotal;
+                    pGNew *= scale; pINew *= scale; pct1New *= scale;
+                }
+                pct2New = lockA2 ? 0 : Math.max(a2Min, 1 - pGNew - pINew - pct1New);
                 const t2 = pGNew + pINew + pct1New + pct2New;
                 pGNew /= t2; pINew /= t2; pct1New /= t2; pct2New /= t2;
+                if (lockI)  pINew  = 0;
+                if (lockA2) pct2New = 0;
             }
 
-            // Normalize final blend to sum exactly 1
+            // Normalize final blend to sum exactly 1, preserving locks
+            if (lockI)  pINew  = 0;
+            if (lockA2) pct2New = 0;
             const blendSum = pGNew + pINew + pct1New + pct2New;
             pGNew   = parseFloat((pGNew   / blendSum).toFixed(4));
-            pINew   = parseFloat((pINew   / blendSum).toFixed(4));
+            pINew   = parseFloat((lockI   ? 0 : pINew / blendSum).toFixed(4));
             pct1New = parseFloat((pct1New / blendSum).toFixed(4));
-            pct2New = parseFloat(Math.max(0.05, 1 - pGNew - pINew - pct1New).toFixed(4));
+            pct2New = parseFloat((lockA2  ? 0 : Math.max(0, 1 - pGNew - pINew - pct1New)).toFixed(4));
 
             const gdOpt = {...gd, pctG: pGNew, pctI: pINew, pct1: pct1New, pct2: pct2New};
             const optCF = aiCalcCF(gdOpt);
@@ -13689,6 +14013,9 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                         <div style="background:#dbeafe;padding:10px;border-radius:6px;margin-bottom:10px;font-weight:700;color:#1e40af;text-align:center">
                             🪨 Ag. Grueso<br><small style="font-weight:400;font-size:11px">ASTM C33 — % Pasando</small>
                         </div>
+                        <select id="sel-grad-grueso" onchange="cargarGradacionEnAI('grueso')" style="width:100%;padding:5px 7px;margin-bottom:8px;border:1.5px solid #93c5fd;border-radius:6px;font-size:11px;color:#1e40af;background:#eff6ff">
+                            <option value="">📂 Cargar desde Gradaciones guardadas...</option>
+                        </select>
                         <table class="grade-table" style="font-size:12px">
                             <thead><tr><th>Tamiz</th><th>% Pas.</th><th>Min</th><th>Max</th></tr></thead>
                             <tbody>
@@ -13708,6 +14035,9 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                         <div style="background:#ede9fe;padding:10px;border-radius:6px;margin-bottom:10px;font-weight:700;color:#5b21b6;text-align:center">
                             🟣 Ag. Intermedio<br><small style="font-weight:400;font-size:11px">ASTM C33 Size 8/89 — % Pas.</small>
                         </div>
+                        <select id="sel-grad-intermedio" onchange="cargarGradacionEnAI('intermedio')" style="width:100%;padding:5px 7px;margin-bottom:8px;border:1.5px solid #c4b5fd;border-radius:6px;font-size:11px;color:#5b21b6;background:#f5f3ff">
+                            <option value="">📂 Cargar desde Gradaciones guardadas...</option>
+                        </select>
                         <table class="grade-table" style="font-size:12px">
                             <thead><tr><th>Tamiz</th><th>% Pas.</th><th>Min</th><th>Max</th></tr></thead>
                             <tbody>
@@ -13727,6 +14057,9 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                         <div style="background:#fef3c7;padding:10px;border-radius:6px;margin-bottom:10px;font-weight:700;color:#92400e;text-align:center">
                             🏖️ Arena 1<br><small style="font-weight:400;font-size:11px">ASTM C33 — % Pasando</small>
                         </div>
+                        <select id="sel-grad-arena1" onchange="cargarGradacionEnAI('arena1')" style="width:100%;padding:5px 7px;margin-bottom:8px;border:1.5px solid #fcd34d;border-radius:6px;font-size:11px;color:#92400e;background:#fffbeb">
+                            <option value="">📂 Cargar desde Gradaciones guardadas...</option>
+                        </select>
                         <table class="grade-table" style="font-size:12px">
                             <thead><tr><th>Tamiz</th><th>% Pas.</th><th>Min</th><th>Max</th></tr></thead>
                             <tbody>
@@ -13746,6 +14079,9 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                         <div style="background:#dcfce7;padding:10px;border-radius:6px;margin-bottom:10px;font-weight:700;color:#166534;text-align:center">
                             🏖️ Arena 2<br><small style="font-weight:400;font-size:11px">ASTM C33 — % Pasando</small>
                         </div>
+                        <select id="sel-grad-arena2" onchange="cargarGradacionEnAI('arena2')" style="width:100%;padding:5px 7px;margin-bottom:8px;border:1.5px solid #86efac;border-radius:6px;font-size:11px;color:#166534;background:#f0fdf4">
+                            <option value="">📂 Cargar desde Gradaciones guardadas...</option>
+                        </select>
                         <table class="grade-table" style="font-size:12px">
                             <thead><tr><th>Tamiz</th><th>% Pas.</th><th>Min</th><th>Max</th></tr></thead>
                             <tbody>
@@ -14577,23 +14913,6 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                 </div>
             </div>
         </div>
-    <!-- Modal: Gestionar Tipos de Prueba -->
-    <div id="modal-tipos-prueba" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;justify-content:center;align-items:center">
-        <div style="background:white;padding:30px;border-radius:12px;max-width:480px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.3)">
-            <h2 style="color:#2563eb;margin-bottom:6px;font-size:1.2rem">✏️ Gestionar Tipos de Prueba</h2>
-            <p style="color:#64748b;font-size:13px;margin-bottom:16px">Añade, edita o elimina los tipos de prueba disponibles.</p>
-            <div id="lista-tipos-prueba" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;max-height:260px;overflow-y:auto"></div>
-            <div style="display:flex;gap:8px;margin-bottom:18px">
-                <input type="text" id="nuevo-tipo-prueba-input" placeholder="Nuevo tipo de prueba..." style="flex:1;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px">
-                <button onclick="agregarTipoPrueba()" style="background:#2563eb;color:white;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:13px;font-weight:600">+ Añadir</button>
-            </div>
-            <div style="display:flex;gap:10px;justify-content:flex-end">
-                <button onclick="cerrarModalTiposPrueba()" style="background:#f1f5f9;border:1px solid #cbd5e1;color:#475569;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:14px">Cancelar</button>
-                <button onclick="guardarTiposPrueba()" style="background:#16a34a;color:white;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:14px;font-weight:600">💾 Guardar</button>
-            </div>
-        </div>
-    </div>
-
     <div id="modal-cliente-rapido" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;justify-content:center;align-items:center">
         <div style="background:white;padding:30px;border-radius:12px;max-width:500px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.3)">
             <h2 style="color:#16a34a;margin-bottom:20px">Nuevo Cliente</h2>
