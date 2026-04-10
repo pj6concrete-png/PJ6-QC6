@@ -2105,10 +2105,10 @@
                                     <th>Material</th>
                                     <th>Descripción / Proveedor</th>
                                     <th style="text-align:right">Moist %</th>
-                                    <th style="text-align:right">Target</th>
-                                    <th style="text-align:right">Actual</th>
+                                    <th style="text-align:right">Target (lb batch)</th>
+                                    <th style="text-align:right">Actual (lb batch)</th>
                                     <th style="text-align:right">% Diff.</th>
-                                    <th style="text-align:right">Design (lb/yd³) <small style="opacity:.75;font-weight:400">Auto</small></th>
+                                    <th style="text-align:right">Design (lb/yd³) <small style="opacity:.75;font-weight:400">Target÷yd³</small></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -2305,7 +2305,7 @@
                     </div>
 
                     <!-- ── YIELD / PESO UNITARIO ───────────────────── -->
-                    <h3>⚖️ Yield & Peso Unitario</h3>
+                    <h3>⚖️ Yield & Peso Unitario — ASTM C138</h3>
                     <div class="form-grid cols-4">
                         <div class="form-group">
                             <label>Weight of Bucket (lb)</label>
@@ -2320,29 +2320,28 @@
                             <input type="number" id="campo-wt-bucket-conc" step="0.01" oninput="calcCampoYield()">
                         </div>
                         <div class="form-group">
-                            <label>Design Unit Weight (lb/ft³)</label>
-                            <input type="number" id="campo-design-unit-wt" step="0.01" placeholder="ej: 145.0">
+                            <label>Design Unit Weight (lb/ft³) <small style="opacity:.7;font-weight:400">pesoTotal Mix ÷ 27</small></label>
+                            <input type="number" id="campo-design-unit-wt" step="0.01" placeholder="Auto desde Mix Design" oninput="this.dataset.manualOverride=this.value?'1':''">
                         </div>
                     </div>
                     <div class="form-grid cols-4">
                         <div class="form-group">
-                            <label>Batch Unit Weight (lb/ft³)</label>
+                            <label>Batch Unit Weight (lb/ft³) <small style="opacity:.7;font-weight:400">Σ Actual ÷ (yd³×27)</small></label>
                             <input type="text" id="campo-batch-unit-wt" readonly class="calculated">
                         </div>
                         <div class="form-group">
-                            <label>Unit Weight (lb/ft³)</label>
+                            <label>Unit Weight Medido (lb/ft³) <small style="opacity:.7;font-weight:400">Balde — ASTM C138</small></label>
                             <input type="text" id="campo-unit-weight" readonly class="calculated">
                         </div>
                         <div class="form-group">
-                            <label>Yield (ft³)</label>
+                            <label>Yield Total (ft³) <small style="opacity:.7;font-weight:400">Σ Actual ÷ UW Medido</small></label>
                             <input type="text" id="campo-yield-ft3" readonly class="calculated">
                         </div>
                         <div class="form-group">
-                            <label>Yield % / Yield CY</label>
+                            <label>Yield yd³ / %</label>
                             <input type="text" id="campo-yield-pct" readonly class="calculated">
                         </div>
                     </div>
-
                     <!-- ── CILINDROS ───────────────────────────────── -->
                     <h3>🧪 Evaluation Cylinders</h3>
                     <div style="overflow-x:auto">
@@ -8040,15 +8039,19 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
         }
 
         function calcCampoDesign() {
+            // Design (lb/yd³) = Target batch total lb ÷ Qty Yards ordered (ASTM C138)
+            // Shows the mix design dosage rate per yd³ for each material
             var qtyYards = parseFloat(document.getElementById('campo-qty-yards') ? document.getElementById('campo-qty-yards').value : '') || 0;
             var mats = ['cem1','cem2','scm1','scm2','agg1','agg2','agg3','agg4','adm1','adm2','adm3','adm4','adm5','water'];
             mats.forEach(function(m) {
-                var aEl = document.getElementById('campo-'+m+'-actual');
-                var dEl = document.getElementById('campo-'+m+'-design');
-                if (!aEl || !dEl) { return; }
-                var actual = parseFloat(aEl.value) || 0;
-                dEl.value = (qtyYards > 0 && actual > 0) ? (actual / qtyYards).toFixed(2) : '';
+                var tEl = document.getElementById('campo-'+m+'-target');  // total target batch lb
+                var dEl = document.getElementById('campo-'+m+'-design');  // design lb/yd³
+                if (!tEl || !dEl) { return; }
+                var target = parseFloat(tEl.value) || 0;
+                dEl.value = (qtyYards > 0 && target > 0) ? (target / qtyYards).toFixed(2) : '';
             });
+            // Recalc yield since qty yards may have changed
+            calcCampoYield();
         }
 
         function calcOneCylDate(n) {
@@ -8082,6 +8085,8 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             document.getElementById('campo-id-display').value = '';
             document.getElementById('edit-campo-id').value    = '';
             document.getElementById('campo-week').value       = '';
+            var duwEl = document.getElementById('campo-design-unit-wt');
+            if (duwEl) { duwEl.value = ''; duwEl.dataset.manualOverride = ''; }
             var mats = ['cem1','cem2','scm1','scm2','agg1','agg2','agg3','agg4','adm1','adm2','adm3','adm4','adm5','water'];
             mats.forEach(function(m) {
                 var df = document.getElementById('campo-'+m+'-diff');   if (df) df.value = '';
@@ -8125,7 +8130,24 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 if (trial.proyectoId) document.getElementById('campo-proyecto-id').value = trial.proyectoId;
             }
             if (trial.ticketNumber) document.getElementById('campo-ticket').value = trial.ticketNumber;
-            document.getElementById('campo-req-strength').value  = trial.resistenciaObjetivo || '';
+            document.getElementById('campo-req-strength').value = trial.resistenciaObjetivo || '';
+
+            // ── Auto-fill Design Unit Weight from the original Mix Design ──
+            // Design UW (lb/ft³) = Mix pesoTotal (lb/yd³) ÷ 27
+            var designUwtEl = document.getElementById('campo-design-unit-wt');
+            if (designUwtEl && !designUwtEl.dataset.manualOverride) {
+                try {
+                    var mixDesignId = parseInt(trial.mixDesignId) || 0;
+                    if (mixDesignId > 0) {
+                        var mix = await getRecord('mixdesigns', mixDesignId);
+                        if (mix && mix.resultados && mix.resultados.pesoTotal > 0) {
+                            var designUW = mix.resultados.pesoTotal / 27;
+                            designUwtEl.value = designUW.toFixed(2);
+                            designUwtEl.title = 'Mix Design: ' + mix.nombre + ' — pesoTotal=' + mix.resultados.pesoTotal.toFixed(1) + ' lb/yd³ ÷ 27';
+                        }
+                    }
+                } catch(e) { console.warn('Design UW auto-fill:', e); }
+            }
         }
 
         // ── % Diff calculation ────────────────────────────────────────
@@ -8175,53 +8197,116 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             }
         }
 
-        // ── Yield calculation ─────────────────────────────────────────
-        // Unit Weight (lb/ft³) = (Wt_bucket+concrete - Wt_bucket) / Bucket_Volume
-        // Yield (ft³/yd³)      = Total_Batch_Weight / Unit_Weight
-        // Yield CY             = Yield_ft3 / 27
-        // Yield %              = (Yield_CY / Qty_Yards) * 100  [if qty yards > 0]
+        // ── Yield & Unit Weight calculations — ASTM C138-17a ──────────
+        //
+        // Three distinct values (all different sources):
+        //
+        // 1. DESIGN UNIT WEIGHT (from original Mix Design)
+        //    = Mix Design pesoTotal (lb/yd³) ÷ 27
+        //    Source: r.pesoTotal saved in the mix design resultados
+        //    Auto-filled when a Trial Mix reference is selected (pulls from mix design)
+        //
+        // 2. BATCH UNIT WEIGHT (from Actual batch ticket totals)
+        //    = Σ Actual materials (lb) ÷ (Qty_Yards × 27 ft³)
+        //    Source: actual column inputs ÷ ordered volume
+        //
+        // 3. UNIT WEIGHT — MEASURED (from bucket test, ASTM C138 §7)
+        //    = (Wt_bucket+concrete − Wt_bucket) ÷ Vol_bucket
+        //    Source: bucket test inputs
+        //
+        // YIELD (ASTM C138 §8) — uses MEASURED unit weight:
+        //    Yield ft³ = Σ Actual (lb) ÷ Unit Weight measured
+        //    Yield yd³ = Yield ft³ ÷ 27
+        //    Yield %   = Yield yd³ ÷ Qty_Yards × 100
+        //
         function calcCampoYield() {
             var wtBucket     = parseFloat(document.getElementById('campo-wt-bucket')?.value)      || 0;
             var volBucket    = parseFloat(document.getElementById('campo-vol-bucket')?.value)     || 0;
             var wtBucketConc = parseFloat(document.getElementById('campo-wt-bucket-conc')?.value) || 0;
+            var qtyYards     = parseFloat(document.getElementById('campo-qty-yards')?.value)      || 0;
 
-            // Unit weight — only calculate when all three inputs are present
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // UNIT WEIGHT MEDIDO — ASTM C138 §7 (test de balde)
+            // UW = (Peso balde + concreto − Peso balde) ÷ Volumen balde
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            var measuredUW = 0;
             if (wtBucketConc > wtBucket && volBucket > 0) {
-                var unitWt  = (wtBucketConc - wtBucket) / volBucket;  // lb/ft³
-                document.getElementById('campo-batch-unit-wt').value = unitWt.toFixed(2);
-                document.getElementById('campo-unit-weight').value   = unitWt.toFixed(2);
+                measuredUW = (wtBucketConc - wtBucket) / volBucket;
+                document.getElementById('campo-unit-weight').value = measuredUW.toFixed(2);
+            } else {
+                document.getElementById('campo-unit-weight').value = '';
+            }
 
-                // Total batch weight: all material ACTUAL values
-                // Water row = campo-water-actual (batch water) + campo-water-added (field addition)
-                var totalBatch = 0;
-                ['cem1','cem2','scm1','scm2','agg1','agg2','agg3','agg4',
-                 'adm1','adm2','adm3','adm4','adm5'].forEach(function(m) {
-                    totalBatch += parseFloat(document.getElementById('campo-'+m+'-actual')?.value) || 0;
-                });
-                // Water: actual (from batch) + water added in field
-                var waterActual = parseFloat(document.getElementById('campo-water-actual')?.value) || 0;
-                var waterAdded  = parseFloat(document.getElementById('campo-water-added')?.value)  || 0;
-                totalBatch += waterActual + waterAdded;
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // TOTAL ACTUAL BATCH WEIGHT — suma de todos los materiales
+            // Nota: Los valores Actual son el TOTAL del batch (lb del truck),
+            //       NO lb/yd³. Ej: 10 yd³ × 520 lb/yd³ cemento = 5,200 lb actual.
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            var totalActual = 0;
+            ['cem1','cem2','scm1','scm2','agg1','agg2','agg3','agg4',
+             'adm1','adm2','adm3','adm4','adm5'].forEach(function(m) {
+                totalActual += parseFloat(document.getElementById('campo-'+m+'-actual')?.value) || 0;
+            });
+            var waterActual = parseFloat(document.getElementById('campo-water-actual')?.value) || 0;
+            var waterAdded  = parseFloat(document.getElementById('campo-water-added')?.value)  || 0;
+            totalActual += waterActual + waterAdded;
 
-                if (unitWt > 0 && totalBatch > 0) {
-                    var yieldFt3 = totalBatch / unitWt;
-                    var yieldCy  = yieldFt3 / 27;
-                    document.getElementById('campo-yield-ft3').value = yieldFt3.toFixed(3);
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // BATCH UNIT WEIGHT — de los valores actuales del batch
+            // Batch UW = Σ Actual (lb) ÷ (Qty Yards × 27 ft³)
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            var batchUW = 0;
+            if (totalActual > 0 && qtyYards > 0) {
+                batchUW = totalActual / (qtyYards * 27);
+                document.getElementById('campo-batch-unit-wt').value = batchUW.toFixed(2);
+            } else {
+                document.getElementById('campo-batch-unit-wt').value = '';
+            }
 
-                    // Yield % = yield CY / ordered yards * 100 (if ordered yards entered)
-                    var qtyYards = parseFloat(document.getElementById('campo-qty-yards')?.value) || 0;
-                    var yieldPctStr;
-                    if (qtyYards > 0) {
-                        var yieldPct = (yieldCy / qtyYards * 100).toFixed(1);
-                        yieldPctStr  = yieldPct + '% / ' + yieldCy.toFixed(3) + ' CY';
-                    } else {
-                        yieldPctStr  = yieldCy.toFixed(3) + ' CY';
-                    }
-                    document.getElementById('campo-yield-pct').value = yieldPctStr;
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // YIELD — ASTM C138 §8
+            //
+            // YIELD TOTAL (ft³) = Σ Actual batch lb ÷ Unit Weight Medido
+            // YIELD (yd³)       = Yield ft³ ÷ 27
+            // YIELD (%)         = Yield yd³ ÷ Qty Yards × 100
+            //
+            // REQUIERE: Unit Weight Medido (balde) y Σ Actual batch weight
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            if (measuredUW > 0 && totalActual > 0) {
+                // Camino correcto: usa UW medido con balde (ASTM C138)
+                var yieldFt3 = totalActual / measuredUW;
+                var yieldCy  = yieldFt3 / 27;
+                document.getElementById('campo-yield-ft3').value = yieldFt3.toFixed(3);
+                var yieldPctStr;
+                if (qtyYards > 0) {
+                    var yieldPct = (yieldCy / qtyYards * 100).toFixed(1);
+                    yieldPctStr  = yieldPct + '% / ' + yieldCy.toFixed(3) + ' yd³';
+                } else {
+                    yieldPctStr  = yieldCy.toFixed(3) + ' yd³';
                 }
+                document.getElementById('campo-yield-pct').value = yieldPctStr;
+
+            } else if (measuredUW === 0 && qtyYards > 0 && totalActual > 0) {
+                // Fallback sin test de balde:
+                // Yield yd³ ≈ Σ Actual (lb) ÷ Design Unit Weight ÷ 27
+                // Si no hay Design UW tampoco, no se puede calcular
+                var designUW = parseFloat(document.getElementById('campo-design-unit-wt')?.value) || 0;
+                if (designUW > 0) {
+                    var yieldFt3F = totalActual / designUW;
+                    var yieldCyF  = yieldFt3F / 27;
+                    document.getElementById('campo-yield-ft3').value = yieldFt3F.toFixed(3) + ' *';
+                    var yieldPctF = (yieldCyF / qtyYards * 100).toFixed(1);
+                    document.getElementById('campo-yield-pct').value =
+                        yieldPctF + '% / ' + yieldCyF.toFixed(3) + ' yd³ * (usa Design UW)';
+                } else {
+                    document.getElementById('campo-yield-ft3').value = '— necesita UW medido';
+                    document.getElementById('campo-yield-pct').value = '';
+                }
+            } else {
+                document.getElementById('campo-yield-ft3').value = '';
+                document.getElementById('campo-yield-pct').value = '';
             }
         }
-
         // ── Cylinders ────────────────────────────────────────────────
         var campoCylinderCount = 0;
         function initCampoCylinders(n) {
@@ -8504,13 +8589,16 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             document.getElementById('campo-wt-bucket').value      = ev.wtBucket || '';
             document.getElementById('campo-vol-bucket').value     = ev.volBucket || '';
             document.getElementById('campo-wt-bucket-conc').value = ev.wtBucketConc || '';
-            document.getElementById('campo-design-unit-wt').value = ev.designUnitWt || '';
+            // Restore saved design unit weight and mark as manual so auto-calc won't overwrite it
+            var duwEl = document.getElementById('campo-design-unit-wt');
+            if (duwEl) { duwEl.value = ev.designUnitWt || ''; duwEl.dataset.manualOverride = ev.designUnitWt ? '1' : ''; }
             document.getElementById('campo-batch-unit-wt').value  = ev.batchUnitWt || '';
             document.getElementById('campo-unit-weight').value    = ev.unitWeight || '';
             document.getElementById('campo-yield-ft3').value      = ev.yieldFt3 || '';
             document.getElementById('campo-yield-pct').value      = ev.yieldPct || '';
             document.getElementById('campo-notes').value          = ev.notes || '';
             calcCampoWCRatio();
+            calcCampoYield(); // recalculate to refresh all derived fields
             // cylinders
             var cyls = ev.cylinders || [];
             campoCylinderCount = 0;
@@ -8638,11 +8726,12 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             html += '</div>';
 
             // Yield
-            html += '<h2>Yield & Peso Unitario</h2>';
+            html += '<h2>Yield &amp; Peso Unitario — ASTM C138</h2>';
             html += '<div class="info-grid">';
-            html += '<div class="info-item"><strong>Design Unit Weight</strong>'+(ev.designUnitWt||'—')+' lb/ft³</div>';
-            html += '<div class="info-item"><strong>Batch Unit Weight</strong>'+(ev.batchUnitWt||'—')+' lb/ft³</div>';
-            html += '<div class="info-item"><strong>Yield</strong>'+(ev.yieldFt3||'—')+' ft³ &nbsp; '+(ev.yieldPct||'')+'</div>';
+            html += '<div class="info-item"><strong>Design Unit Weight</strong> ' + (ev.designUnitWt ? ev.designUnitWt + ' lb/ft³' : '—') + '<br><small style="color:#888">Del Mix Design original: pesoTotal (lb/yd³) ÷ 27</small></div>';
+            html += '<div class="info-item"><strong>Batch Unit Weight</strong> ' + (ev.batchUnitWt || '—') + ' lb/ft³<br><small style="color:#888">Σ Actual (lb) ÷ (Qty yd³ × 27 ft³)</small></div>';
+            html += '<div class="info-item"><strong>Unit Weight Medido</strong> ' + (ev.unitWeight || '—') + ' lb/ft³<br><small style="color:#888">(Wt balde+conc − Wt balde) ÷ Vol balde &mdash; ASTM C138</small></div>';
+            html += '<div class="info-item"><strong>Yield ft³ / yd³ / %</strong> ' + (ev.yieldFt3 || '—') + ' &nbsp; ' + (ev.yieldPct || '') + '<br><small style="color:#888">Σ Actual ÷ UW Medido &nbsp;|÷ 27 &nbsp;| % = Yield yd³ ÷ Qty ordered</small></div>';
             html += '</div>';
 
             // Materials table
@@ -11611,7 +11700,160 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
         }
 
         // Attach live update listeners to all sieve inputs
-        // ── Tamiz name → AI input ID mapping (exact names from C33_SPECS.tamices) ──
+        // ── PUMP OBJECTIVE HELPERS ──────────────────────────────────────────────
+        function aiTogglePumpOptions() {
+            const obj = document.getElementById('ai-objetivo').value;
+            const panel = document.getElementById('pump-params-panel');
+            if (panel) panel.style.display = obj.startsWith('pump_') ? 'block' : 'none';
+            if (obj.startsWith('pump_')) {
+                aiCheckPumpTMA();
+                // Auto-set colocacion to Bomba when a pump objective is selected
+                const colSel = document.getElementById('ai-colocacion');
+                if (colSel && colSel.value !== 'pump') colSel.value = 'pump';
+            }
+        }
+
+        // Pipe diameter in inches from objetivo value
+        function aiPumpDiameter(objetivo) {
+            return { pump_3in:3, pump_4in:4, pump_5in:5, pump_6in:6 }[objetivo] || 4;
+        }
+
+        // Max aggregate size rule: angular = 1/3 pipe ID; rounded = 2/5 pipe ID (ACI 304.2R §4.2)
+        function aiPumpMaxAgg(pipeDia, aggType) {
+            return aggType === 'gravel' ? pipeDia * (2/5) : pipeDia * (1/3);
+        }
+
+        function aiCheckPumpTMA() {
+            const obj      = document.getElementById('ai-objetivo').value;
+            const aggType  = (document.getElementById('pump-agg-type') || {}).value || 'crushed';
+            const tmaIn    = parseFloat((document.getElementById('pump-tma') || {}).value || 0.75);
+            const pipeDia  = aiPumpDiameter(obj);
+            const maxAllowed = aiPumpMaxAgg(pipeDia, aggType);
+            const warn = document.getElementById('pump-tma-warning');
+            if (!warn) return;
+            if (tmaIn > maxAllowed) {
+                warn.style.display = 'block';
+                warn.innerHTML = '⚠️ <strong>TMA excede límite ACI 304.2R:</strong> Para manga de ' + pipeDia + '" con agregado ' +
+                    (aggType === 'gravel' ? 'redondeado (máx = 2/5 × ID)' : 'angular/triturado (máx = 1/3 × ID)') +
+                    ', el TMA máximo es <strong>' + maxAllowed.toFixed(2) + '"</strong>. TMA actual: ' + tmaIn + '". ' +
+                    'Riesgo de bloqueo en la línea. Reducir TMA o usar manga de mayor diámetro.';
+            } else {
+                warn.style.display = 'none';
+            }
+        }
+
+        // ── PUMP OPTIMIZATION PARAMETERS by pipe size ────────────────────────────
+        // Based on: ACI 304.2R, ACI 211.1, ACI 301, F&R/CivilBlog references
+        function aiGetPumpSpecs(objetivo, aggType) {
+            const dia = aiPumpDiameter(objetivo);
+            const maxAgg = aiPumpMaxAgg(dia, aggType);
+            // Slump targets at pump inlet (loss during pumping accounted for separately)
+            // ACI 304.2R: 2"–6" at pump inlet; ideal 4"–5"; avoid >6" (segregation risk)
+            const slumpSpecs = {
+                3: { minIn:4, targetIn:5.5, maxIn:6,   // 3" line — very high slump needed, high pressure
+                     cementMin:590, cementTarget:640,   // lb/yd³ — extra paste for lubrication
+                     wfMin:40, wfMax:48, cfMin:48, cfMax:62,  // more mortar, less coarse
+                     mfMin:2.3, mfMax:2.6,              // fine sand preferred
+                     passNo50Min:20, passNo50Max:35, passNo100Min:8, passNo100Max:15 },
+                4: { minIn:4, targetIn:5,   maxIn:6,
+                     cementMin:540, cementTarget:590,   // ACI 301 Table 4.1.2.9 min 540 lb/yd³ for ¾" TMA
+                     wfMin:38, wfMax:46, cfMin:52, cfMax:66,
+                     mfMin:2.4, mfMax:2.7,
+                     passNo50Min:15, passNo50Max:30, passNo100Min:5, passNo100Max:10 },
+                5: { minIn:3.5, targetIn:4.5, maxIn:5.5,
+                     cementMin:500, cementTarget:560,
+                     wfMin:36, wfMax:44, cfMin:55, cfMax:70,
+                     mfMin:2.4, mfMax:2.9,
+                     passNo50Min:15, passNo50Max:28, passNo100Min:5, passNo100Max:10 },
+                6: { minIn:3, targetIn:4,   maxIn:5,
+                     cementMin:470, cementTarget:530,
+                     wfMin:34, wfMax:42, cfMin:58, cfMax:72,
+                     mfMin:2.5, mfMax:3.0,
+                     passNo50Min:15, passNo50Max:25, passNo100Min:5, passNo100Max:10 },
+            };
+            const s = slumpSpecs[dia] || slumpSpecs[4];
+            s.maxAggIn = maxAgg;
+            s.pipeDia  = dia;
+            return s;
+        }
+
+        // ── Slump loss estimate based on distance (ACI 304.2R) ───────────────────
+        // ~1" loss per 300 ft horizontal; vertical rise adds 3-4x pressure per ft
+        function aiPumpSlumpLoss(distH, distV) {
+            const horizLoss   = distH / 300;          // in per 300 ft
+            const vertLoss    = distV * (3 / 300);    // 3x pressure ratio
+            return Math.min(2.5, horizLoss + vertLoss);
+        }
+
+        // ── TMA string for display ───────────────────────────────────────────────
+        function aiTMALabel(tmaIn) {
+            const map = {0.375:'3/8"', 0.5:'½"', 0.75:'¾"', 1.0:'1"', 1.5:'1½"'};
+            return map[tmaIn] || tmaIn + '"';
+        }
+
+        // ── Shilstone targets ────────────────────────────────────────────────────
+        // (added alongside existing shilstoneTarget object in the engine)
+
+        // ── PUMP OPTIMIZATION STRATEGY ───────────────────────────────────────────
+        function aiPumpStrategy(objetivo, mix, r, gd, wcMax, waterDemandBase, slump) {
+            const aggType  = (document.getElementById('pump-agg-type') || {}).value || 'crushed';
+            const tmaIn    = parseFloat((document.getElementById('pump-tma') || {}).value || 0.75);
+            const distH    = parseFloat((document.getElementById('pump-dist-h') || {}).value || 150);
+            const distV    = parseFloat((document.getElementById('pump-dist-v') || {}).value || 0);
+            const hasReturn= ((document.getElementById('pump-return') || {}).value || 'no') === 'yes';
+            const scm      = (document.getElementById('pump-scm') || {}).value || 'none';
+            const spec     = aiGetPumpSpecs(objetivo, aggType);
+
+            // Slump loss during pumping
+            let slumpLoss = aiPumpSlumpLoss(distH, distV);
+            if (hasReturn) slumpLoss *= 1.6;
+            // Required slump at plant = target at placement + loss
+            const slumpAtPump  = Math.min(spec.maxIn, spec.targetIn + slumpLoss);
+            const slumpAtPlace = slumpAtPump - slumpLoss;
+
+            // W/C: maintain structural requirement but ensure cement ≥ spec min
+            const wc_orig  = (r.agua && r.agua.peso && r.cemento && r.cemento.peso)
+                           ? r.agua.peso / r.cemento.peso : 0.50;
+            const wcTarget = Math.min(wc_orig, wcMax);
+
+            // Water demand: extra for higher slump if needed
+            let waterOpt = waterDemandBase;
+            if (slumpAtPump > slump + 0.5) waterOpt = waterDemandBase * (1 + (slumpAtPump - slump) * 0.012);
+            // Ensure cement ≥ minimum for pumpability (ACI 301 / ACI 304.2R)
+            const cementFromWC  = waterOpt / wcTarget;
+            const cementMin_lb  = spec.cementMin;
+            const cementOpt     = Math.max(cementFromWC, cementMin_lb);
+            const waterFinal    = cementOpt * wcTarget;
+
+            // TMA check
+            const tmaOK = tmaIn <= spec.maxAggIn;
+            const tmaWarning = tmaOK ? '' :
+                ` ⚠️ TMA ${aiTMALabel(tmaIn)} EXCEDE límite ACI 304.2R de ${spec.maxAggIn.toFixed(2)}" para manga ${spec.pipeDia}". Reducir TMA.`;
+
+            // SCM note
+            const scmNote = {
+                flyash: ' Fly Ash 15-25% reemplaza cemento: mejora bombeabilidad, reduce calor de hidratación y aumenta cohesión (ASTM C618).',
+                slag:   ' GGBS 25-35%: excelente para bombeabilidad y durabilidad en ambientes húmedos (ASTM C989).',
+                sf:     ' Microsílice 5-8%: densifica pasta, mejora lubrificación de línea, aumenta resistencia ≥20% (ASTM C1240).',
+                none:   ''
+            }[scm] || '';
+
+            const strategyText =
+                `Mezcla Bombeable — Manga ${spec.pipeDia}" (ACI 304.2R / ACI 301):` +
+                ` TMA máximo = ${spec.maxAggIn.toFixed(2)}" (${aggType === 'gravel' ? '2/5' : '1/3'} × ID).` +
+                ` Slump en planta ≈ ${slumpAtPump.toFixed(1)}" → en sitio ≈ ${Math.max(2, slumpAtPlace).toFixed(1)}"` +
+                ` (pérdida estimada ${slumpLoss.toFixed(1)}" por ${distH} ft horiz.${distV > 0 ? ' + ' + distV + ' ft vert.' : ''}).` +
+                ` Cemento mínimo ACI 301: ${spec.cementMin} lb/yd³ → ajustado a ${cementOpt.toFixed(0)} lb/yd³.` +
+                ` W/C = ${wcTarget.toFixed(3)}. WF objetivo: ${spec.wfMin}–${spec.wfMax} (mezcla mortar-rich para lubricación).` +
+                ` CF objetivo: ${spec.cfMin}–${spec.cfMax} (limitar grueso para evitar bloqueos).` +
+                ` MF arena ideal: ${spec.mfMin}–${spec.mfMax} (ASTM C33 §4).` +
+                ` Finos: ${spec.passNo50Min}–${spec.passNo50Max}% pasa Nº50, ${spec.passNo100Min}–${spec.passNo100Max}% pasa Nº100 (ACI 304.2R §4.3).` +
+                tmaWarning + scmNote;
+
+            return { wcTarget, waterOpt: waterFinal, cementOpt, slumpOpt: slumpAtPump, spec, scmNote, tmaOK, tmaWarning, strategy: strategyText };
+        }
+
+                // ── Tamiz name → AI input ID mapping (exact names from C33_SPECS.tamices) ──
         const SIEVE_MAP_AI = {
             grueso: {
                 // Exact tamiz strings saved by guardarGradacion() for tipo='grueso'
@@ -11931,6 +12173,21 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                 waterOpt = waterDemandBase;
                 slumpOpt = slump;
                 strategy = `Optimización Shilstone Zone II: búsqueda iterativa de proporciones de blend (Grueso/Intermedio/Arena1/Arena2) que minimicen la distancia al centro de Zone II (CF=65, WF=38). W/C mantenida en ${wcTarget.toFixed(3)}. Se ajustan las 4 fracciones de agregado conservando la proporción total de pasta (cemento y agua).`;
+
+            } else if (objetivo.startsWith('pump_')) {
+                // ── PUMP OBJECTIVES — delegate to aiPumpStrategy ──────────────────
+                const ps = aiPumpStrategy(objetivo, mix, r, gd, wcMax, waterDemandBase, slump);
+                wcTarget  = ps.wcTarget;
+                waterOpt  = ps.waterOpt;
+                slumpOpt  = ps.slumpOpt;
+                strategy  = ps.strategy;
+                // Override cementOpt below with ps.cementOpt (enforces ACI 301 minimum)
+                // Store pump spec so recommendations can reference it
+                window._aiPumpSpec = ps.spec;
+                window._aiPumpTmaOK = ps.tmaOK;
+                window._aiPumpTmaWarning = ps.tmaWarning;
+                window._aiPumpSCMNote = ps.scmNote;
+
             } else {
                 // balanced — meet exposure limit, target Zone II, minimize waste
                 const wc_bal = Math.min(wc_orig, wcMax);
@@ -11941,7 +12198,11 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
             }
 
             wcTarget = parseFloat(Math.min(wcTarget, wcMax).toFixed(3));
-            const cementOpt = waterOpt / wcTarget;
+            // For pump objectives enforce the ACI 301 minimum cement content
+            let cementOpt = waterOpt / wcTarget;
+            if (objetivo.startsWith('pump_') && window._aiPumpSpec) {
+                cementOpt = Math.max(cementOpt, window._aiPumpSpec.cementMin);
+            }
             const fc_est_orig = abramsFC(wc_orig);
             const fc_est_opt  = abramsFC(wcTarget);
 
@@ -11954,6 +12215,11 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                 sustainability: {cfMin:60, cfMax:74, wfMin:33, wfMax:41},
                 balanced:       {cfMin:55, cfMax:75, wfMin:32, wfMax:44},
                 shilstone_zone2:{cfMin:60, cfMax:70, wfMin:35, wfMax:42},
+                // Pump objectives: higher WF (more mortar), lower CF (less coarse) per ACI 304.2R
+                pump_3in:       {cfMin:48, cfMax:60, wfMin:42, wfMax:50},
+                pump_4in:       {cfMin:52, cfMax:64, wfMin:39, wfMax:47},
+                pump_5in:       {cfMin:55, cfMax:67, wfMin:37, wfMax:45},
+                pump_6in:       {cfMin:57, cfMax:70, wfMin:35, wfMax:43},
             };
             const st = shilstoneTarget[objetivo] || shilstoneTarget.balanced;
             const cfCenter = (st.cfMin + st.cfMax) / 2;  // e.g. 65
@@ -12084,15 +12350,39 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
             const arena1Opt = totalAgg * pct1New;
             const arena2Opt = totalAgg * pct2New;
 
-            // ---- Cost model ----
-            // Cost driven by: cement price (~$0.18/lb), aggregates (~$0.02/lb), water (~$0.001/lb)
-            const costPerLbCement = 0.18, costPerLbAgg = 0.02, costPerLbWater = 0.001;
-            const costOrig = (r.cemento.peso||500)*costPerLbCement + (r.agua.peso||280)*costPerLbWater
-                           + (grossOrig+interOrig+arena1Orig+arena2Orig)*costPerLbAgg;
-            const costOpt  = cementOpt*costPerLbCement + waterOpt*costPerLbWater
-                           + (grossOpt+interOpt+arena1Opt+arena2Opt)*costPerLbAgg;
-            // Use actual saved cost or fallback to r.costoTotal proportional
-            const costOptFinal = r.costoTotal ? r.costoTotal * (costOpt / Math.max(costOrig, costOpt)) : costOpt;
+            // ---- Cost model — real prices from saved mix design ----
+            // Derive $/lb for each material from saved costo/peso; fallback to market estimates
+            const pricePerLbCement = (r.cemento && r.cemento.peso > 0 && r.cemento.costo > 0)
+                ? r.cemento.costo / r.cemento.peso : 0.18;
+            const pricePerLbWater  = (r.agua && r.agua.peso > 0 && r.agua.costo > 0)
+                ? r.agua.costo / r.agua.peso : 0.001;
+            const pricePerLbGrueso = (r.grueso && r.grueso.peso > 0 && r.grueso.costo > 0)
+                ? r.grueso.costo / r.grueso.peso : 0.02;
+            const pricePerLbInter  = (r.intermedio && r.intermedio.peso > 0 && r.intermedio.costo > 0)
+                ? r.intermedio.costo / r.intermedio.peso : pricePerLbGrueso;
+            const pricePerLbArena1 = (r.arena1 && r.arena1.peso > 0 && r.arena1.costo > 0)
+                ? r.arena1.costo / r.arena1.peso : 0.015;
+            const pricePerLbArena2 = (r.arena2 && r.arena2.peso > 0 && r.arena2.costo > 0)
+                ? r.arena2.costo / r.arena2.peso : pricePerLbArena1;
+
+            const costOrig = (r.cemento.peso||500)*pricePerLbCement
+                           + (r.agua.peso||280)*pricePerLbWater
+                           + grossOrig*pricePerLbGrueso
+                           + interOrig*pricePerLbInter
+                           + arena1Orig*pricePerLbArena1
+                           + arena2Orig*pricePerLbArena2;
+
+            const costOpt  = cementOpt*pricePerLbCement
+                           + waterOpt*pricePerLbWater
+                           + grossOpt*pricePerLbGrueso
+                           + interOpt*pricePerLbInter
+                           + arena1Opt*pricePerLbArena1
+                           + arena2Opt*pricePerLbArena2;
+
+            // Scale by real saved total (includes aditivos/SCMs not in the model above)
+            const costOptFinal = (r.costoTotal && r.costoTotal > 0 && costOrig > 0)
+                ? r.costoTotal * (costOpt / costOrig)
+                : costOpt;
 
             // ---- Zones ----
             const getZone = (cf, wf) => {
@@ -12127,7 +12417,7 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                 recs.push({categoria:'Proceso',titulo:'Curado intensivo para alta resistencia',descripcion:'Curado húmedo continuo 14 días mínimo. Temperatura curado ≥ 15°C. Resistencia a 28 días puede incrementar 15-20% con curado adecuado vs curado estándar.',estandar:'ACI 308R',prioridad:'Alta'});
             }
             if (objetivo==='cost') {
-                recs.push({categoria:'Agregados',titulo:'Maximizar contenido de grueso — ACI 211.1',descripcion:`Aumentar grueso de ${grossOrig.toFixed(0)} a ${grossOpt.toFixed(0)} lb/yd³. Cada saco menos de cemento ≈ $${(0.18*94).toFixed(0)} de ahorro/yd³. CF objetivo ${st.cfMin}-${st.cfMax}.`,estandar:'ACI 211.1-91',prioridad:'Alta'});
+                recs.push({categoria:'Agregados',titulo:'Maximizar contenido de grueso — ACI 211.1',descripcion:`Aumentar grueso de ${grossOrig.toFixed(0)} a ${grossOpt.toFixed(0)} lb/yd³. Cada saco menos de cemento ≈ $${(pricePerLbCement*94).toFixed(2)} de ahorro/yd³. CF objetivo ${st.cfMin}-${st.cfMax}.`,estandar:'ACI 211.1-91',prioridad:'Alta'});
                 if (fcOverdesign > 500) recs.push({categoria:'Eficiencia',titulo:`Usar margen de sobrediseño — ${fcOverdesign.toLocaleString()} PSI de exceso`,descripcion:`f'c estimada original (${fc_est_orig.toLocaleString()} PSI) supera en ${fcOverdesign.toLocaleString()} PSI el diseño (${fc_design.toLocaleString()} PSI). Aumentar W/C a ${wcTarget.toFixed(3)} sin comprometer seguridad.`,estandar:'ACI 318-19',prioridad:'Media'});
             }
             if (objetivo==='workability') {
@@ -12141,6 +12431,56 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
             if (objetivo==='sustainability') {
                 recs.push({categoria:'Sostenibilidad',titulo:'Reemplazo parcial de cemento — SCM',descripcion:`Reducir cemento de ${(r.cemento.peso||500).toFixed(0)} a ${cementOpt.toFixed(0)} lb/yd³. Reemplazar 20-25% con ceniza volante Clase F (ASTM C618) o 30-40% GGBS (ASTM C989). Reduce CO₂ hasta 40%.`,estandar:'ACI 232.2R / ASTM C618',prioridad:'Alta'});
                 recs.push({categoria:'Sostenibilidad',titulo:'Optimizar gradación para mínimo cemento',descripcion:'Gradación bien dosificada (Zone II Shilstone) reduce demanda de pasta y por ende de cemento. Cada 1% de mejora en CF/WF puede reducir 0.3-0.5 sacos/yd³.',estandar:'Shilstone JM (1990)',prioridad:'Media'});
+            }
+            if (objetivo.startsWith('pump_')) {
+                const spec = window._aiPumpSpec || {};
+                const dia  = aiPumpDiameter(objetivo);
+                const aggType = (document.getElementById('pump-agg-type')||{}).value || 'crushed';
+                const tmaIn   = parseFloat((document.getElementById('pump-tma')||{}).value || 0.75);
+                const maxAgg  = aiPumpMaxAgg(dia, aggType);
+                // TMA compliance
+                if (tmaIn > maxAgg) {
+                    recs.push({categoria:'Gradación',titulo:`⚠️ TMA ${aiTMALabel(tmaIn)} excede límite ACI 304.2R para manga ${dia}"`,
+                        descripcion:`Para manga ${dia}" con agregado ${aggType==='gravel'?'redondeado (límite 2/5×ID)':'angular/triturado (límite 1/3×ID)'}, el TMA máximo es ${maxAgg.toFixed(2)}". TMA actual ${aiTMALabel(tmaIn)} causará bloqueos. Reducir TMA o usar manga de mayor diámetro.`,
+                        estandar:'ACI 304.2R §5.2',prioridad:'Alta'});
+                } else {
+                    recs.push({categoria:'Gradación',titulo:`✅ TMA ${aiTMALabel(tmaIn)} compatible con manga ${dia}"`,
+                        descripcion:`TMA ${aiTMALabel(tmaIn)} ≤ ${maxAgg.toFixed(2)}" (límite ACI 304.2R para manga ${dia}"). Agregar 5% de reducción en contenido de grueso respecto a ACI 211.1 Tabla 6.3.6 como margen de seguridad adicional para bombeabilidad.`,
+                        estandar:'ACI 304.2R §5.2 / ACI 211.1',prioridad:'Media'});
+                }
+                // Cement minimum
+                recs.push({categoria:'Cemento',titulo:`Cemento mínimo ACI 301 para bombeo — manga ${dia}"`,
+                    descripcion:`Mezclas bombeables requieren cemento ≥ ${spec.cementMin||540} lb/yd³ (${((spec.cementMin||540)/94).toFixed(1)} sacos). Optimizado a ${cementOpt.toFixed(0)} lb/yd³. Pasta suficiente es crítica para lubricar la manga y evitar segregación bajo presión.`,
+                    estandar:'ACI 301 Tabla 4.1.2.9 / ACI 304.2R',prioridad:'Alta'});
+                // WF (mortar richness) for pump
+                if (optWF < spec.wfMin) {
+                    recs.push({categoria:'Gradación',titulo:`WF=${optWF.toFixed(1)} bajo para manga ${dia}" — Aumentar finos`,
+                        descripcion:`Manga ${dia}" requiere WF≥${spec.wfMin} para garantizar suficiente mortero lubricante. WF actual del diseño optimizado: ${optWF.toFixed(1)}. Aumentar % Arena 1 o Arena 2 en el blend.`,
+                        estandar:'ACI 304.2R §5.2 / Shilstone',prioridad:'Alta'});
+                }
+                // Fine aggregate MF
+                recs.push({categoria:'Agregados',titulo:`Arena ideal para bombeabilidad — MF ${spec.mfMin||2.4}–${spec.mfMax||2.7}`,
+                    descripcion:`MF óptimo para manga ${dia}": ${spec.mfMin||2.4}–${spec.mfMax||2.7}. Arenas con MF < 2.3 aumentan demanda de agua; MF > 3.1 reduce cohesión. Asegurar ≥ ${spec.passNo50Min||15}% pasa Nº50 y ≥ ${spec.passNo100Min||5}% pasa Nº100 para lubrificación continua.`,
+                    estandar:'ACI 304.2R §5.2.3 / ASTM C33',prioridad:'Alta'});
+                // Slump
+                const distH = parseFloat((document.getElementById('pump-dist-h')||{}).value||150);
+                const distV = parseFloat((document.getElementById('pump-dist-v')||{}).value||0);
+                recs.push({categoria:'Proceso',titulo:`Slump en planta para manga ${dia}" — ${slumpOpt.toFixed(1)}" requerido`,
+                    descripcion:`Pérdida estimada de slump en línea: ${aiPumpSlumpLoss(distH,distV).toFixed(1)}" para ${distH}ft horizontal${distV>0?' + '+distV+'ft vertical':''}. Slump en planta: ≥ ${slumpOpt.toFixed(1)}" (máx 6" para evitar segregación). Usar superplastificante Tipo F (ASTM C494) para lograr slump objetivo sin aumentar W/C.`,
+                    estandar:'ACI 304.2R §5.4 / ASTM C494',prioridad:'Alta'});
+                // SCM
+                const scm = (document.getElementById('pump-scm')||{}).value || 'none';
+                if (scm !== 'none') {
+                    const scmRec = {
+                        flyash:{t:'Fly Ash 15–25% — Mejora bombeabilidad y cohesión',d:'Ceniza volante Clase F reduce demanda de agua 5-10%, aumenta cohesión y lubricidad de la mezcla. Mejora resistencia a largo plazo y reduce calor de hidratación. Crítico en mangas largas.', e:'ASTM C618 / ACI 232.2R'},
+                        slag:  {t:'GGBS 25–35% — Excelente bombeabilidad y durabilidad',d:'GGBS mejora fluidez de la mezcla, reduce temperatura de hidratación y aumenta resistencia a sulfatos. Ideal para bombeo en ambientes agresivos. Fraguado más lento facilita bombeo en distancias largas.',e:'ASTM C989 / ACI 233R'},
+                        sf:    {t:'Microsílice 5–8% — Densificación y resistencia',d:'Microsílice llena vacíos capilares, reduce bleeding y aumenta cohesión — reduciendo riesgo de segregación bajo presión de bombeo. Resistencia ≥20% mayor a 28 días. Usar con superplastificante.',e:'ASTM C1240 / ACI 234R'},
+                    }[scm];
+                    if (scmRec) recs.push({categoria:'Aditivos',titulo:scmRec.t,descripcion:scmRec.d,estandar:scmRec.e,prioridad:'Media'});
+                }
+                recs.push({categoria:'Proceso',titulo:'Cebado de línea y limpieza — ACI 304.2R',
+                    descripcion:'Cebar manga con lechada de cemento (relación A/C=0.45, ~1 saco) antes de iniciar el bombeo. Limpiar línea con bola de esponja al finalizar. Nunca usar agua a presión para limpiar sin descargar el concreto primero.',
+                    estandar:'ACI 304.2R §6.3',prioridad:'Media'});
             }
 
             // Universal recommendations
@@ -12159,6 +12499,23 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
             if (zoneOpt === 'Zone II')  warns.push({nivel:'info',mensaje:`✅ Optimización alcanza ${zoneOpt} (CF=${optCF.toFixed(1)}, WF=${optWF.toFixed(1)}) — Mezcla bien graduada.`,estandar:'Shilstone JM (1990)'});
             if (fc_est_orig > fc_design * 1.35) warns.push({nivel:'info',mensaje:`f'c estimada original (${fc_est_orig.toLocaleString()} PSI) excede diseño en ${Math.round((fc_est_orig/fc_design-1)*100)}%. Existe margen para optimizar.`,estandar:'Ley de Abrams'});
             if (colocacion==='pump' && optWF < 36) warns.push({nivel:'warning',mensaje:`WF=${optWF.toFixed(1)} puede ser bajo para bombeo. Recomendado WF≥37. Considerar plastificante o ajuste de blend.`,estandar:'ACI 304.2R'});
+            if (objetivo.startsWith('pump_')) {
+                const dia = aiPumpDiameter(objetivo);
+                const spec = window._aiPumpSpec || {};
+                const tmaIn = parseFloat((document.getElementById('pump-tma')||{}).value||0.75);
+                const aggT  = (document.getElementById('pump-agg-type')||{}).value||'crushed';
+                const maxAgg = aiPumpMaxAgg(dia, aggT);
+                if (!window._aiPumpTmaOK && tmaIn > maxAgg) {
+                    warns.push({nivel:'error',mensaje:`⛔ TMA ${aiTMALabel(tmaIn)} EXCEDE límite ACI 304.2R de ${maxAgg.toFixed(2)}" para manga ${dia}". RIESGO DE BLOQUEO CRÍTICO. Reducir TMA o cambiar a manga de mayor diámetro.`,estandar:'ACI 304.2R §5.2'});
+                }
+                if (cementOpt < (spec.cementMin||540)) {
+                    warns.push({nivel:'warning',mensaje:`Cemento ${cementOpt.toFixed(0)} lb/yd³ está por debajo del mínimo ACI 301 de ${spec.cementMin||540} lb/yd³ para bombeabilidad con TMA ¾". Mezcla puede segregar bajo presión.`,estandar:'ACI 301 Tabla 4.1.2.9'});
+                }
+                if (optWF < (spec.wfMin||38)) {
+                    warns.push({nivel:'warning',mensaje:`WF optimizado (${optWF.toFixed(1)}) por debajo de ${spec.wfMin||38} requerido para manga ${dia}". Mezcla puede no lubricar suficientemente la línea.`,estandar:'ACI 304.2R §5.2'});
+                }
+                warns.push({nivel:'info',mensaje:`🚿 Manga ${dia}": Slump en planta recomendado ${(spec.targetIn||5).toFixed(1)}"–${(spec.maxIn||6).toFixed(1)}" (ASTM C143). Cementar la línea antes de iniciar bombeo (ACI 304.2R §6.3). TMA máximo: ${maxAgg.toFixed(2)}".`,estandar:'ACI 304.2R'});
+            }
 
             // ---- Combined 0.45 power ----
             const combOpt = aiGetCombinedPassing(gdOpt);
@@ -13912,7 +14269,7 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                     </div>
                     <div class="form-group">
                         <label>🎯 Objetivo de Optimización</label>
-                        <select id="ai-objetivo">
+                        <select id="ai-objetivo" onchange="aiTogglePumpOptions()">
                             <option value="balanced">⚖️ Balanceado (Resistencia + Costo + Trabajabilidad)</option>
                             <option value="shilstone_zone2">🎯 Llevar Mezcla a Zone II — Shilstone</option>
                             <option value="cost">💰 Minimizar Costo</option>
@@ -13920,7 +14277,64 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                             <option value="workability">🌊 Maximizar Trabajabilidad</option>
                             <option value="durability">🛡️ Maximizar Durabilidad</option>
                             <option value="sustainability">🌱 Sostenibilidad (Menor Contenido de Cemento)</option>
+                            <optgroup label="── 🚿 Mezcla Bombeable ──">
+                                <option value="pump_4in">🚿 Bombeable — Manga 4" (102 mm)</option>
+                                <option value="pump_5in">🚿 Bombeable — Manga 5" (127 mm)</option>
+                                <option value="pump_6in">🚿 Bombeable — Manga 6" (152 mm)</option>
+                                <option value="pump_3in">🚿 Bombeable — Manga 3" (76 mm) — Alta Presión</option>
+                            </optgroup>
                         </select>
+                    </div>
+                    <!-- Panel de parámetros bombeables — visible solo cuando se selecciona pump_* -->
+                    <div id="pump-params-panel" style="display:none;background:#eff6ff;border:2px solid #93c5fd;border-radius:10px;padding:14px 16px;margin-top:10px;grid-column:1/-1">
+                        <div style="font-weight:700;color:#1e40af;font-size:13px;margin-bottom:10px">🚿 Parámetros de Bombeo — ACI 304.2R</div>
+                        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-size:12px">
+                            <div>
+                                <label style="color:#374151;font-weight:600;display:block;margin-bottom:4px">Distancia Horizontal (ft)</label>
+                                <input type="number" id="pump-dist-h" value="150" min="0" step="10"
+                                    style="width:100%;padding:6px 8px;border:1.5px solid #93c5fd;border-radius:6px;font-size:13px">
+                            </div>
+                            <div>
+                                <label style="color:#374151;font-weight:600;display:block;margin-bottom:4px">Altura Vertical (ft)</label>
+                                <input type="number" id="pump-dist-v" value="0" min="0" step="5"
+                                    style="width:100%;padding:6px 8px;border:1.5px solid #93c5fd;border-radius:6px;font-size:13px">
+                            </div>
+                            <div>
+                                <label style="color:#374151;font-weight:600;display:block;margin-bottom:4px">Tipo de Agregado</label>
+                                <select id="pump-agg-type" style="width:100%;padding:6px 8px;border:1.5px solid #93c5fd;border-radius:6px;font-size:13px">
+                                    <option value="gravel">Grava Redondeada (mejor)</option>
+                                    <option value="crushed" selected>Piedra Triturada (angular)</option>
+                                    <option value="mixed">Mixto</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="color:#374151;font-weight:600;display:block;margin-bottom:4px">TMA Actual del Grueso</label>
+                                <select id="pump-tma" style="width:100%;padding:6px 8px;border:1.5px solid #93c5fd;border-radius:6px;font-size:13px">
+                                    <option value="0.375">3/8" — No.3 (ideal manga 3")</option>
+                                    <option value="0.5" selected>½" — No.4/5 (ideal manga 4")</option>
+                                    <option value="0.75">¾" — No.57/67 (ideal manga 4-5")</option>
+                                    <option value="1.0">1" — No.57 (máx manga 5-6")</option>
+                                    <option value="1.5">1½" — No.4 (máx manga 6"+)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="color:#374151;font-weight:600;display:block;margin-bottom:4px">Incluir Vuelta Retorno</label>
+                                <select id="pump-return" style="width:100%;padding:6px 8px;border:1.5px solid #93c5fd;border-radius:6px;font-size:13px">
+                                    <option value="no">No</option>
+                                    <option value="yes">Sí (doblar pérdida de slump)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="color:#374151;font-weight:600;display:block;margin-bottom:4px">SCM Recomendado</label>
+                                <select id="pump-scm" style="width:100%;padding:6px 8px;border:1.5px solid #93c5fd;border-radius:6px;font-size:13px">
+                                    <option value="none">Sin SCM</option>
+                                    <option value="flyash" selected>Fly Ash 15-25% (mejora bombeabilidad)</option>
+                                    <option value="slag">GGBS 25-35%</option>
+                                    <option value="sf">Microsílice 5-8% (alta resist.)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="pump-tma-warning" style="margin-top:8px;padding:7px 10px;background:#fef9c3;border:1px solid #fde047;border-radius:6px;font-size:11px;color:#854d0e;display:none"></div>
                     </div>
                 </div>
                 <div class="form-grid cols-3">
