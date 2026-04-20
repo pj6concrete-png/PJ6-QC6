@@ -4279,7 +4279,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
         async function generarPDFCotizacion(cotizacion) {
             const logo = await obtenerLogo();
             const logoHtml = logo 
-                ? `<img src="${logo}" style="max-height: 120px; max-width: 350px;">` 
+                ? `<img src="${logo}" style="max-height: 200px; max-width: 520px;">` 
                 : `<div style="background: #16a34a; color: white; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 18px;">MIXTEC PRO</div>`;
             
             const html = `<!DOCTYPE html>
@@ -6499,6 +6499,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     html += '<tr style="background:#eff6ff">';
                     html += '<td><strong>Cemento' + (tipoCemR ? ' (' + tipoCemR + ')' : '') + '</strong></td>';
                     html += '<td style="text-align:right">' + currentMixResults.cemento.peso.toFixed(1) + '</td>';
+                    html += '<td>' + (currentMixResults.cemento.proveedor || document.getElementById('proveedor-cemento')?.value || '—') + '</td>';
                     html += '<td style="text-align:right">' + currentMixResults.cemento.volumen.toFixed(3) + '</td>';
                     html += '</tr>';
                 }
@@ -6514,6 +6515,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                         html += '<tr style="background:' + scmColorsD[ix] + '">';
                         html += '<td><strong>' + s.tipo + '</strong> <span style="font-size:11px;color:#7c3aed">(SCM '+i+' — '+pct+'% reemplazo)</span></td>';
                         html += '<td style="text-align:right">' + s.peso.toFixed(1) + '</td>';
+                        html += '<td>—</td>';
                         html += '<td style="text-align:right">' + s.volumen.toFixed(3) + '</td>';
                         html += '</tr>';
                     }
@@ -6525,6 +6527,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     html += '<tr style="background:#ddd6fe;font-weight:700">';
                     html += '<td style="color:#5b21b6">Total Cementicio (Cemento + SCMs)</td>';
                     html += '<td style="text-align:right;color:#5b21b6">' + currentMixResults.totalCementicio.toFixed(1) + '</td>';
+                    html += '<td></td>';
                     html += '<td style="text-align:right;color:#5b21b6">' + ((currentMixResults.cemento?.volumen||0)+volSCMsD).toFixed(3) + '</td>';
                     html += '</tr>';
                 }
@@ -6534,6 +6537,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     html += '<tr>';
                     html += '<td><strong>Agua Efectiva</strong></td>';
                     html += '<td style="text-align:right">' + currentMixResults.agua.peso.toFixed(1) + '</td>';
+                    html += '<td>—</td>';
                     html += '<td style="text-align:right">' + currentMixResults.agua.volumen.toFixed(3) + '</td>';
                     html += '</tr>';
                 }
@@ -6543,6 +6547,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     html += '<tr>';
                     html += '<td><strong>Agregado Grueso</strong></td>';
                     html += '<td style="text-align:right">' + currentMixResults.grueso.peso.toFixed(1) + '</td>';
+                    html += '<td>' + (currentMixResults.grueso.proveedor || document.getElementById('proveedor-grueso')?.value || '—') + '</td>';
                     html += '<td style="text-align:right">' + currentMixResults.grueso.volumen.toFixed(3) + '</td>';
                     html += '</tr>';
                 }
@@ -6552,6 +6557,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     html += '<tr>';
                     html += '<td><strong>Agregado Intermedio</strong></td>';
                     html += '<td style="text-align:right">' + currentMixResults.intermedio.peso.toFixed(1) + '</td>';
+                    html += '<td>—</td>';
                     html += '<td style="text-align:right">' + currentMixResults.intermedio.volumen.toFixed(3) + '</td>';
                     html += '</tr>';
                 }
@@ -6561,6 +6567,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     html += '<tr>';
                     html += '<td><strong>Arena 1</strong></td>';
                     html += '<td style="text-align:right">' + currentMixResults.arena1.peso.toFixed(1) + '</td>';
+                    html += '<td>' + (currentMixResults.arena1.proveedor || document.getElementById('proveedor-arena1')?.value || '—') + '</td>';
                     html += '<td style="text-align:right">' + currentMixResults.arena1.volumen.toFixed(3) + '</td>';
                     html += '</tr>';
                 }
@@ -6570,6 +6577,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     html += '<tr>';
                     html += '<td><strong>Arena 2</strong></td>';
                     html += '<td style="text-align:right">' + currentMixResults.arena2.peso.toFixed(1) + '</td>';
+                    html += '<td>' + (currentMixResults.arena2.proveedor || document.getElementById('proveedor-arena2')?.value || '—') + '</td>';
                     html += '<td style="text-align:right">' + currentMixResults.arena2.volumen.toFixed(3) + '</td>';
                     html += '</tr>';
                 }
@@ -6582,7 +6590,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     if (ad && ad.nombre && dosis > 0) {
                         html += '<tr style="background:#fffbeb">';
                         html += '<td><strong>' + ad.nombre + '</strong></td>';
-                        html += '<td colspan="2" style="color:#92400e;font-style:italic">Rango: 0 to ' + dosis.toFixed(2) + ' oz/cwt</td>';
+                        html += '<td colspan="3" style="color:#92400e;font-style:italic">Rango: 0 to ' + dosis.toFixed(2) + ' oz/cwt</td>';
                         html += '</tr>';
                     }
                 });
@@ -6594,6 +6602,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                         html += '<tr style="background:#fff1f2">';
                         html += '<td><strong>' + ad.nombre + ' <span style="font-size:0.7em;background:#dc2626;color:#fff;border-radius:2px;padding:1px 4px">lb/yd³</span></strong></td>';
                         html += '<td style="text-align:right">' + ad.peso.toFixed(3) + ' lb</td>';
+                        html += '<td>—</td>';
                         html += '<td style="text-align:right">' + ad.volumen.toFixed(3) + '</td>';
                         html += '</tr>';
                     }
@@ -6604,6 +6613,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 html += '<tr style="background:#f0fdf4">';
                 html += '<td><strong>Aire</strong></td>';
                 html += '<td style="text-align:right">—</td>';
+                html += '<td>—</td>';
                 html += '<td style="text-align:right">' + aireVolD.toFixed(3) + '</td>';
                 html += '</tr>';
 
