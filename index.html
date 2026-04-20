@@ -13114,37 +13114,106 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
         }
 
         function renderComparisonChart(data) {
-            const groupedData = {};
-            
-            data.forEach(d => {
-                if (!groupedData[d.trialName]) groupedData[d.trialName] = [];
-                groupedData[d.trialName].push(d.resistencia);
+            // Get selected age from the shared age selector
+            const ageSelect = document.getElementById('analisis-age-select');
+            const selectedAge = ageSelect && ageSelect.value ? parseInt(ageSelect.value) : null;
+
+            // Filter data to only the chosen age
+            const ageFiltered = selectedAge !== null
+                ? data.filter(d => parseInt(d.diasCurado) === selectedAge)
+                : data;
+
+            if (ageFiltered.length === 0) {
+                const canvas = document.getElementById('analisis-chart-main');
+                if (canvas) {
+                    if (analisisChart) { analisisChart.destroy(); analisisChart = null; }
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.font = '16px Arial';
+                    ctx.fillStyle = '#64748b';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('No hay datos para la edad seleccionada', canvas.width / 2, canvas.height / 2);
+                }
+                return;
+            }
+
+            // Group by sourceId so each trial/evaluation is one bar (avg at selected age)
+            const grouped = {};
+            ageFiltered.forEach(d => {
+                if (!grouped[d.sourceId]) {
+                    grouped[d.sourceId] = {
+                        trialName:    d.trialName,
+                        resistencias: [],
+                        objetivo:     d.resistenciaObjetivo
+                    };
+                }
+                grouped[d.sourceId].resistencias.push(d.resistencia);
             });
-            
-            const labels = Object.keys(groupedData);
-            const avgData = labels.map(label => {
-                const resistencias = groupedData[label];
-                return resistencias.reduce((sum, r) => sum + r, 0) / resistencias.length;
+
+            const entries  = Object.values(grouped);
+            const labels   = entries.map(e => e.trialName);
+            const avgData  = entries.map(e => parseFloat((e.resistencias.reduce((s,r)=>s+r,0)/e.resistencias.length).toFixed(0)));
+            const tgtData  = entries.map(e => parseFloat(e.objetivo) || null);
+            const nData    = entries.map(e => e.resistencias.length);
+
+            // Color each bar: green=meets target, amber=>=80%, red=below
+            const colors = entries.map((e, i) => {
+                const avg = avgData[i];
+                const tgt = parseFloat(e.objetivo) || 0;
+                return tgt > 0
+                    ? (avg >= tgt ? '#16a34a' : avg >= tgt * 0.8 ? '#f59e0b' : '#ef4444')
+                    : '#16a34a';
             });
-            
+
+            const ageLabel  = selectedAge !== null ? selectedAge + ' días' : 'todos los días';
+            const titleText = 'Comparación entre Muestras — Promedio a ' + ageLabel + ' de Curado';
+
             renderChart({
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: 'Resistencia Promedio (PSI)',
-                        data: avgData,
-                        backgroundColor: '#16a34a',
-                        borderColor: '#15803d',
-                        borderWidth: 2
-                    }]
+                    datasets: [
+                        {
+                            label: 'Resistencia Promedio (PSI)',
+                            data: avgData,
+                            backgroundColor: colors,
+                            borderColor: colors,
+                            borderWidth: 2
+                        },
+                        {
+                            label: "f'c Objetivo (PSI)",
+                            data: tgtData,
+                            type: 'line',
+                            borderColor: '#0369a1',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            borderDash: [6, 4],
+                            pointRadius: 4,
+                            pointBackgroundColor: '#0369a1'
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        title: { display: true, text: 'Comparación de Resistencia Promedio entre Trial Mixes', font: { size: 16, weight: 'bold' } },
-                        legend: { display: false }
+                        title: { display: true, text: titleText, font: { size: 16, weight: 'bold' } },
+                        legend: { display: true, position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                afterBody: function(items) {
+                                    const i   = items[0].dataIndex;
+                                    const tgt = parseFloat(entries[i].objetivo) || 0;
+                                    const avg = avgData[i];
+                                    const eff = tgt > 0 ? ((avg / tgt) * 100).toFixed(1) : 'N/A';
+                                    return [
+                                        'Cilindros (n): ' + nData[i],
+                                        "f'c obj: " + tgt + ' PSI',
+                                        'Eficiencia: ' + eff + '%'
+                                    ];
+                                }
+                            }
+                        }
                     },
                     scales: {
                         y: { title: { display: true, text: 'Resistencia Promedio (PSI)' }, beginAtZero: true }
