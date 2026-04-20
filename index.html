@@ -2396,24 +2396,33 @@
                 
                 <div class="alert info">
                     <span>ℹ️</span>
-                    <span>Análisis estadístico de los resultados de Trial Mixes. Los gráficos se generan automáticamente con los datos de cilindros rotos.</span>
+                    <span>Análisis estadístico de resistencia de concreto. Incluye datos de <strong>Trial Mixes</strong> y <strong>Evaluaciones de Campo</strong>. Selecciona la fuente de datos y filtra por ensayo.</span>
                 </div>
 
                 <!-- Controles y Filtros -->
                 <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                    <div class="form-grid cols-3">
+                    <div class="form-grid cols-4">
                         <div class="form-group">
-                            <label>Seleccionar Trial Mixes</label>
+                            <label>📂 Fuente de Datos</label>
+                            <select id="analisis-source" onchange="updateAnalisisMixFilter();updateAnalisisCharts()">
+                                <option value="trials">🧪 Trial Mixes</option>
+                                <option value="campo">🏗️ Evaluaciones de Campo</option>
+                                <option value="both">📊 Ambas Fuentes</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Seleccionar Ensayos</label>
                             <div style="position: relative;">
                                 <button type="button" class="secondary" onclick="toggleAnalisisMixFilter()" style="width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center;">
-                                    <span id="analisis-filter-label">Todas las mezclas</span>
+                                    <span id="analisis-filter-label">Todos</span>
                                     <span>▼</span>
                                 </button>
                                 <div id="analisis-mix-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 4px; margin-top: 5px; max-height: 300px; overflow-y: auto; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                                     <div style="padding: 10px; border-bottom: 1px solid #eee;">
                                         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 5px;">
                                             <input type="checkbox" value="all" checked onchange="handleAnalisisMixFilterChange(this)">
-                                            <strong>Seleccionar Todas</strong>
+                                            <strong>Seleccionar Todos</strong>
                                         </label>
                                     </div>
                                     <div id="analisis-mix-checkboxes" style="padding: 10px;"></div>
@@ -2426,7 +2435,7 @@
                             <select id="analisis-view-type" onchange="updateAnalisisCharts()">
                                 <option value="evolution">Evolución de Resistencia</option>
                                 <option value="efficiency">% de Resistencia (f'c)</option>
-                                <option value="comparison">Comparación entre Mezclas</option>
+                                <option value="comparison">Comparación entre Muestras</option>
                             </select>
                         </div>
 
@@ -2453,7 +2462,7 @@
 
                 <!-- Tabla de Datos Detallados -->
                 <div class="card">
-                    <h3>📋 Datos Detallados por Trial Mix</h3>
+                    <h3>📋 Datos Detallados por Ensayo</h3>
                     <div id="analisis-table-container"></div>
                 </div>
             </div>
@@ -12698,66 +12707,137 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
         let analisisChart = null;
         let selectedAnalisisMixes = [];
 
+        // ── Load Trial Mixes cylinder data ──────────────────────────────
         async function loadAnalisisData() {
             const trials = await getAllRecords('trials');
             const mixdesigns = await getAllRecords('mixdesigns');
-            
             const analisisData = [];
-            
             for (const trial of trials) {
                 if (!trial.cilindros || trial.cilindros.length === 0) continue;
-                
                 const mixDesign = mixdesigns.find(m => m.id === trial.mixDesignId);
-                const resistenciaObjetivo = mixDesign ? mixDesign.resistencia : 3000;
-                
+                const resistenciaObjetivo = mixDesign ? (mixDesign.resistencia || 3000) : 3000;
                 trial.cilindros.forEach(cilindro => {
-                    if (cilindro.resistencia && cilindro.resistencia > 0) {
+                    const res = parseFloat(cilindro.resistencia);
+                    if (res && res > 0) {
                         analisisData.push({
-                            trialId: trial.id,
-                            trialName: trial.trialId || `Trial-${trial.id}`,
-                            mixName: mixDesign ? mixDesign.nombre : 'N/A',
-                            diasCurado: parseInt(cilindro.diasCurado) || 0,
-                            resistencia: parseFloat(cilindro.resistencia),
+                            source:              'trial',
+                            sourceId:            'T:' + trial.id,
+                            trialId:             trial.id,
+                            trialName:           trial.trialId || ('Trial-' + trial.id),
+                            mixName:             mixDesign ? mixDesign.nombre : 'N/A',
+                            diasCurado:          parseInt(cilindro.diasCurado) || 0,
+                            resistencia:         res,
                             resistenciaObjetivo: resistenciaObjetivo,
-                            eficiencia: (parseFloat(cilindro.resistencia) / resistenciaObjetivo * 100).toFixed(1),
-                            fechaRotura: cilindro.fechaRotura,
-                            fechaColado: trial.fecha
+                            eficiencia:          (res / resistenciaObjetivo * 100).toFixed(1),
+                            fechaRotura:         cilindro.fechaRotura || cilindro.fechaEnsayo || '',
+                            fechaColado:         trial.fecha || ''
                         });
                     }
                 });
             }
-            
             return analisisData;
         }
 
+        // ── Load Campo Evaluaciones cylinder data ───────────────────────
+        async function loadCampoAnalisisData() {
+            const evaluaciones = await getAllRecords('campo_evaluaciones');
+            const analisisData = [];
+            for (const ev of evaluaciones) {
+                if (!ev.cylinders || ev.cylinders.length === 0) continue;
+                const reqStrength = parseFloat(ev.reqStrength) || 3000;
+                const evalLabel   = ev.evalId || ('Campo-' + ev.id);
+                // Field saved as proyectoNombre in the save object
+                const proyecto    = ev.proyectoNombre || ev.projectName || ev.proyecto || '';
+                const cliente     = ev.clienteNombre  || '';
+                const displayName = evalLabel +
+                    (cliente  ? ' — ' + cliente  : '') +
+                    (proyecto ? ' / ' + proyecto : '');
+                ev.cylinders.forEach(function(cyl) {
+                    const res = parseFloat(cyl.result);
+                    if (res && res > 0) {
+                        analisisData.push({
+                            source:              'campo',
+                            sourceId:            'C:' + ev.id,
+                            trialId:             'C:' + ev.id,
+                            trialName:           displayName,
+                            mixName:             ev.mixCode || ev.mixDesc || ev.trialMixRef || '—',
+                            diasCurado:          parseInt(cyl.age) || 0,
+                            resistencia:         res,
+                            resistenciaObjetivo: reqStrength,
+                            eficiencia:          (res / reqStrength * 100).toFixed(1),
+                            fechaRotura:         cyl.fechaEnsayo || '',
+                            fechaColado:         ev.fecha || ''
+                        });
+                    }
+                });
+            }
+            return analisisData;
+        }
+
+        // ── Combined loader based on selected source ─────────────────────
+        async function loadAllAnalisisData() {
+            const source = (document.getElementById('analisis-source') || {}).value || 'trials';
+            if (source === 'trials') return await loadAnalisisData();
+            if (source === 'campo')  return await loadCampoAnalisisData();
+            // 'both'
+            const t = await loadAnalisisData();
+            const c = await loadCampoAnalisisData();
+            return t.concat(c);
+        }
+
         async function updateAnalisisMixFilter() {
-            const trials = await getAllRecords('trials');
-            const mixdesigns = await getAllRecords('mixdesigns');
+            const source = (document.getElementById('analisis-source') || {}).value || 'trials';
             const container = document.getElementById('analisis-mix-checkboxes');
-            
             if (!container) return;
-            
             container.innerHTML = '';
-            
-            trials.forEach(trial => {
-                if (!trial.cilindros || trial.cilindros.length === 0) return;
-                
-                const mixDesign = mixdesigns.find(m => m.id === trial.mixDesignId);
-                const isChecked = selectedAnalisisMixes.length === 0 || selectedAnalisisMixes.includes(trial.id);
-                
+
+            let items = [];
+
+            if (source === 'trials' || source === 'both') {
+                const trials     = await getAllRecords('trials');
+                const mixdesigns = await getAllRecords('mixdesigns');
+                trials.forEach(function(trial) {
+                    if (!trial.cilindros || trial.cilindros.length === 0) return;
+                    const hasCyl = trial.cilindros.some(c => parseFloat(c.resistencia) > 0);
+                    if (!hasCyl) return;
+                    const mixDesign = mixdesigns.find(m => m.id === trial.mixDesignId);
+                    items.push({
+                        id:    'T:' + trial.id,
+                        label: '🧪 ' + (trial.trialId || ('Trial-' + trial.id)) + ' — ' + (mixDesign ? mixDesign.nombre : 'N/A')
+                    });
+                });
+            }
+            if (source === 'campo' || source === 'both') {
+                const evaluaciones = await getAllRecords('campo_evaluaciones');
+                evaluaciones.forEach(function(ev) {
+                    if (!ev.cylinders || ev.cylinders.length === 0) return;
+                    const hasCyl = ev.cylinders.some(function(c){ return parseFloat(c.result) > 0; });
+                    if (!hasCyl) return;
+                    const evalLabel  = ev.evalId || ('Campo-' + ev.id);
+                    const cliente    = ev.clienteNombre  || '';
+                    const proyecto   = ev.proyectoNombre || ev.projectName || ev.proyecto || '';
+                    const mixCode    = ev.mixCode || '';
+                    var suffix = '';
+                    if (cliente)  suffix += ' — ' + cliente;
+                    if (proyecto) suffix += ' / ' + proyecto;
+                    if (mixCode)  suffix += ' [' + mixCode + ']';
+                    items.push({
+                        id:    'C:' + ev.id,
+                        label: '🏗️ ' + evalLabel + suffix
+                    });
+                });
+            }
+
+            items.forEach(function(item) {
+                const isChecked = selectedAnalisisMixes.length === 0 || selectedAnalisisMixes.includes(item.id);
                 const label = document.createElement('label');
-                label.style.cssText = 'display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 5px; border-radius: 4px;';
-                label.innerHTML = `
-                    <input type="checkbox" value="${trial.id}" ${isChecked ? 'checked' : ''} onchange="handleAnalisisMixFilterChange(this)">
-                    <span>${trial.trialId || `Trial-${trial.id}`} - ${mixDesign ? mixDesign.nombre : 'N/A'}</span>
-                `;
-                
-                label.onmouseover = () => label.style.background = '#f0f0f0';
-                label.onmouseout = () => label.style.background = 'transparent';
-                
+                label.style.cssText = 'display:flex;align-items:center;gap:8px;cursor:pointer;padding:5px;border-radius:4px;';
+                label.innerHTML = '<input type="checkbox" value="' + item.id + '"' + (isChecked ? ' checked' : '') + ' onchange="handleAnalisisMixFilterChange(this)"><span>' + item.label + '</span>';
+                label.onmouseover = function(){ label.style.background='#f0f0f0'; };
+                label.onmouseout  = function(){ label.style.background='transparent'; };
                 container.appendChild(label);
             });
-            
+
             updateAnalisisMixFilterLabel();
         }
 
@@ -12769,7 +12849,6 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
         function handleAnalisisMixFilterChange(checkbox) {
             const value = checkbox.value;
             const allCheckbox = document.querySelector('#analisis-mix-dropdown input[value="all"]');
-            
             if (value === 'all') {
                 const checkboxes = document.querySelectorAll('#analisis-mix-checkboxes input[type="checkbox"]');
                 checkboxes.forEach(cb => cb.checked = checkbox.checked);
@@ -12777,57 +12856,54 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
             } else {
                 if (checkbox.checked) {
                     if (selectedAnalisisMixes.includes('none')) selectedAnalisisMixes = [];
-                    if (!selectedAnalisisMixes.includes(parseInt(value))) {
-                        selectedAnalisisMixes.push(parseInt(value));
-                    }
+                    if (!selectedAnalisisMixes.includes(value)) selectedAnalisisMixes.push(value);
                 } else {
-                    selectedAnalisisMixes = selectedAnalisisMixes.filter(id => id !== parseInt(value));
+                    selectedAnalisisMixes = selectedAnalisisMixes.filter(id => id !== value);
                     if (allCheckbox) allCheckbox.checked = false;
                 }
-                
                 const checkboxes = document.querySelectorAll('#analisis-mix-checkboxes input[type="checkbox"]');
                 const allChecked = Array.from(checkboxes).every(cb => cb.checked);
                 if (allCheckbox) allCheckbox.checked = allChecked;
-                
                 if (selectedAnalisisMixes.length === 0) {
                     selectedAnalisisMixes = [];
                     if (allCheckbox) allCheckbox.checked = true;
                 }
             }
-            
             updateAnalisisMixFilterLabel();
         }
 
         function updateAnalisisMixFilterLabel() {
             const label = document.getElementById('analisis-filter-label');
             if (!label) return;
-            
-            const checkboxes = document.querySelectorAll('#analisis-mix-checkboxes input[type="checkbox"]:checked');
+            const checkboxes      = document.querySelectorAll('#analisis-mix-checkboxes input[type="checkbox"]:checked');
             const totalCheckboxes = document.querySelectorAll('#analisis-mix-checkboxes input[type="checkbox"]');
-            
             if (selectedAnalisisMixes.length === 0 || checkboxes.length === totalCheckboxes.length) {
-                label.textContent = 'Todas las mezclas';
+                label.textContent = 'Todos';
             } else {
-                label.textContent = `${checkboxes.length} mezcla(s) seleccionada(s)`;
+                label.textContent = checkboxes.length + ' seleccionado(s)';
             }
         }
-
         async function updateAnalisisCharts() {
-            const allData = await loadAnalisisData();
+            const allData  = await loadAllAnalisisData();
             const viewType = document.getElementById('analisis-view-type').value;
-            
+
             let filteredData = allData;
             if (selectedAnalisisMixes.length > 0 && !selectedAnalisisMixes.includes('none')) {
-                filteredData = allData.filter(d => selectedAnalisisMixes.includes(d.trialId));
+                filteredData = allData.filter(function(d) {
+                    return selectedAnalisisMixes.includes(d.sourceId);
+                });
             }
-            
+
             if (filteredData.length === 0) {
-                alert('⚠️ No hay datos para mostrar. Asegúrate de tener Trial Mixes con cilindros rotos.');
+                const container = document.getElementById('analisis-table-container');
+                if (container) container.innerHTML = '<div class="empty-state">⚠️ No hay datos con cilindros rotos para la fuente seleccionada.</div>';
+                const statsEl = document.getElementById('analisis-stats');
+                if (statsEl) statsEl.innerHTML = '';
                 return;
             }
-            
+
             updateAnalisisStats(filteredData);
-            
+
             if (viewType === 'evolution') {
                 renderEvolutionChart(filteredData);
             } else if (viewType === 'efficiency') {
@@ -12835,42 +12911,57 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
             } else if (viewType === 'comparison') {
                 renderComparisonChart(filteredData);
             }
-            
+
             renderAnalisisTable(filteredData);
         }
 
         function updateAnalisisStats(data) {
             const container = document.getElementById('analisis-stats');
             if (!container) return;
-            
-            const totalTests = data.length;
-            const avgResistencia = data.reduce((sum, d) => sum + d.resistencia, 0) / totalTests;
-            const avgEficiencia = data.reduce((sum, d) => sum + parseFloat(d.eficiencia), 0) / totalTests;
-            const maxResistencia = Math.max(...data.map(d => d.resistencia));
-            const uniqueTrials = [...new Set(data.map(d => d.trialId))].length;
-            
-            container.innerHTML = `
-                <div style="background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); padding: 15px; border-radius: 8px; border-left: 4px solid #16a34a;">
-                    <div style="font-size: 12px; color: #166534; font-weight: bold; margin-bottom: 5px;">🧪 TOTAL ENSAYOS</div>
-                    <div style="font-size: 28px; font-weight: bold; color: #16a34a;">${totalTests}</div>
-                </div>
-                <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); padding: 15px; border-radius: 8px; border-left: 4px solid #0369a1;">
-                    <div style="font-size: 12px; color: #075985; font-weight: bold; margin-bottom: 5px;">📊 TRIAL MIXES</div>
-                    <div style="font-size: 28px; font-weight: bold; color: #0369a1;">${uniqueTrials}</div>
-                </div>
-                <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b;">
-                    <div style="font-size: 12px; color: #92400e; font-weight: bold; margin-bottom: 5px;">💪 PROMEDIO RESISTENCIA</div>
-                    <div style="font-size: 28px; font-weight: bold; color: #f59e0b;">${avgResistencia.toFixed(0)} PSI</div>
-                </div>
-                <div style="background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); padding: 15px; border-radius: 8px; border-left: 4px solid #4f46e5;">
-                    <div style="font-size: 12px; color: #3730a3; font-weight: bold; margin-bottom: 5px;">📈 EFICIENCIA PROMEDIO</div>
-                    <div style="font-size: 28px; font-weight: bold; color: #4f46e5;">${avgEficiencia.toFixed(1)}%</div>
-                </div>
-                <div style="background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%); padding: 15px; border-radius: 8px; border-left: 4px solid #ec4899;">
-                    <div style="font-size: 12px; color: #9f1239; font-weight: bold; margin-bottom: 5px;">🏆 MÁXIMA RESISTENCIA</div>
-                    <div style="font-size: 28px; font-weight: bold; color: #ec4899;">${maxResistencia.toFixed(0)} PSI</div>
-                </div>
-            `;
+
+            const totalTests     = data.length;
+            const avgResistencia = data.reduce(function(s,d){ return s+d.resistencia; }, 0) / totalTests;
+            const avgEficiencia  = data.reduce(function(s,d){ return s+parseFloat(d.eficiencia); }, 0) / totalTests;
+            const maxResistencia = Math.max.apply(null, data.map(function(d){ return d.resistencia; }));
+            const minResistencia = Math.min.apply(null, data.map(function(d){ return d.resistencia; }));
+            const uniqueSources  = new Set(data.map(function(d){ return d.sourceId; })).size;
+            const trialCount     = data.filter(function(d){ return d.source === 'trial'; }).length;
+            const campoCount     = data.filter(function(d){ return d.source === 'campo'; }).length;
+
+            // Standard deviation
+            const variance = data.reduce(function(s,d){ return s + Math.pow(d.resistencia - avgResistencia, 2); }, 0) / totalTests;
+            const stdDev   = Math.sqrt(variance);
+
+            var sourceBreakdown = '';
+            if (trialCount > 0 && campoCount > 0) {
+                sourceBreakdown = '<div style="font-size:11px;color:#555;margin-top:4px">' +
+                    '🧪 ' + trialCount + ' Trial · 🏗️ ' + campoCount + ' Campo</div>';
+            }
+
+            container.innerHTML =
+                '<div style="background:linear-gradient(135deg,#dcfce7,#bbf7d0);padding:15px;border-radius:8px;border-left:4px solid #16a34a">' +
+                    '<div style="font-size:12px;color:#166534;font-weight:bold;margin-bottom:5px">🧪 TOTAL CILINDROS</div>' +
+                    '<div style="font-size:28px;font-weight:bold;color:#16a34a">' + totalTests + '</div>' +
+                    sourceBreakdown +
+                '</div>' +
+                '<div style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);padding:15px;border-radius:8px;border-left:4px solid #0369a1">' +
+                    '<div style="font-size:12px;color:#075985;font-weight:bold;margin-bottom:5px">📊 MUESTRAS / ENSAYOS</div>' +
+                    '<div style="font-size:28px;font-weight:bold;color:#0369a1">' + uniqueSources + '</div>' +
+                '</div>' +
+                '<div style="background:linear-gradient(135deg,#fef3c7,#fde68a);padding:15px;border-radius:8px;border-left:4px solid #f59e0b">' +
+                    '<div style="font-size:12px;color:#92400e;font-weight:bold;margin-bottom:5px">💪 PROMEDIO</div>' +
+                    '<div style="font-size:28px;font-weight:bold;color:#f59e0b">' + avgResistencia.toFixed(0) + ' PSI</div>' +
+                    '<div style="font-size:11px;color:#555;margin-top:4px">σ = ' + stdDev.toFixed(0) + ' PSI</div>' +
+                '</div>' +
+                '<div style="background:linear-gradient(135deg,#e0e7ff,#c7d2fe);padding:15px;border-radius:8px;border-left:4px solid #4f46e5">' +
+                    '<div style="font-size:12px;color:#3730a3;font-weight:bold;margin-bottom:5px">📈 EFICIENCIA PROM.</div>' +
+                    '<div style="font-size:28px;font-weight:bold;color:#4f46e5">' + avgEficiencia.toFixed(1) + '%</div>' +
+                '</div>' +
+                '<div style="background:linear-gradient(135deg,#fce7f3,#fbcfe8);padding:15px;border-radius:8px;border-left:4px solid #ec4899">' +
+                    '<div style="font-size:12px;color:#9f1239;font-weight:bold;margin-bottom:5px">🏆 MÁX / MÍN</div>' +
+                    '<div style="font-size:22px;font-weight:bold;color:#ec4899">' + maxResistencia.toFixed(0) + ' PSI</div>' +
+                    '<div style="font-size:13px;color:#9f1239;margin-top:2px">' + minResistencia.toFixed(0) + ' PSI mín</div>' +
+                '</div>';
         }
 
         function renderEvolutionChart(data) {
@@ -13038,92 +13129,85 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
         function renderAnalisisTable(data) {
             const container = document.getElementById('analisis-table-container');
             if (!container) return;
-            
-            const groupedByTrial = {};
-            data.forEach(d => {
-                if (!groupedByTrial[d.trialName]) groupedByTrial[d.trialName] = [];
-                groupedByTrial[d.trialName].push(d);
-            });
-            
-            let html = '';
-            
-            Object.keys(groupedByTrial).forEach(trialName => {
-                const trialData = groupedByTrial[trialName];
 
-                // Agrupar por edad (días de curado)
+            // Group by sourceId
+            const groupedBySource = {};
+            data.forEach(function(d) {
+                if (!groupedBySource[d.sourceId]) groupedBySource[d.sourceId] = [];
+                groupedBySource[d.sourceId].push(d);
+            });
+
+            let html = '';
+
+            Object.keys(groupedBySource).forEach(function(sourceId) {
+                const trialData = groupedBySource[sourceId];
+                const first = trialData[0];
+                const sourceBadge = first.source === 'campo'
+                    ? '<span style="background:#0369a1;color:white;padding:2px 8px;border-radius:4px;font-size:11px;margin-left:8px">🏗️ CAMPO</span>'
+                    : '<span style="background:#16a34a;color:white;padding:2px 8px;border-radius:4px;font-size:11px;margin-left:8px">🧪 TRIAL MIX</span>';
+
+                // Group by age
                 const groupedByAge = {};
-                trialData.forEach(d => {
+                trialData.forEach(function(d) {
                     const age = d.diasCurado;
                     if (!groupedByAge[age]) groupedByAge[age] = [];
                     groupedByAge[age].push(d);
                 });
 
-                // Calcular promedio por edad
                 const ageAverages = {};
-                Object.keys(groupedByAge).forEach(age => {
+                Object.keys(groupedByAge).forEach(function(age) {
                     const group = groupedByAge[age];
                     ageAverages[age] = {
-                        avgResistencia: group.reduce((s, d) => s + d.resistencia, 0) / group.length,
-                        avgEficiencia:  group.reduce((s, d) => s + parseFloat(d.eficiencia), 0) / group.length,
-                        count: group.length,
+                        avgResistencia: group.reduce(function(s,d){ return s+d.resistencia; }, 0) / group.length,
+                        avgEficiencia:  group.reduce(function(s,d){ return s+parseFloat(d.eficiencia); }, 0) / group.length,
+                        count:   group.length,
                         objetivo: group[0].resistenciaObjetivo
                     };
                 });
 
-                const sortedAges = Object.keys(groupedByAge).map(Number).sort((a, b) => a - b);
-                
-                html += `
-                    <h4 style="margin: 20px 0 10px 0; color: #16a34a;">${trialName} — Mix: ${trialData[0].mixName}</h4>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Días Curado</th>
-                                <th>Resistencia (PSI)</th>
-                                <th>f'c Objetivo</th>
-                                <th>% Eficiencia</th>
-                                <th>Fecha Rotura</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-                
-                trialData.sort((a, b) => a.diasCurado - b.diasCurado).forEach(d => {
-                    const colorEficiencia = parseFloat(d.eficiencia) >= 100 ? '#16a34a' : parseFloat(d.eficiencia) >= 80 ? '#f59e0b' : '#dc2626';
-                    html += `
-                        <tr>
-                            <td style="text-align: center;"><strong>${d.diasCurado} días</strong></td>
-                            <td style="text-align: center; font-weight: bold;">${d.resistencia.toFixed(0)} PSI</td>
-                            <td style="text-align: center;">${d.resistenciaObjetivo} PSI</td>
-                            <td style="text-align: center; color: ${colorEficiencia}; font-weight: bold;">${d.eficiencia}%</td>
-                            <td style="text-align: center;">${d.fechaRotura || 'N/A'}</td>
-                        </tr>
-                    `;
+                const sortedAges = Object.keys(groupedByAge).map(Number).sort(function(a,b){ return a-b; });
+
+                html += '<h4 style="margin:20px 0 8px 0;color:#0f172a">' +
+                    first.trialName + sourceBadge +
+                    ' &nbsp;<span style="font-size:13px;color:#64748b;font-weight:400">Mix: ' + first.mixName +
+                    ' &nbsp;|&nbsp; f\'c obj: ' + first.resistenciaObjetivo + ' PSI</span></h4>';
+
+                html += '<table style="margin-bottom:24px"><thead><tr>' +
+                    '<th>Días</th><th style="text-align:right">Resist. (PSI)</th>' +
+                    '<th style="text-align:right">f\'c Obj.</th><th style="text-align:right">Efic. %</th>' +
+                    '<th>Fecha Ensayo</th><th>Estado</th></tr></thead><tbody>';
+
+                trialData.slice().sort(function(a,b){ return a.diasCurado - b.diasCurado; }).forEach(function(d) {
+                    const eff = parseFloat(d.eficiencia);
+                    const c = eff >= 100 ? '#16a34a' : eff >= 80 ? '#f59e0b' : '#dc2626';
+                    html += '<tr>' +
+                        '<td style="text-align:center"><strong>' + d.diasCurado + ' d</strong></td>' +
+                        '<td style="text-align:right;font-weight:bold;color:' + c + '">' + d.resistencia.toFixed(0) + '</td>' +
+                        '<td style="text-align:right">' + d.resistenciaObjetivo + '</td>' +
+                        '<td style="text-align:right;color:' + c + ';font-weight:bold">' + d.eficiencia + '%</td>' +
+                        '<td style="text-align:center;font-size:12px">' + (d.fechaRotura || '—') + '</td>' +
+                        '<td><span style="color:' + c + ';font-weight:bold">' + (eff>=100?'✅ Cumple':eff>=80?'⚠️ Parcial':'❌ No cumple') + '</span></td>' +
+                        '</tr>';
                 });
 
-                html += `</tbody><tfoot>`;
-
-                // Fila de promedio por cada edad
-                sortedAges.forEach(age => {
+                html += '</tbody><tfoot>';
+                sortedAges.forEach(function(age) {
                     const avg = ageAverages[age];
-                    const colorAvg = avg.avgEficiencia >= 100 ? '#16a34a' : avg.avgEficiencia >= 80 ? '#f59e0b' : '#dc2626';
-                    const countLabel = avg.count > 1 ? ` (n=${avg.count})` : '';
-                    html += `
-                        <tr style="background: #f0fdf4; font-weight: bold; border-top: 2px solid #bbf7d0;">
-                            <td style="color:#166534;">⌀ Prom. ${age} días${countLabel}</td>
-                            <td style="text-align: center; color: #16a34a;">${avg.avgResistencia.toFixed(0)} PSI</td>
-                            <td style="text-align: center; color:#64748b;">${avg.objetivo} PSI</td>
-                            <td style="text-align: center; color: ${colorAvg};">${avg.avgEficiencia.toFixed(1)}%</td>
-                            <td></td>
-                        </tr>
-                    `;
+                    const c2 = avg.avgEficiencia >= 100 ? '#16a34a' : avg.avgEficiencia >= 80 ? '#f59e0b' : '#dc2626';
+                    const n  = avg.count > 1 ? ' (n=' + avg.count + ')' : '';
+                    html += '<tr style="background:#f0fdf4;font-weight:bold;border-top:2px solid #bbf7d0">' +
+                        '<td style="color:#166534">⌀ ' + age + ' d' + n + '</td>' +
+                        '<td style="text-align:right;color:#16a34a">' + avg.avgResistencia.toFixed(0) + '</td>' +
+                        '<td style="text-align:right;color:#64748b">' + avg.objetivo + '</td>' +
+                        '<td style="text-align:right;color:' + c2 + '">' + avg.avgEficiencia.toFixed(1) + '%</td>' +
+                        '<td></td><td></td></tr>';
                 });
 
-                html += `</tfoot></table>`;
+                html += '</tfoot></table>';
             });
-            
+
             container.innerHTML = html || '<div class="empty-state">No hay datos para mostrar</div>';
         }
-
         async function exportarAnalisisPDF() {
             alert('📄 Exportando análisis a PDF...\n\nPor ahora puedes usar Ctrl+P para imprimir esta sección.');
             window.print();
