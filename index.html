@@ -2436,6 +2436,7 @@
                                 <option value="evolution">Evolución de Resistencia</option>
                                 <option value="efficiency">% de Resistencia (f'c)</option>
                                 <option value="comparison">Comparación entre Muestras</option>
+                                <option value="cement_efficiency">Eficiencia de Cemento (PSI/lb)</option>
                             </select>
                         </div>
 
@@ -12737,7 +12738,11 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                             resistenciaObjetivo: resistenciaObjetivo,
                             eficiencia:          (res / resistenciaObjetivo * 100).toFixed(1),
                             fechaRotura:         cilindro.fechaRotura || cilindro.fechaEnsayo || '',
-                            fechaColado:         trial.fecha || ''
+                            fechaColado:         trial.fecha || '',
+                            pesoCemento:         mixDesign ? (parseFloat(mixDesign.pesoCemento) || 0) : 0,
+                            pesoSCM1:            mixDesign ? (parseFloat(mixDesign.pesoSCM1) || 0) : 0,
+                            pesoSCM2:            mixDesign ? (parseFloat(mixDesign.pesoSCM2) || 0) : 0,
+                            pesoSCM3:            mixDesign ? (parseFloat(mixDesign.pesoSCM3) || 0) : 0
                         });
                     }
                 });
@@ -12773,7 +12778,11 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                             resistenciaObjetivo: reqStrength,
                             eficiencia:          (res / reqStrength * 100).toFixed(1),
                             fechaRotura:         cyl.fechaEnsayo || '',
-                            fechaColado:         ev.fecha || ''
+                            fechaColado:         ev.fecha || '',
+                            pesoCemento:         parseFloat(ev.pesoCemento) || 0,
+                            pesoSCM1:            0,
+                            pesoSCM2:            0,
+                            pesoSCM3:            0
                         });
                     }
                 });
@@ -12901,17 +12910,16 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                 });
             }
 
-            // Show / hide age selector
-            const ageGroup = document.getElementById('analisis-age-group');
+            // Show/hide age selector for views that need it
+            const needsAge = viewType === 'comparison' || viewType === 'cement_efficiency';
+            const ageGroup  = document.getElementById('analisis-age-group');
             const ageSelect = document.getElementById('analisis-age-select');
-            if (viewType === 'comparison') {
+            if (needsAge) {
                 if (ageGroup) ageGroup.style.display = '';
-                // Populate available ages from filtered data
                 if (ageSelect) {
                     const prevAge = ageSelect.value;
-                    const ages = [...new Set(filteredData.map(d => parseInt(d.diasCurado)))].sort((a,b) => a-b);
+                    const ages = [...new Set(filteredData.map(d => parseInt(d.diasCurado)))].sort((a,b)=>a-b);
                     ageSelect.innerHTML = ages.map(a => '<option value="' + a + '">' + a + ' días</option>').join('');
-                    // Restore previous selection if still valid, otherwise pick first
                     if (prevAge && ages.includes(parseInt(prevAge))) {
                         ageSelect.value = prevAge;
                     } else if (ages.length > 0) {
@@ -12938,6 +12946,8 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                 renderEfficiencyChart(filteredData);
             } else if (viewType === 'comparison') {
                 renderComparisonChart(filteredData);
+            } else if (viewType === 'cement_efficiency') {
+                renderCementEfficiencyChart(filteredData);
             }
 
             renderAnalisisTable(filteredData);
@@ -13104,11 +13114,49 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
         }
 
         function renderComparisonChart(data) {
-            // Get selected age
+            const groupedData = {};
+            
+            data.forEach(d => {
+                if (!groupedData[d.trialName]) groupedData[d.trialName] = [];
+                groupedData[d.trialName].push(d.resistencia);
+            });
+            
+            const labels = Object.keys(groupedData);
+            const avgData = labels.map(label => {
+                const resistencias = groupedData[label];
+                return resistencias.reduce((sum, r) => sum + r, 0) / resistencias.length;
+            });
+            
+            renderChart({
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Resistencia Promedio (PSI)',
+                        data: avgData,
+                        backgroundColor: '#16a34a',
+                        borderColor: '#15803d',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: true, text: 'Comparación de Resistencia Promedio entre Trial Mixes', font: { size: 16, weight: 'bold' } },
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { title: { display: true, text: 'Resistencia Promedio (PSI)' }, beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function renderCementEfficiencyChart(data) {
             const ageSelect = document.getElementById('analisis-age-select');
             const selectedAge = ageSelect && ageSelect.value ? parseInt(ageSelect.value) : null;
 
-            // Filter by selected age
             const ageFiltered = selectedAge !== null
                 ? data.filter(d => parseInt(d.diasCurado) === selectedAge)
                 : data;
@@ -13119,36 +13167,66 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                     if (analisisChart) { analisisChart.destroy(); analisisChart = null; }
                     const ctx = canvas.getContext('2d');
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.font = '16px Arial';
-                    ctx.fillStyle = '#64748b';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('No hay datos para la edad seleccionada', canvas.width / 2, canvas.height / 2);
+                    ctx.font = '16px Arial'; ctx.fillStyle = '#64748b'; ctx.textAlign = 'center';
+                    ctx.fillText('No hay datos para la edad seleccionada', canvas.width/2, canvas.height/2);
                 }
                 return;
             }
 
-            // Group by trialName — average at selected age
-            const groupedData = {};
+            // Group by sourceId → average resistance and cement content
+            const grouped = {};
             ageFiltered.forEach(d => {
-                if (!groupedData[d.trialName]) groupedData[d.trialName] = { resistencias: [], objetivo: d.resistenciaObjetivo };
-                groupedData[d.trialName].resistencias.push(d.resistencia);
+                if (!grouped[d.sourceId]) {
+                    grouped[d.sourceId] = {
+                        trialName:    d.trialName,
+                        mixName:      d.mixName,
+                        resistencias: [],
+                        pesoCemento:  d.pesoCemento,
+                        pesoSCM1:     d.pesoSCM1 || 0,
+                        pesoSCM2:     d.pesoSCM2 || 0,
+                        pesoSCM3:     d.pesoSCM3 || 0,
+                        objetivo:     d.resistenciaObjetivo
+                    };
+                }
+                grouped[d.sourceId].resistencias.push(d.resistencia);
             });
 
-            const labels = Object.keys(groupedData);
-            const avgData = labels.map(label => {
-                const rs = groupedData[label].resistencias;
-                return rs.reduce((sum, r) => sum + r, 0) / rs.length;
-            });
-            const targetData = labels.map(label => parseFloat(groupedData[label].objetivo) || null);
+            const entries = Object.values(grouped).filter(g => g.pesoCemento > 0);
+            if (entries.length === 0) {
+                const canvas = document.getElementById('analisis-chart-main');
+                if (canvas) {
+                    if (analisisChart) { analisisChart.destroy(); analisisChart = null; }
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.font = '15px Arial'; ctx.fillStyle = '#ef4444'; ctx.textAlign = 'center';
+                    ctx.fillText('Sin dato de kg cemento en el Mix Design de estas muestras', canvas.width/2, canvas.height/2);
+                }
+                return;
+            }
 
-            const colors = labels.map(label => {
-                const avg = groupedData[label].resistencias.reduce((s,r)=>s+r,0)/groupedData[label].resistencias.length;
-                const tgt = parseFloat(groupedData[label].objetivo) || 0;
-                return avg >= tgt ? '#16a34a' : avg >= tgt * 0.8 ? '#f59e0b' : '#ef4444';
+            entries.sort((a,b) => {
+                const avgA = a.resistencias.reduce((s,r)=>s+r,0)/a.resistencias.length;
+                const avgB = b.resistencias.reduce((s,r)=>s+r,0)/b.resistencias.length;
+                const cemA = a.pesoCemento + a.pesoSCM1 + a.pesoSCM2 + a.pesoSCM3;
+                const cemB = b.pesoCemento + b.pesoSCM1 + b.pesoSCM2 + b.pesoSCM3;
+                return (avgB/cemB) - (avgA/cemA);
+            });
+
+            const labels   = entries.map(e => e.trialName);
+            const cemTotals = entries.map(e => e.pesoCemento + e.pesoSCM1 + e.pesoSCM2 + e.pesoSCM3);
+            const effData  = entries.map((e, i) => {
+                const avg = e.resistencias.reduce((s,r)=>s+r,0)/e.resistencias.length;
+                return parseFloat((avg / cemTotals[i]).toFixed(3));
+            });
+            const avgData  = entries.map(e => parseFloat((e.resistencias.reduce((s,r)=>s+r,0)/e.resistencias.length).toFixed(0)));
+
+            const colors = effData.map((v, i) => {
+                const maxEff = Math.max(...effData);
+                const ratio  = maxEff > 0 ? v / maxEff : 1;
+                return ratio >= 0.9 ? '#16a34a' : ratio >= 0.75 ? '#0369a1' : ratio >= 0.6 ? '#f59e0b' : '#ef4444';
             });
 
             const ageLabel = selectedAge !== null ? selectedAge + ' días' : 'todos los días';
-            const titleText = 'Comparación entre Muestras — Promedio a ' + ageLabel + ' de Curado';
 
             renderChart({
                 type: 'bar',
@@ -13156,22 +13234,24 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                     labels: labels,
                     datasets: [
                         {
-                            label: 'Resistencia Promedio (PSI)',
-                            data: avgData,
+                            label: 'Eficiencia de Cemento (PSI/lb cem.)',
+                            data: effData,
                             backgroundColor: colors,
-                            borderColor: colors.map(c => c),
-                            borderWidth: 2
+                            borderColor: colors,
+                            borderWidth: 2,
+                            yAxisID: 'yEff'
                         },
                         {
-                            label: "f'c Objetivo (PSI)",
-                            data: targetData,
+                            label: 'Resistencia Promedio (PSI)',
+                            data: avgData,
                             type: 'line',
-                            borderColor: '#0369a1',
+                            borderColor: '#7c3aed',
                             backgroundColor: 'transparent',
-                            borderWidth: 2,
-                            borderDash: [6, 4],
-                            pointRadius: 4,
-                            pointBackgroundColor: '#0369a1'
+                            borderWidth: 2.5,
+                            pointRadius: 5,
+                            pointBackgroundColor: '#7c3aed',
+                            tension: 0.3,
+                            yAxisID: 'yPSI'
                         }
                     ]
                 },
@@ -13179,28 +13259,67 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        title: { display: true, text: titleText, font: { size: 16, weight: 'bold' } },
+                        title: {
+                            display: true,
+                            text: 'Eficiencia de Cemento — PSI obtenido por lb de material cementicio a ' + ageLabel,
+                            font: { size: 15, weight: 'bold' }
+                        },
                         legend: { display: true, position: 'bottom' },
                         tooltip: {
                             callbacks: {
                                 afterBody: function(items) {
-                                    const label = items[0].label;
-                                    const g = groupedData[label];
-                                    if (!g) return '';
-                                    const n = g.resistencias.length;
-                                    const tgt = parseFloat(g.objetivo) || 0;
-                                    const avg = g.resistencias.reduce((s,r)=>s+r,0)/n;
-                                    const eff = tgt > 0 ? ((avg/tgt)*100).toFixed(1) : 'N/A';
-                                    return ['Cilindros: ' + n, 'f\'c obj: ' + tgt + ' PSI', 'Eficiencia: ' + eff + '%'];
+                                    const idx = items[0].dataIndex;
+                                    const e = entries[idx];
+                                    const avg = e.resistencias.reduce((s,r)=>s+r,0)/e.resistencias.length;
+                                    const cemT = cemTotals[idx];
+                                    const scmTotal = e.pesoSCM1 + e.pesoSCM2 + e.pesoSCM3;
+                                    const lines = [
+                                        'Mix: ' + e.mixName,
+                                        'Cemento Portland: ' + e.pesoCemento.toFixed(0) + ' lb/yd³',
+                                        scmTotal > 0 ? 'SCMs: ' + scmTotal.toFixed(0) + ' lb/yd³' : '',
+                                        'Total cementicio: ' + cemT.toFixed(0) + ' lb/yd³',
+                                        'Resist. prom: ' + avg.toFixed(0) + ' PSI',
+                                        'f\'c obj: ' + e.objetivo + ' PSI',
+                                        'Cilindros: ' + e.resistencias.length
+                                    ].filter(Boolean);
+                                    return lines;
                                 }
                             }
                         }
                     },
                     scales: {
-                        y: { title: { display: true, text: 'Resistencia Promedio (PSI)' }, beginAtZero: true }
+                        yEff: {
+                            type: 'linear',
+                            position: 'left',
+                            title: { display: true, text: 'Eficiencia (PSI / lb cem.)' },
+                            beginAtZero: true
+                        },
+                        yPSI: {
+                            type: 'linear',
+                            position: 'right',
+                            title: { display: true, text: 'Resistencia Promedio (PSI)' },
+                            beginAtZero: true,
+                            grid: { drawOnChartArea: false }
+                        }
                     }
                 }
             });
+
+            // Store computed entries for use in table
+            window._lastCemEffEntries = entries.map((e, i) => ({
+                trialName:    e.trialName,
+                mixName:      e.mixName,
+                pesoCemento:  e.pesoCemento,
+                pesoSCM1:     e.pesoSCM1,
+                pesoSCM2:     e.pesoSCM2,
+                pesoSCM3:     e.pesoSCM3,
+                cemTotal:     cemTotals[i],
+                avgResistencia: parseFloat((e.resistencias.reduce((s,r)=>s+r,0)/e.resistencias.length).toFixed(0)),
+                eficienciaCem: effData[i],
+                objetivo:     e.objetivo,
+                n:            e.resistencias.length,
+                diasCurado:   selectedAge
+            }));
         }
 
         function renderChart(config) {
@@ -13218,7 +13337,65 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
             const container = document.getElementById('analisis-table-container');
             if (!container) return;
 
-            // Group by sourceId
+            const viewType = document.getElementById('analisis-view-type').value;
+
+            // ── Cement efficiency view: show dedicated summary table ──────────
+            if (viewType === 'cement_efficiency') {
+                const entries = window._lastCemEffEntries || [];
+                if (!entries.length) {
+                    container.innerHTML = '<div class="empty-state">No hay datos de eficiencia de cemento disponibles.</div>';
+                    return;
+                }
+                const ageLabel = entries[0].diasCurado !== null ? entries[0].diasCurado + ' días' : '—';
+                let html = '<h3 style="margin:0 0 12px 0;color:#7c3aed">🏭 Eficiencia de Cemento — Promedio a ' + ageLabel + ' de Curado</h3>';
+                html += '<table style="margin-bottom:24px">' +
+                    '<thead><tr>' +
+                    '<th>Muestra / Trial</th>' +
+                    '<th>Mix Design</th>' +
+                    '<th style="text-align:right">Cem. Portland<br><span style="font-weight:normal;font-size:11px">(lb/yd³)</span></th>' +
+                    '<th style="text-align:right">SCMs<br><span style="font-weight:normal;font-size:11px">(lb/yd³)</span></th>' +
+                    '<th style="text-align:right">Total Cementicio<br><span style="font-weight:normal;font-size:11px">(lb/yd³)</span></th>' +
+                    '<th style="text-align:right">Resist. Prom.<br><span style="font-weight:normal;font-size:11px">(PSI)</span></th>' +
+                    '<th style="text-align:right">f\'c Obj.<br><span style="font-weight:normal;font-size:11px">(PSI)</span></th>' +
+                    '<th style="text-align:right">Efic. Cemento<br><span style="font-weight:normal;font-size:11px">(PSI / lb)</span></th>' +
+                    '<th style="text-align:center">Cilindros</th>' +
+                    '<th style="text-align:center">Ranking</th>' +
+                    '</tr></thead><tbody>';
+
+                const maxEff = Math.max(...entries.map(e => e.eficienciaCem));
+                entries.forEach(function(e, idx) {
+                    const ratio  = maxEff > 0 ? e.eficienciaCem / maxEff : 1;
+                    const color  = ratio >= 0.9 ? '#16a34a' : ratio >= 0.75 ? '#0369a1' : ratio >= 0.6 ? '#f59e0b' : '#ef4444';
+                    const badge  = ratio >= 0.9 ? '🥇' : ratio >= 0.75 ? '🥈' : ratio >= 0.6 ? '🥉' : '—';
+                    const scmT   = e.pesoSCM1 + e.pesoSCM2 + e.pesoSCM3;
+                    const bg     = idx % 2 === 0 ? '' : 'background:#f8fafc';
+                    html += '<tr style="' + bg + '">' +
+                        '<td><strong>' + e.trialName + '</strong></td>' +
+                        '<td style="font-size:13px;color:#475569">' + e.mixName + '</td>' +
+                        '<td style="text-align:right">' + e.pesoCemento.toFixed(0) + '</td>' +
+                        '<td style="text-align:right;color:#7c3aed">' + (scmT > 0 ? scmT.toFixed(0) : '—') + '</td>' +
+                        '<td style="text-align:right;font-weight:600">' + e.cemTotal.toFixed(0) + '</td>' +
+                        '<td style="text-align:right;font-weight:700;color:' + color + '">' + e.avgResistencia.toFixed(0) + '</td>' +
+                        '<td style="text-align:right;color:#64748b">' + e.objetivo + '</td>' +
+                        '<td style="text-align:right;font-weight:700;color:' + color + ';font-size:15px">' + e.eficienciaCem.toFixed(3) + '</td>' +
+                        '<td style="text-align:center;color:#64748b">' + e.n + '</td>' +
+                        '<td style="text-align:center;font-size:18px">' + badge + '</td>' +
+                        '</tr>';
+                });
+
+                // Footer: best overall
+                const best = entries[0];
+                html += '</tbody><tfoot><tr style="background:#f0fdf4;font-weight:bold;border-top:2px solid #bbf7d0">' +
+                    '<td colspan="7" style="color:#166534">🏆 Mejor eficiencia de cemento</td>' +
+                    '<td style="text-align:right;color:#16a34a;font-size:15px">' + best.eficienciaCem.toFixed(3) + ' PSI/lb</td>' +
+                    '<td colspan="2" style="color:#166534">' + best.trialName + '</td>' +
+                    '</tr></tfoot></table>';
+
+                container.innerHTML = html;
+                return;
+            }
+
+            // ── Standard table for other views ───────────────────────────────
             const groupedBySource = {};
             data.forEach(function(d) {
                 if (!groupedBySource[d.sourceId]) groupedBySource[d.sourceId] = [];
