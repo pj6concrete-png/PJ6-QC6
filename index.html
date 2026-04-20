@@ -2439,6 +2439,13 @@
                             </select>
                         </div>
 
+                        <div class="form-group" id="analisis-age-group" style="display:none">
+                            <label>Edad de Curado (días)</label>
+                            <select id="analisis-age-select" onchange="updateAnalisisCharts()">
+                                <option value="">Cargando...</option>
+                            </select>
+                        </div>
+
                         <div class="form-group">
                             <label>Acciones</label>
                             <div style="display: flex; gap: 10px;">
@@ -4279,7 +4286,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
         async function generarPDFCotizacion(cotizacion) {
             const logo = await obtenerLogo();
             const logoHtml = logo 
-                ? `<img src="${logo}" style="max-height: 200px; max-width: 520px;">` 
+                ? `<img src="${logo}" style="max-height: 120px; max-width: 350px;">` 
                 : `<div style="background: #16a34a; color: white; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 18px;">MIXTEC PRO</div>`;
             
             const html = `<!DOCTYPE html>
@@ -6499,7 +6506,6 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     html += '<tr style="background:#eff6ff">';
                     html += '<td><strong>Cemento' + (tipoCemR ? ' (' + tipoCemR + ')' : '') + '</strong></td>';
                     html += '<td style="text-align:right">' + currentMixResults.cemento.peso.toFixed(1) + '</td>';
-                    html += '<td>' + (currentMixResults.cemento.proveedor || document.getElementById('proveedor-cemento')?.value || '—') + '</td>';
                     html += '<td style="text-align:right">' + currentMixResults.cemento.volumen.toFixed(3) + '</td>';
                     html += '</tr>';
                 }
@@ -6515,7 +6521,6 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                         html += '<tr style="background:' + scmColorsD[ix] + '">';
                         html += '<td><strong>' + s.tipo + '</strong> <span style="font-size:11px;color:#7c3aed">(SCM '+i+' — '+pct+'% reemplazo)</span></td>';
                         html += '<td style="text-align:right">' + s.peso.toFixed(1) + '</td>';
-                        html += '<td>—</td>';
                         html += '<td style="text-align:right">' + s.volumen.toFixed(3) + '</td>';
                         html += '</tr>';
                     }
@@ -6527,7 +6532,6 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     html += '<tr style="background:#ddd6fe;font-weight:700">';
                     html += '<td style="color:#5b21b6">Total Cementicio (Cemento + SCMs)</td>';
                     html += '<td style="text-align:right;color:#5b21b6">' + currentMixResults.totalCementicio.toFixed(1) + '</td>';
-                    html += '<td></td>';
                     html += '<td style="text-align:right;color:#5b21b6">' + ((currentMixResults.cemento?.volumen||0)+volSCMsD).toFixed(3) + '</td>';
                     html += '</tr>';
                 }
@@ -6537,7 +6541,6 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     html += '<tr>';
                     html += '<td><strong>Agua Efectiva</strong></td>';
                     html += '<td style="text-align:right">' + currentMixResults.agua.peso.toFixed(1) + '</td>';
-                    html += '<td>—</td>';
                     html += '<td style="text-align:right">' + currentMixResults.agua.volumen.toFixed(3) + '</td>';
                     html += '</tr>';
                 }
@@ -6547,7 +6550,6 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     html += '<tr>';
                     html += '<td><strong>Agregado Grueso</strong></td>';
                     html += '<td style="text-align:right">' + currentMixResults.grueso.peso.toFixed(1) + '</td>';
-                    html += '<td>' + (currentMixResults.grueso.proveedor || document.getElementById('proveedor-grueso')?.value || '—') + '</td>';
                     html += '<td style="text-align:right">' + currentMixResults.grueso.volumen.toFixed(3) + '</td>';
                     html += '</tr>';
                 }
@@ -6557,7 +6559,6 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     html += '<tr>';
                     html += '<td><strong>Agregado Intermedio</strong></td>';
                     html += '<td style="text-align:right">' + currentMixResults.intermedio.peso.toFixed(1) + '</td>';
-                    html += '<td>—</td>';
                     html += '<td style="text-align:right">' + currentMixResults.intermedio.volumen.toFixed(3) + '</td>';
                     html += '</tr>';
                 }
@@ -6567,7 +6568,6 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     html += '<tr>';
                     html += '<td><strong>Arena 1</strong></td>';
                     html += '<td style="text-align:right">' + currentMixResults.arena1.peso.toFixed(1) + '</td>';
-                    html += '<td>' + (currentMixResults.arena1.proveedor || document.getElementById('proveedor-arena1')?.value || '—') + '</td>';
                     html += '<td style="text-align:right">' + currentMixResults.arena1.volumen.toFixed(3) + '</td>';
                     html += '</tr>';
                 }
@@ -6577,7 +6577,6 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     html += '<tr>';
                     html += '<td><strong>Arena 2</strong></td>';
                     html += '<td style="text-align:right">' + currentMixResults.arena2.peso.toFixed(1) + '</td>';
-                    html += '<td>' + (currentMixResults.arena2.proveedor || document.getElementById('proveedor-arena2')?.value || '—') + '</td>';
                     html += '<td style="text-align:right">' + currentMixResults.arena2.volumen.toFixed(3) + '</td>';
                     html += '</tr>';
                 }
@@ -6590,7 +6589,7 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                     if (ad && ad.nombre && dosis > 0) {
                         html += '<tr style="background:#fffbeb">';
                         html += '<td><strong>' + ad.nombre + '</strong></td>';
-                        html += '<td colspan="3" style="color:#92400e;font-style:italic">Rango: 0 to ' + dosis.toFixed(2) + ' oz/cwt</td>';
+                        html += '<td colspan="2" style="color:#92400e;font-style:italic">Rango: 0 to ' + dosis.toFixed(2) + ' oz/cwt</td>';
                         html += '</tr>';
                     }
                 });
@@ -6602,7 +6601,6 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                         html += '<tr style="background:#fff1f2">';
                         html += '<td><strong>' + ad.nombre + ' <span style="font-size:0.7em;background:#dc2626;color:#fff;border-radius:2px;padding:1px 4px">lb/yd³</span></strong></td>';
                         html += '<td style="text-align:right">' + ad.peso.toFixed(3) + ' lb</td>';
-                        html += '<td>—</td>';
                         html += '<td style="text-align:right">' + ad.volumen.toFixed(3) + '</td>';
                         html += '</tr>';
                     }
@@ -6613,7 +6611,6 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 html += '<tr style="background:#f0fdf4">';
                 html += '<td><strong>Aire</strong></td>';
                 html += '<td style="text-align:right">—</td>';
-                html += '<td>—</td>';
                 html += '<td style="text-align:right">' + aireVolD.toFixed(3) + '</td>';
                 html += '</tr>';
 
@@ -12904,6 +12901,27 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
                 });
             }
 
+            // Show / hide age selector
+            const ageGroup = document.getElementById('analisis-age-group');
+            const ageSelect = document.getElementById('analisis-age-select');
+            if (viewType === 'comparison') {
+                if (ageGroup) ageGroup.style.display = '';
+                // Populate available ages from filtered data
+                if (ageSelect) {
+                    const prevAge = ageSelect.value;
+                    const ages = [...new Set(filteredData.map(d => parseInt(d.diasCurado)))].sort((a,b) => a-b);
+                    ageSelect.innerHTML = ages.map(a => '<option value="' + a + '">' + a + ' días</option>').join('');
+                    // Restore previous selection if still valid, otherwise pick first
+                    if (prevAge && ages.includes(parseInt(prevAge))) {
+                        ageSelect.value = prevAge;
+                    } else if (ages.length > 0) {
+                        ageSelect.value = ages[0];
+                    }
+                }
+            } else {
+                if (ageGroup) ageGroup.style.display = 'none';
+            }
+
             if (filteredData.length === 0) {
                 const container = document.getElementById('analisis-table-container');
                 if (container) container.innerHTML = '<div class="empty-state">⚠️ No hay datos con cilindros rotos para la fuente seleccionada.</div>';
@@ -13086,37 +13104,97 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
         }
 
         function renderComparisonChart(data) {
+            // Get selected age
+            const ageSelect = document.getElementById('analisis-age-select');
+            const selectedAge = ageSelect && ageSelect.value ? parseInt(ageSelect.value) : null;
+
+            // Filter by selected age
+            const ageFiltered = selectedAge !== null
+                ? data.filter(d => parseInt(d.diasCurado) === selectedAge)
+                : data;
+
+            if (ageFiltered.length === 0) {
+                const canvas = document.getElementById('analisis-chart-main');
+                if (canvas) {
+                    if (analisisChart) { analisisChart.destroy(); analisisChart = null; }
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.font = '16px Arial';
+                    ctx.fillStyle = '#64748b';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('No hay datos para la edad seleccionada', canvas.width / 2, canvas.height / 2);
+                }
+                return;
+            }
+
+            // Group by trialName — average at selected age
             const groupedData = {};
-            
-            data.forEach(d => {
-                if (!groupedData[d.trialName]) groupedData[d.trialName] = [];
-                groupedData[d.trialName].push(d.resistencia);
+            ageFiltered.forEach(d => {
+                if (!groupedData[d.trialName]) groupedData[d.trialName] = { resistencias: [], objetivo: d.resistenciaObjetivo };
+                groupedData[d.trialName].resistencias.push(d.resistencia);
             });
-            
+
             const labels = Object.keys(groupedData);
             const avgData = labels.map(label => {
-                const resistencias = groupedData[label];
-                return resistencias.reduce((sum, r) => sum + r, 0) / resistencias.length;
+                const rs = groupedData[label].resistencias;
+                return rs.reduce((sum, r) => sum + r, 0) / rs.length;
             });
-            
+            const targetData = labels.map(label => parseFloat(groupedData[label].objetivo) || null);
+
+            const colors = labels.map(label => {
+                const avg = groupedData[label].resistencias.reduce((s,r)=>s+r,0)/groupedData[label].resistencias.length;
+                const tgt = parseFloat(groupedData[label].objetivo) || 0;
+                return avg >= tgt ? '#16a34a' : avg >= tgt * 0.8 ? '#f59e0b' : '#ef4444';
+            });
+
+            const ageLabel = selectedAge !== null ? selectedAge + ' días' : 'todos los días';
+            const titleText = 'Comparación entre Muestras — Promedio a ' + ageLabel + ' de Curado';
+
             renderChart({
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: 'Resistencia Promedio (PSI)',
-                        data: avgData,
-                        backgroundColor: '#16a34a',
-                        borderColor: '#15803d',
-                        borderWidth: 2
-                    }]
+                    datasets: [
+                        {
+                            label: 'Resistencia Promedio (PSI)',
+                            data: avgData,
+                            backgroundColor: colors,
+                            borderColor: colors.map(c => c),
+                            borderWidth: 2
+                        },
+                        {
+                            label: "f'c Objetivo (PSI)",
+                            data: targetData,
+                            type: 'line',
+                            borderColor: '#0369a1',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            borderDash: [6, 4],
+                            pointRadius: 4,
+                            pointBackgroundColor: '#0369a1'
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        title: { display: true, text: 'Comparación de Resistencia Promedio entre Trial Mixes', font: { size: 16, weight: 'bold' } },
-                        legend: { display: false }
+                        title: { display: true, text: titleText, font: { size: 16, weight: 'bold' } },
+                        legend: { display: true, position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                afterBody: function(items) {
+                                    const label = items[0].label;
+                                    const g = groupedData[label];
+                                    if (!g) return '';
+                                    const n = g.resistencias.length;
+                                    const tgt = parseFloat(g.objetivo) || 0;
+                                    const avg = g.resistencias.reduce((s,r)=>s+r,0)/n;
+                                    const eff = tgt > 0 ? ((avg/tgt)*100).toFixed(1) : 'N/A';
+                                    return ['Cilindros: ' + n, 'f\'c obj: ' + tgt + ' PSI', 'Eficiencia: ' + eff + '%'];
+                                }
+                            }
+                        }
                     },
                     scales: {
                         y: { title: { display: true, text: 'Resistencia Promedio (PSI)' }, beginAtZero: true }
