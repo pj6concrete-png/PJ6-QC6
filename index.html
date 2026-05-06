@@ -1905,8 +1905,12 @@
                             <input type="number" id="trial-aire" step="0.1" placeholder="ej: 2.5">
                         </div>
                         <div class="form-group">
-                            <label>Peso Unitario (lb/ft³)</label>
+                            <label>Peso Unitario Medido (lb/ft³)</label>
                             <input type="number" id="trial-peso-unitario" step="0.1" placeholder="ej: 145.2">
+                        </div>
+                        <div class="form-group">
+                            <label>Peso Unitario de Diseño (lb/ft³) <small style="opacity:.7;font-weight:400">pesoTotal ÷ 27</small></label>
+                            <input type="text" id="trial-peso-unitario-diseno" readonly placeholder="Auto desde Mix Design" style="background:#f0fdf4;border-color:#86efac;color:#166534;font-weight:600;cursor:default">
                         </div>
                     </div>
                     <div class="form-grid cols-4">
@@ -6087,28 +6091,38 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
         }
 
         async function cargarInfoMixDesign() {
-            const mixId = document.getElementById('trial-mixdesign').value;
+            const mixId    = document.getElementById('trial-mixdesign').value;
+            const disenoEl = document.getElementById('trial-peso-unitario-diseno');
             if (!mixId) {
                 document.getElementById('mix-design-preview').style.display = 'none';
-                document.getElementById('trial-cantidades').style.display = 'none';
+                document.getElementById('trial-cantidades').style.display   = 'none';
+                if (disenoEl) disenoEl.value = '';
                 return;
             }
 
             const mix = await getRecord('mixdesigns', parseInt(mixId));
             if (!mix) return;
 
-            document.getElementById('preview-nombre').textContent = mix.nombre;
-            document.getElementById('preview-resistencia').textContent = `${mix.resistencia} PSI`;
-            document.getElementById('preview-wc').textContent = mix.resultados.wc.toFixed(2);
-            document.getElementById('preview-slump').textContent = `${mix.slump} in`;
-            
+            document.getElementById('preview-nombre').textContent      = mix.nombre;
+            document.getElementById('preview-resistencia').textContent = mix.resistencia + ' PSI';
+            document.getElementById('preview-wc').textContent          = mix.resultados.wc.toFixed(2);
+            document.getElementById('preview-slump').textContent       = mix.slump + ' in';
+
+            // ── Peso Unitario de Diseño (lb/ft³) = pesoTotal (lb/yd³) ÷ 27 ──
+            if (disenoEl && mix.resultados && mix.resultados.pesoTotal > 0) {
+                const pud = mix.resultados.pesoTotal / 27;
+                disenoEl.value = pud.toFixed(2);
+                disenoEl.title = mix.nombre + ': ' + mix.resultados.pesoTotal.toFixed(1) + ' lb/yd³ ÷ 27 = ' + pud.toFixed(2) + ' lb/ft³';
+            } else if (disenoEl) {
+                disenoEl.value = '';
+            }
+
             document.getElementById('mix-design-preview').style.display = 'block';
-            
+
             if (document.getElementById('trial-tamano').value) {
                 calcularCantidadesTrial();
             }
         }
-
         async function calcularCantidadesTrial() {
             const mixId = document.getElementById('trial-mixdesign').value;
             let tamano = document.getElementById('trial-tamano').value;
@@ -8877,10 +8891,36 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
         }
 
         function abrirModalTiposPrueba() {
+            if (!document.getElementById('modal-tipos-prueba')) {
+                const m = document.createElement('div');
+                m.id = 'modal-tipos-prueba';
+                m.style.cssText = 'display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;justify-content:center;align-items:center';
+                const inner = document.createElement('div');
+                inner.style.cssText = 'background:white;padding:30px;border-radius:12px;max-width:480px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.3)';
+                inner.innerHTML = '<h2 style="color:#2563eb;margin:0 0 6px 0;font-size:1.2rem">&#9999;&#65039; Gestionar Tipos de Prueba</h2>'
+                    + '<p style="color:#64748b;font-size:13px;margin:0 0 16px 0">Edita, a&#241;ade o elimina los tipos de prueba disponibles.</p>'
+                    + '<div id="lista-tipos-prueba" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;max-height:260px;overflow-y:auto"></div>'
+                    + '<div style="display:flex;gap:8px;margin-bottom:18px">'
+                    + '<input type="text" id="nuevo-tipo-prueba-input" placeholder="Nuevo tipo de prueba..." style="flex:1;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px">'
+                    + '<button type="button" onclick="agregarTipoPrueba()" style="background:#2563eb;color:white;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:13px;font-weight:600">+ A&#241;adir</button>'
+                    + '</div>'
+                    + '<div style="display:flex;gap:10px;justify-content:flex-end">'
+                    + '<button type="button" onclick="cerrarModalTiposPrueba()" style="background:#f1f5f9;border:1px solid #cbd5e1;color:#475569;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:14px">Cancelar</button>'
+                    + '<button type="button" onclick="guardarTiposPrueba()" style="background:#16a34a;color:white;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:14px;font-weight:600">&#128190; Guardar</button>'
+                    + '</div>';
+                m.appendChild(inner);
+                m.addEventListener('click', function(e) { if (e.target === m) cerrarModalTiposPrueba(); });
+                // Enter key on input
+                m.addEventListener('keydown', function(e) {
+                    if (e.target.id === 'nuevo-tipo-prueba-input' && e.key === 'Enter') {
+                        e.preventDefault(); agregarTipoPrueba();
+                    }
+                });
+                document.body.appendChild(m);
+            }
             const tipos = getTiposPrueba();
             renderListaTiposPrueba(tipos);
-            const modal = document.getElementById('modal-tipos-prueba');
-            modal.style.display = 'flex';
+            document.getElementById('modal-tipos-prueba').style.display = 'flex';
         }
 
         function cerrarModalTiposPrueba() {
@@ -9314,6 +9354,9 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             document.getElementById('trial-temperatura').value = trial.temperatura;
             document.getElementById('trial-aire').value      = trial.aire;
             document.getElementById('trial-peso-unitario').value = trial.pesoUnitario;
+            // Peso unitario de diseño is auto-calculated by cargarInfoMixDesign below
+            const disenoElT = document.getElementById('trial-peso-unitario-diseno');
+            if (disenoElT) disenoElT.value = '';
             document.getElementById('trial-agua-anadida').value = trial.aguaAnadida || '';
             document.getElementById('trial-ticket').value    = trial.ticketNumber || '';
             refreshTipoPruebaSelect(trial.tipoPrueba || '');
@@ -9638,7 +9681,11 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
             html += '<tr><td>Slump</td><td>' + (trial.slump || '-') + ' in</td><td>' + (mix ? mix.slump + ' in' : '-') + '</td></tr>';
             html += '<tr><td>Temperatura</td><td>' + (trial.temperatura || '-') + ' °F</td><td>50-90 °F</td></tr>';
             html += '<tr><td>Contenido de Aire</td><td>' + (trial.aire || '-') + ' %</td><td>' + (mix ? mix.contenidoAire + ' %' : '-') + '</td></tr>';
-            html += '<tr><td>Peso Unitario</td><td>' + (trial.pesoUnitario || '-') + ' lb/ft³</td><td>-</td></tr>';
+            html += '<tr><td>Peso Unitario Medido</td><td>' + (trial.pesoUnitario || '-') + ' lb/ft³</td><td>-</td></tr>';
+            if (mix && mix.resultados && mix.resultados.pesoTotal > 0) {
+                var pudDiseno = (mix.resultados.pesoTotal / 27).toFixed(2);
+                html += '<tr style="background:#f0fdf4"><td><strong>Peso Unitario de Diseño</strong></td><td><strong>' + pudDiseno + ' lb/ft³</strong></td><td style="color:#166534">' + mix.resultados.pesoTotal.toFixed(1) + ' lb/yd³ ÷ 27</td></tr>';
+            }
             if (trial.aguaAnadida && trial.aguaAnadida > 0) {
                 var galAnadida = (trial.aguaAnadida / 8.34).toFixed(3);
                 html += '<tr style="background:#fff3cd"><td><strong>Agua Añadida en Campo</strong></td><td><strong>' + trial.aguaAnadida + ' lb</strong> (' + galAnadida + ' gal)</td><td style="color:#856404">⚠ Ajuste en campo</td></tr>';
@@ -10330,6 +10377,8 @@ TOTAL GENERAL: $${cotizacion.total.toFixed(2)}
                 currentTrialData = null;
                 document.getElementById('btn-reporte-trial').disabled = true;
                 document.getElementById('btn-qr-trial').disabled = true;
+                var pudEl = document.getElementById('trial-peso-unitario-diseno');
+                if (pudEl) pudEl.value = '';
                 generarTrialId().then(id => {
                     document.getElementById('trial-id-display').value = id;
                 });
@@ -13114,93 +13163,37 @@ Sistema de Optimización AI de Concreto — ACI 211.1 / ACI 318 / ASTM C33 / Mé
         }
 
         function renderComparisonChart(data) {
-            // Read the age the user selected
-            const ageSelect   = document.getElementById('analisis-age-select');
-            const selectedAge = ageSelect && ageSelect.value ? parseInt(ageSelect.value) : null;
-
-            // Keep only cylinders of that age
-            const ageFiltered = selectedAge !== null
-                ? data.filter(d => parseInt(d.diasCurado) === selectedAge)
-                : data;
-
-            const canvas = document.getElementById('analisis-chart-main');
-            if (ageFiltered.length === 0) {
-                if (canvas) {
-                    if (typeof analisisChart !== 'undefined' && analisisChart) { analisisChart.destroy(); analisisChart = null; }
-                    const ctx = canvas.getContext('2d');
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.font = '16px Arial'; ctx.fillStyle = '#64748b'; ctx.textAlign = 'center';
-                    ctx.fillText('No hay datos para la edad seleccionada', canvas.width / 2, canvas.height / 2);
-                }
-                return;
-            }
-
-            // One bar per trial/evaluation — average of its cylinders at selected age
-            const grouped = {};
-            ageFiltered.forEach(d => {
-                if (!grouped[d.sourceId]) {
-                    grouped[d.sourceId] = { trialName: d.trialName, resistencias: [], objetivo: d.resistenciaObjetivo };
-                }
-                grouped[d.sourceId].resistencias.push(d.resistencia);
+            const groupedData = {};
+            
+            data.forEach(d => {
+                if (!groupedData[d.trialName]) groupedData[d.trialName] = [];
+                groupedData[d.trialName].push(d.resistencia);
             });
-
-            const entries = Object.values(grouped);
-            const labels  = entries.map(e => e.trialName);
-            const avgData = entries.map(e =>
-                parseFloat((e.resistencias.reduce((s,r)=>s+r,0) / e.resistencias.length).toFixed(0))
-            );
-            const tgtData = entries.map(e => parseFloat(e.objetivo) || null);
-            const nData   = entries.map(e => e.resistencias.length);
-
-            const colors = entries.map((e, i) => {
-                const avg = avgData[i], tgt = parseFloat(e.objetivo) || 0;
-                if (!tgt) return '#16a34a';
-                return avg >= tgt ? '#16a34a' : avg >= tgt * 0.8 ? '#f59e0b' : '#ef4444';
+            
+            const labels = Object.keys(groupedData);
+            const avgData = labels.map(label => {
+                const resistencias = groupedData[label];
+                return resistencias.reduce((sum, r) => sum + r, 0) / resistencias.length;
             });
-
-            const ageLabel = selectedAge !== null ? selectedAge + ' dias' : 'todos los dias';
-
+            
             renderChart({
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [
-                        {
-                            label: 'Resistencia Promedio (PSI)',
-                            data: avgData,
-                            backgroundColor: colors,
-                            borderColor: colors,
-                            borderWidth: 2
-                        },
-                        {
-                            label: "f'c Objetivo (PSI)",
-                            data: tgtData,
-                            type: 'line',
-                            borderColor: '#0369a1',
-                            backgroundColor: 'transparent',
-                            borderWidth: 2,
-                            borderDash: [6, 4],
-                            pointRadius: 4,
-                            pointBackgroundColor: '#0369a1'
-                        }
-                    ]
+                    datasets: [{
+                        label: 'Resistencia Promedio (PSI)',
+                        data: avgData,
+                        backgroundColor: '#16a34a',
+                        borderColor: '#15803d',
+                        borderWidth: 2
+                    }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        title: { display: true, text: 'Comparacion entre Muestras — Promedio a ' + ageLabel + ' de Curado', font: { size: 16, weight: 'bold' } },
-                        legend: { display: true, position: 'bottom' },
-                        tooltip: {
-                            callbacks: {
-                                afterBody: function(items) {
-                                    const i   = items[0].dataIndex;
-                                    const tgt = parseFloat(entries[i].objetivo) || 0;
-                                    const eff = tgt > 0 ? ((avgData[i]/tgt)*100).toFixed(1) : 'N/A';
-                                    return ['Cilindros (n): ' + nData[i], "f'c obj: " + tgt + ' PSI', 'Eficiencia: ' + eff + '%'];
-                                }
-                            }
-                        }
+                        title: { display: true, text: 'Comparación de Resistencia Promedio entre Trial Mixes', font: { size: 16, weight: 'bold' } },
+                        legend: { display: false }
                     },
                     scales: {
                         y: { title: { display: true, text: 'Resistencia Promedio (PSI)' }, beginAtZero: true }
