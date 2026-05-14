@@ -971,7 +971,7 @@
         <div id="tab-cotizaciones" class="tab-content">
             <div class="card">
                 <h2>💰 Nueva Cotización</h2>
-                <form id="form-cotizacion">
+                <form id="form-cotizacion" novalidate>
                     <input type="hidden" id="edit-cotizacion-id">
                     
                     <div class="alert info">
@@ -1114,7 +1114,7 @@
 
                     <div class="button-group">
                         <button type="button" class="secondary" onclick="nuevaCotizacion()">➕ Nueva Cotización</button>
-                        <button type="submit" class="primary">💾 Guardar Cotización</button>
+                        <button type="button" class="primary" onclick="guardarCotizacionHandler()">💾 Guardar Cotización</button>
                         <button type="button" class="success" id="btn-imprimir-cotizacion" onclick="imprimirCotizacion()" disabled>🖨️ Imprimir</button>
                         <button type="button" class="secondary" onclick="limpiarFormularioCotizacion()">🔄 Limpiar</button>
                     </div>
@@ -3995,9 +3995,7 @@
             document.getElementById('cotizacion-valida-hasta').valueAsDate = validaHasta;
         }
 
-        document.getElementById('form-cotizacion').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
+        async function guardarCotizacionHandler() {
             // Recopilar líneas
             const tbody = document.getElementById('cotizacion-lineas-body');
             const lineas = [];
@@ -4073,6 +4071,11 @@
                 console.error('Error al guardar cotización:', error);
                 alert('❌ Error al guardar: ' + error.message);
             }
+        }
+
+        document.getElementById('form-cotizacion').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await guardarCotizacionHandler();
         });
 
         async function loadCotizaciones() {
